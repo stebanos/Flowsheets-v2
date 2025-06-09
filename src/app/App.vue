@@ -1,5 +1,5 @@
 <script setup>
-import BlockEditor from './components/BlockEditor.vue';
+import { BlockEditor } from '@/features/block-editor/components';
 </script>
 
 <template>

@@ -6,7 +6,7 @@ import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
 
-import App from './App.vue';
+import App from './app/App.vue';
 import Aura from '@primevue/themes/aura';
 
 const app = createApp(App);
