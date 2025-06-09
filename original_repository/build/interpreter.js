@@ -204,7 +204,7 @@ function generate_unique_name_from_name(test_name) {
     return current_test_name;
 }
 
-// Basically, queue up commands to run on the python processes's stdin,
+// Basically, queue up commands to rune python processes's stdin,
 // and queue up what to do if a command succeeds or fails as well. If
 // it succeeds, then the fail function is thrown away. If it fails,
 // then the succeed function is thrown away.

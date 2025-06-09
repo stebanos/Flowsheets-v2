@@ -1,6 +1,5 @@
-#
-# Flowsheets v2
+# Vue 3 + Vite
 
-A research prototype programming environment for making programs while seeing the data the program outputs. See the **[10 minute demo video](https://www.youtube.com/watch?v=y1Ca5czOY7Q)** for details and **[sign up for the newsletter](https://tinyletter.com/Flowsheets)**.
+This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
-Install with `npm install`. Run development with `npm run-script run`.
+Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).

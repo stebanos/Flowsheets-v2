@@ -1,78 +1,78 @@
-// @flow
+import { createApp } from 'vue';
 
-const electron = require('electron')
-// Module to control application life.
-const app = electron.app
-// Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow
+import 'primeicons/primeicons.css';
+import './assets/main.css';
+import store, {StoreSymbol} from './store/store';
 
-const path = require('path')
-const url = require('url')
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+import App from './App.vue';
+import PrimeVue from 'primevue/config';
+import ToastService from 'primevue/toastservice';
+import Badge from 'primevue/badge';
+import Breadcrumb from 'primevue/breadcrumb';
+import Button from 'primevue/button';
+import Card from 'primevue/card';
+import Checkbox from 'primevue/checkbox';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import DatePicker from 'primevue/datepicker';
+import Dialog from 'primevue/dialog';
+import Divider from 'primevue/divider';
+import Drawer from 'primevue/drawer';
+import InputText from 'primevue/inputtext';
+import Listbox from 'primevue/listbox';
+import Message from 'primevue/message';
+import Panel from 'primevue/panel';
+import Popover from 'primevue/popover';
+import ProgressSpinner from 'primevue/progressspinner';
+import RadioButton from 'primevue/radiobutton';
+import Select from 'primevue/select';
+import Tab from 'primevue/tab';
+import TabList from 'primevue/tablist';
+import TabPanel from 'primevue/tabpanel';
+import TabPanels from 'primevue/tabpanels';
+import Tabs from 'primevue/tabs';
+import Tag from 'primevue/tag';
+import Toast from 'primevue/toast';
+import ToggleButton from 'primevue/togglebutton';
+import Tooltip from 'primevue/tooltip';
+import TreeTable from 'primevue/treetable';
+import Aura from '@primevue/themes/aura';
 
-function createWindow () {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1900, height: 1000})
+const app = createApp(App);
+app.provide(StoreSymbol, store);
+app.use(PrimeVue, { theme: { preset: Aura } });
+app.use(ToastService);
+app.component('p-badge', Badge);
+app.component('p-breadcrumb', Breadcrumb);
+app.component('p-button', Button);
+app.component('p-card', Card);
+app.component('p-checkbox', Checkbox);
+app.component('p-column', Column);
+app.component('p-data-table', DataTable);
+app.component('p-date-picker', DatePicker);
+app.component('p-dialog', Dialog);
+app.component('p-divider', Divider);
+app.component('p-drawer', Drawer);
+app.component('p-input-text', InputText);
+app.component('p-listbox', Listbox);
+app.component('p-message', Message);
+app.component('p-panel', Panel);
+app.component('p-popover', Popover);
+app.component('p-progress-spinner', ProgressSpinner);
+app.component('p-radio-button', RadioButton);
+app.component('p-select', Select);
+app.component('p-tab', Tab);
+app.component('p-tab-list', TabList);
+app.component('p-tab-panel', TabPanel);
+app.component('p-tab-panels', TabPanels);
+app.component('p-tabs', Tabs);
+app.component('p-tag', Tag);
+app.component('p-toast', Toast);
+app.component('p-toggle-button', ToggleButton);
+app.component('p-tree-table', TreeTable);
+app.directive('tooltip', Tooltip);
+app.mount('#app');
 
-  // and load the index.html of the app.
-  mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'index.html'),
-    protocol: 'file:',
-    slashes: true
-  }))
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools()
 
-  // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null
-  })
-}
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
-
-// Quit when all windows are closed.
-app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow()
-  }
-})
-
-app.on('will-quit', function() {
-  // try to kill python process so it doesn't spin out of control
-  var ps = require('ps-node');
-
-  ps.lookup({
-      command: 'python',
-      }, function(err, resultList) {
-          if (err) {
-              throw new Error(err);
-          }
-   
-          resultList.forEach(function( python_process ){
-              if (python_process && python_process.arguments[0].endsWith('interpreter.py')){
-                  ps.kill(python_process.pid)
-              }
-          });
-  });
-})

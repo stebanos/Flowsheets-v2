@@ -1,32 +1,31 @@
 {
-  "name": "flowsheetsv2",
-  "main": "build/main.js",
-  "engines": {
-    "node": ">=7.5.0"
-  },
+  "name": "package.json",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "flow": "flow; test $? -eq 0 -o $? -eq 2",
-    "build": "flow && lessc src/style.less build/style.css && babel src/ --out-dir build/ && cp src/index.html build/ && cp src/interpreter.py build/",
-    "run": "flow && lessc src/style.less build/style.css && babel src/ --out-dir build/ && cp src/index.html build/ && cp src/interpreter.py build/ && electron .",
-    "update": "git pull && npm install"
-  },
-  "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-plugin-transform-flow-strip-types": "^6.22.0",
-    "codemirror": "^5.28.0",
-    "diff": "^3.3.0",
-    "electron": "^1.7.6",
-    "filbert": "^0.1.20",
-    "flow-bin": "^0.38.0",
-    "jquery": "^3.2.1",
-    "less": "^2.7.2",
-    "ps-node": "^0.1.6",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
-    "underscore": "^1.8.3"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
-    "canvas": "^1.6.9",
-    "window": "^4.2.2"
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/state": "^6.5.2",
+    "@primevue/themes": "^4.3.3",
+    "codemirror": "^6.0.1",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.3",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@tailwindcss/vite": "^4.1.4",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "eslint": "^9.25.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "tailwindcss": "^4.1.4",
+    "vite": "^6.3.1",
+    "vite-plugin-vue-devtools": "^7.7.5"
   }
 }
