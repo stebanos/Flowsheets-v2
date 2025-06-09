@@ -1,7 +1,8 @@
 <script setup>
+import { computed } from 'vue';
 import { useDrag, useResize } from '../composables';
 
-defineProps({
+const props = defineProps({
     block: {
         type: Object,
         required: true,
@@ -10,42 +11,21 @@ defineProps({
 
 const { startDrag } = useDrag();
 const { startResize } = useResize();
-</script>
 
+const blockPositionStyle = computed(() => ({
+    top: `${props.block.y}px`,
+    left: `${props.block.x}px`,
+    width: `${props.block.width}px`,
+    height: `${props.block.height}px`
+}));
+</script>
 <template>
-    <div class="block" @mousedown="startDrag(block, $event)"
-         :style="{ top: block.y + 'px', left: block.x + 'px', width: block.width + 'px', height: block.height + 'px'}">
-        Block {{ block.id }}
-        <div class="resize-handle" @mousedown.stop.prevent="startResize(block, $event)"></div>
+    <div class="absolute box-border cursor-move select-none border border-gray-300 bg-white py-1 shadow-md px-1.5"
+         :style="blockPositionStyle"
+         @mousedown="startDrag(block, $event)">
+            Block {{ block.id }}
+        <div class="absolute z-10 box-border h-3 w-3 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent bottom-0.5 right-0.5"
+            @mousedown.stop.prevent="startResize(block, $event)"
+        ></div>
     </div>
 </template>
-
-<style scoped>
-.block {
-    position: absolute;
-    background: #fff;
-    border: 1px solid #ccc;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-    padding: 6px 12px;
-    cursor: move;
-    user-select: none;
-    box-sizing: border-box;
-}
-
-.resize-handle {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    bottom: 3px;
-    right: 3px;
-    cursor: se-resize;
-    user-select: none;
-    z-index: 10;
-
-    /* Create triangle */
-    background: transparent;
-    border-right: 2px solid #ccc;
-    border-bottom: 2px solid #ccc;
-    box-sizing: border-box;
-}
-</style>
