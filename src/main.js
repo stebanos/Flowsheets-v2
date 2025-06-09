@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 
 import 'primeicons/primeicons.css';
 import './assets/main.css';
-import store, {StoreSymbol} from './store/store';
+//import store, {StoreSymbol} from './store/store';
 
 
 import App from './App.vue';
@@ -40,7 +40,7 @@ import TreeTable from 'primevue/treetable';
 import Aura from '@primevue/themes/aura';
 
 const app = createApp(App);
-app.provide(StoreSymbol, store);
+//app.provide(StoreSymbol, store);
 app.use(PrimeVue, { theme: { preset: Aura } });
 app.use(ToastService);
 app.component('p-badge', Badge);
