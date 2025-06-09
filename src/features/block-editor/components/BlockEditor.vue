@@ -17,7 +17,7 @@ setCellDimensions(cellWidth, cellHeight);
 </script>
 
 <template>
-    <block-list :blocks="blocks" class="grid">
+    <block-list :blocks="blocks" :data-cell-width="cellWidth" :data-cell-height="cellHeight" class="fs-grid">
         <template #default="{ block }">
             <block :block="block" />
         </template>
@@ -25,16 +25,13 @@ setCellDimensions(cellWidth, cellHeight);
 </template>
 
 <style scoped>
-.grid {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
+.fs-grid {
+    @apply relative w-screen h-screen overflow-hidden;
     background-image:
-        linear-gradient(to right, #e6e6e6 1px, transparent 1px 150px),
-        linear-gradient(to bottom, #e6e6e6 1px, transparent 1px 30px);
-    background-size: 150px 30px;
+        linear-gradient(to right, #e6e6e6 1px, transparent 1px attr(data-cell-width px)),
+        linear-gradient(to bottom, #e6e6e6 1px, transparent 1px attr(data-cell-height px));
+    background-size: attr(data-cell-width px) attr(data-cell-height px);
     background-repeat: repeat;
     background-position: 0 0;
-    overflow: hidden;
 }
 </style>
