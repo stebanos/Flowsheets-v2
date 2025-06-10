@@ -1,8 +1,8 @@
 import { reactive } from 'vue';
-import { useCellDimensions } from '.';
+import { useCellDimensions } from './useCellDimensions';
 
 export function useResize() {
-    const { cellWidth, cellHeight } = useCellDimensions();
+    const { cellWidth, cellHeight, snapX, snapY } = useCellDimensions();
 
     const resizeState = reactive({
         block: null,
@@ -44,14 +44,6 @@ export function useResize() {
         resizeState.block = null;
         window.removeEventListener('mousemove', onResize);
         window.removeEventListener('mouseup', stopResize);
-    }
-
-    function snapX(value) {
-        return Math.round(value / cellWidth.value) * cellWidth.value;
-    }
-
-    function snapY(value) {
-        return Math.round(value / cellHeight.value) * cellHeight.value;
     }
 
     return {

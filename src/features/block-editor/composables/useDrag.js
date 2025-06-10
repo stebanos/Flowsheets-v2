@@ -1,8 +1,8 @@
 import { reactive } from 'vue';
-import { useCellDimensions } from '.';
+import { useCellDimensions } from './useCellDimensions';
 
 export function useDrag() {
-    const { cellWidth, cellHeight } = useCellDimensions();
+    const { snapX, snapY } = useCellDimensions();
 
     const dragState = reactive({
         block: null,
@@ -37,14 +37,6 @@ export function useDrag() {
         dragState.block = null;
         window.removeEventListener('mousemove', onDrag);
         window.removeEventListener('mouseup', stopDrag);
-    }
-
-    function snapX(value) {
-        return Math.round(value / cellWidth.value) * cellWidth.value;
-    }
-
-    function snapY(value) {
-        return Math.round(value / cellHeight.value) * cellHeight.value;
     }
 
     return {
