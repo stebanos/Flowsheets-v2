@@ -1,0 +1,14 @@
+services:
+  flowsheets:
+    container_name: flowsheets
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: node:22-alpine
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
