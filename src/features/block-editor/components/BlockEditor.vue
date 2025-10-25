@@ -4,7 +4,7 @@ import BlockGrid from './BlockGrid.vue';
 import Block from './Block.vue';
 
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
-setCellDimensions(150, 30);
+setCellDimensions(150, 26.48);
 const { blocks, addBlock } = useBlockManager();
 </script>
 
