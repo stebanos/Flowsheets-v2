@@ -42,6 +42,6 @@ export function useDrag() {
     return {
         startDrag,
         onDrag,
-        stopDrag,
+        stopDrag
     };
 }

@@ -7,7 +7,7 @@ import CodeEditor from './CodeEditor.vue';
 const props = defineProps({
     block: {
         type: Object,
-        required: true,
+        required: true
     }
 });
 

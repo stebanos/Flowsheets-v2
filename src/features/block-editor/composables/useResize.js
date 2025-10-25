@@ -9,7 +9,7 @@ export function useResize() {
         startX: 0,
         startY: 0,
         startWidth: 0,
-        startHeight: 0,
+        startHeight: 0
     });
 
     function startResize(block, event) {
@@ -49,6 +49,6 @@ export function useResize() {
     return {
         startResize,
         onResize,
-        stopResize,
+        stopResize
     };
 }
