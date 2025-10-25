@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { javascript } from '@codemirror/lang-javascript';
-const value = ref('let x = 1;');
-const lang = javascript();
 
+const value = ref('1 + 1');
+const lang = javascript();
 </script>
 
 <template>

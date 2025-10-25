@@ -5,10 +5,10 @@ import Block from './Block.vue';
 
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 26.48);
-const { blocks, addBlock } = useBlockManager();
+const { blocks, createBlock } = useBlockManager();
 </script>
 
 <template>
-    <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="addBlock" />
-    <block v-for="block in blocks" :block="block" :key="block.id" />
+    <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="createBlock" />
+    <block v-for="block in blocks" :block :key="`block-${block.id}`" />
 </template>
