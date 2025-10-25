@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { useDrag, useResize } from '../composables';
+import { useDrag, useResize, useCodeEvaluation } from '../composables';
 import BlockName from './BlockName.vue';
 import CodeEditor from './CodeEditor.vue';
 
@@ -20,6 +20,8 @@ const blockPositionStyle = computed(() => ({
     width: `${props.block.width}px`,
     height: `${props.block.height}px`
 }));
+
+const { evaluation, formattedResult } = useCodeEvaluation(() => props.block.code);
 </script>
 
 <template>
@@ -28,7 +30,11 @@ const blockPositionStyle = computed(() => ({
         <block-name v-model:name="block.name"
             class="bg-black h-[1.655rem] text-white flex items-center justify-center w-full cursor-move"
             @mousedown="startDrag(block, $event)" />
-        <code-editor />
+        <code-editor v-model:code="block.code" />
+        <div class="output h-[1.6555rem] w-full flex items-center border-t border-gray-300">
+            <span v-if="evaluation.error" class="text-red-600 px-2">{{ evaluation.error }}</span>
+            <span v-else class="px-2">{{ formattedResult }}</span>
+        </div>
         <div class="absolute z-10 box-border h-3 w-3 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent bottom-0.5 right-0.5"
             @mousedown.stop.prevent="startResize(block, $event)">
         </div>

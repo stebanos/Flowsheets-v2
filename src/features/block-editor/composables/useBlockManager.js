@@ -20,6 +20,7 @@ export function useBlockManager() {
             y,
             width: cellWidth.value,
             height: 3 * unitY.value,
+            code: '1 + 1'
         };
 
         if (name) {
