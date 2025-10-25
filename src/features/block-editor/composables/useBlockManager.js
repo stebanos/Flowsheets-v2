@@ -1,7 +1,6 @@
 import { reactive } from 'vue';
 import { generateUniqueId } from '@/shared/utils';
-import { useCellDimensions } from './useCellDimensions';
-import { useBlockNameGenerators } from './useBlockName';
+import { useCellDimensions, useBlockNameGenerators } from '.';
 
 const blocks = reactive([]);
 

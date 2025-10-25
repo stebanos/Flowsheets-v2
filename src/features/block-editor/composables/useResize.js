@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { useCellDimensions } from './useCellDimensions';
+import { useCellDimensions } from '.';
 
 export function useResize() {
     const { cellWidth, cellHeight, snapX, snapY } = useCellDimensions();

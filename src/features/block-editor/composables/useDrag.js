@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { useCellDimensions } from './useCellDimensions';
+import { useCellDimensions } from '.';
 
 export function useDrag() {
     const { snapX, snapY } = useCellDimensions();
