@@ -1,4 +1,5 @@
 import { computed, reactive } from 'vue';
+import { useBlocks } from '.';
 
 function tryEvalBodyScoped(body, scope, wrapWithScope = true) {
     try {
@@ -35,8 +36,10 @@ function createBlockEvaluator(block, results) {
     });
 }
 
-export function useEvaluationContext(blocks) {
-    const results = reactive({});
+const results = reactive({});
+
+export function useEvaluationContext() {
+    const { blocks } = useBlocks();
 
     const evaluations = computed(() => {
         const map = {};

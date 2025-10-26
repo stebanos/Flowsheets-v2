@@ -1,6 +1,6 @@
 <script setup>
-import { computed, inject } from 'vue';
-import { useDrag, useResize } from '../composables';
+import { computed } from 'vue';
+import { useDrag, useResize, useEvaluationContext } from '../composables';
 import BlockName from './BlockName.vue';
 import CodeEditor from './CodeEditor.vue';
 
@@ -13,6 +13,7 @@ const props = defineProps({
 
 const { startDrag } = useDrag();
 const { startResize } = useResize();
+const evalContext = useEvaluationContext();
 
 const blockPositionStyle = computed(() => ({
     top: `${props.block.y}px`,
@@ -21,7 +22,6 @@ const blockPositionStyle = computed(() => ({
     height: `${props.block.height}px`
 }));
 
-const evalContext = inject('evalContext');
 const blockEval = evalContext ? evalContext.getEvaluation(props.block.name) : computed(() => ({ value: null, error: 'no eval context' }));
 
 const formattedResult = computed(() => {

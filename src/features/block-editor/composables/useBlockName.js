@@ -1,5 +1,5 @@
 import { ref, nextTick } from 'vue';
-import { useBlockManager } from '.';
+import { useBlocks } from '.';
 
 const RESERVED_KEYWORDS = new Set([
     // ECMAScript keywords + common literals
@@ -24,7 +24,10 @@ function isReservedOrGlobal(name) {
     return false;
 }
 
-export function useBlockNameGenerators(blocks) {
+export function useBlockNameGenerators() {
+
+    const { blocks } = useBlocks();
+
     function generateUniqueName() {
         // 'a', 'b', 'c', ...
         const existing_names = blocks.map(block => block.name);
@@ -59,8 +62,7 @@ export function useBlockName(name, nameInput) {
     const isEditing = ref(false);
     const editName = ref('');
 
-    const { blocks } = useBlockManager();
-    const { generateUniqueNameFromName } = useBlockNameGenerators(blocks);
+    const { generateUniqueNameFromName } = useBlockNameGenerators();
 
     function startEdit() {
         editName.value = name.value;

@@ -1,12 +1,10 @@
-import { reactive } from 'vue';
 import { generateUniqueId } from '@/shared/utils';
-import { useCellDimensions, useBlockNameGenerators } from '.';
-
-const blocks = reactive([]);
+import { useBlocks, useBlockNameGenerators, useCellDimensions } from '.';
 
 export function useBlockManager() {
+    const { blocks } = useBlocks();
     const { cellWidth, unitY } = useCellDimensions();
-    const { generateUniqueName, generateUniqueNameFromName } = useBlockNameGenerators(blocks);
+    const { generateUniqueName, generateUniqueNameFromName } = useBlockNameGenerators();
 
     function createBlock(event, name = null, code = '') {
         const blockIds = blocks.map(block => block.id);
@@ -33,7 +31,6 @@ export function useBlockManager() {
     }
 
     return {
-        blocks,
         createBlock
     };
 }
