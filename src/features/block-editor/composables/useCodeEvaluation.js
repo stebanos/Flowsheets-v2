@@ -1,50 +1,72 @@
-import { computed, isRef } from 'vue';
+import { computed, reactive } from 'vue';
 
-function tryEvalBody(body) {
+function tryEvalBodyScoped(body, scope, wrapWithScope = true) {
     try {
-        const fn = new Function(body);
-        return { value: fn(), error: null };
+        const bodySrc = wrapWithScope ? `with (scope) { ${body} }` : body;
+        const fn = new Function('scope', bodySrc);
+        return { value: fn(scope), error: null };
     } catch (err) {
         return { value: null, error: err };
     }
 }
 
-export function useCodeEvaluation(source) {
-    const codeSource = computed(() => {
-        if (typeof source === 'function') { return source(); }
-        if (isRef(source)) {return source.value; }
-        return source;
-    });
+function createBlockEvaluator(block, results) {
+    const name = block.name;
 
-    const evaluation = computed(() => {
-        const code = codeSource.value || '';
+    return computed(() => {
+        const code = block.code || '';
+        const scope = results;
 
-        const expr = tryEvalBody('return (' + code + ')');
-        if (!expr.error) { return expr; }
+        const expr = tryEvalBodyScoped(`return (${code})`, scope, true);
+        if (!expr.error) {
+            results[name] = expr.value;
+            return { value: expr.value, error: null };
+        }
 
-        const stmt = tryEvalBody(code);
-        if (!stmt.error) { return stmt; }
+        const stmt = tryEvalBodyScoped(code, scope, true);
+        if (!stmt.error) {
+            results[name] = stmt.value;
+            return { value: stmt.value, error: null };
+        }
 
+        results[name] = undefined;
         const err = stmt.error || expr.error;
         return { value: null, error: err ? (err.message || String(err)) : 'Unknown evaluation error' };
     });
+}
 
-    const formattedResult = computed(() => {
-        if (evaluation.value && evaluation.value.error) { return 'null'; }
-        const v = evaluation.value ? evaluation.value.value : undefined;
-        if (v === undefined) { return 'undefined'; }
-        if (v === null) { return 'null'; }
-        if (typeof v === 'string') { return v; }
-        try {
-            return JSON.stringify(v);
-        } catch {
-            return String(v);
+export function useEvaluationContext(blocks) {
+    const results = reactive({});
+
+    const evaluations = computed(() => {
+        const map = {};
+        for (const block of blocks) {
+            const name = block.name;
+            map[name] = createBlockEvaluator(block, results);
         }
+        return map;
+    });
+
+    function getEvaluation(name) {
+        return computed(() => {
+            const map = evaluations.value;
+            const c = map && map[name];
+            return c ? c.value : { value: null, error: `no block named "${name}"` };
+        });
+    }
+
+    const values = computed(() => {
+        const out = {};
+        const map = evaluations.value;
+        for (const n in map) {
+            const res = map[n].value;
+            out[n] = res ? res.value : undefined;
+        }
+        return out;
     });
 
     return {
-        evaluation,
-        formattedResult
+        getEvaluation,
+        values
     };
 }
-
