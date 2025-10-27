@@ -3,11 +3,11 @@ import { useBlocks, useBlockManager, useCellDimensions, useEvaluationContext } f
 import BlockGrid from './BlockGrid.vue';
 import Block from './Block.vue';
 
-const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
-setCellDimensions(150, 26.48);
+const context = useEvaluationContext();
 const { blocks } = useBlocks();
 const { createBlock } = useBlockManager();
-const context = useEvaluationContext();
+const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
+setCellDimensions(150, 26.48);
 </script>
 
 <template>
