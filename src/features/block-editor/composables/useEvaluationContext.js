@@ -18,6 +18,11 @@ function createBlockEvaluator(block, results) {
         const code = block.code || '';
         const scope = results;
 
+        if (code.trim() === '') {
+            results[name] = '';
+            return { value: '', error: null };
+        }
+
         const expr = tryEvalBodyScoped(`return (${code})`, scope, true);
         if (!expr.error) {
             results[name] = expr.value;
