@@ -6,17 +6,14 @@ export function useBlockManager() {
     const { cellWidth, unitY } = useCellDimensions();
     const { generateUniqueName, generateUniqueNameFromName } = useBlockNameGenerators();
 
-    function createBlock(event, name = null, code = '') {
+    function createBlock({x, y}, name = null, code = '') {
         const blockIds = blocks.map(block => block.id);
-        const gridRect = event.target.getBoundingClientRect();
-        const x = Math.floor((event.clientX - gridRect.left) / cellWidth.value) * cellWidth.value;
-        const y = Math.floor((event.clientY - gridRect.top) / unitY.value) * unitY.value;
 
         blocks.push({
             id: generateUniqueId(blockIds),
             name: name ? generateUniqueNameFromName(name) : generateUniqueName(),
-            x,
-            y,
+            x: Math.floor(x / cellWidth.value) * cellWidth.value,
+            y: Math.floor(y / unitY.value) * unitY.value,
             width: cellWidth.value,
             height: 3 * unitY.value,
             code: '1 + 1'
