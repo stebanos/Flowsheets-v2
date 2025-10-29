@@ -1,3 +1,4 @@
+export { useBlockDependencies } from './useBlockDependencies';
 export { useBlockManager } from './useBlockManager';
 export { useBlockNameGenerators, useBlockName } from './useBlockName';
 export { useBlocks } from './useBlocks';

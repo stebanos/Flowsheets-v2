@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue';
-import { useBlocks } from '.';
+import { useBlockDependencies, useBlocks } from '.';
 
 function tryEvalBodyScoped(body, scope, wrapWithScope = true) {
     try {
@@ -45,6 +45,11 @@ const results = reactive({});
 
 export function useEvaluationContext() {
     const { blocks } = useBlocks();
+    const { dependsOn, identifiersByBlock } = useBlockDependencies();
+
+    const ctx = reactive({});
+    ctx.dependsOn = dependsOn;
+    ctx.identifiersByBlock = identifiersByBlock;
 
     const evaluations = computed(() => {
         const map = {};
@@ -74,6 +79,7 @@ export function useEvaluationContext() {
     });
 
     return {
+        ctx,
         getEvaluation,
         values
     };

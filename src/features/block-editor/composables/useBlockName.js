@@ -1,5 +1,5 @@
 import { ref, nextTick } from 'vue';
-import { useBlocks } from '.';
+import { useBlocks, useBlockDependencies } from '.';
 
 const RESERVED_KEYWORDS = new Set([
     // ECMAScript keywords + common literals
@@ -57,12 +57,25 @@ export function useBlockNameGenerators() {
 
     return { generateUniqueName, generateUniqueNameFromName };
 }
+
+function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function replaceIdentifierInCode(code, oldName, newName) {
+    if (!code || typeof code !== 'string') { return code; }
+    const re = new RegExp('\\b' + escapeRegExp(oldName) + '\\b', 'g');
+    return code.replace(re, newName);
+}
+
 export function useBlockName(name, nameInput) {
 
     const isEditing = ref(false);
     const editName = ref('');
 
+    const { blocks } = useBlocks();
     const { generateUniqueNameFromName } = useBlockNameGenerators();
+    const { identifiersByBlock } = useBlockDependencies();
 
     function startEdit() {
         editName.value = name.value;
@@ -70,10 +83,24 @@ export function useBlockName(name, nameInput) {
         nextTick(() => nameInput.value?.focus());
     }
 
+    function renameReferences(oldName, newName) {
+        try {
+            for (const b of blocks) {
+                const ids = identifiersByBlock[b.name] || [];
+                if (ids.includes(oldName)) {
+                    b.code = replaceIdentifierInCode(b.code || '', oldName, newName);
+                }
+            }
+        } catch (err) {
+        }
+    }
+
     function saveName() {
         const trimmed = (editName.value ?? '').trim();
         if (trimmed.length) {
-            name.value = generateUniqueNameFromName(trimmed);
+            const newName = generateUniqueNameFromName(trimmed);
+            name.value = newName;
+            renameReferences(name.value, newName);
         }
         isEditing.value = false;
         editName.value = '';

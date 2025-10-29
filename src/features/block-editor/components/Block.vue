@@ -17,7 +17,10 @@ const props = defineProps({
 const { startDrag } = useDrag();
 const { startResize } = useResize();
 
-const blockEval = props.context.getEvaluation(props.block.name);
+const blockEval = computed(() => {
+    const c = props.context.getEvaluation(props.block.name);
+    return c ? c.value : { value: null, error: `no block named "${props.block.name}"` };
+});
 
 const blockPositionStyle = computed(() => ({
     top: `${props.block.y}px`,
