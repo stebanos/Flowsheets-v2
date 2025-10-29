@@ -14,6 +14,8 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.6",
     "@primevue/themes": "^4.3.5",
+    "acorn": "^8.15.0",
+    "acorn-walk": "^8.3.4",
     "codemirror": "^6.0.2",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.5",
