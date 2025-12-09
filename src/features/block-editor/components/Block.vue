@@ -46,18 +46,32 @@ const formattedResult = computed(() => {
 </script>
 
 <template>
-    <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.825rem] leading-[1.4]"
+    <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.825rem] leading-[1.4] flex flex-col"
          :style="blockPositionStyle">
         <block-name v-model:name="block.name"
-            class="bg-black h-[1.655rem] text-white flex items-center justify-center w-full cursor-move"
+            class="block-name bg-black h-[1.655rem] text-white flex items-center justify-center w-full cursor-move"
             @mousedown="startDrag(block, $event)" />
-        <code-editor v-model:code="block.code" />
-        <div class="output h-[1.6555rem] w-full flex items-center border-t border-gray-300">
+        <div class="block-code flex-1 min-h-0 w-full">
+            <code-editor class="block-code-editor h-full w-full overflow-auto" v-model:code="block.code" />
+        </div>
+        <div class="block-output h-[1.6555rem] w-full flex items-center border-t border-gray-300 bg-white">
             <span v-if="blockEval.error" class="text-red-600 px-2">{{ blockEval.error }}</span>
             <span v-else class="px-2">{{ formattedResult }}</span>
         </div>
-        <div class="absolute z-10 box-border h-3 w-3 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent bottom-0.5 right-0.5"
+        <div class="block-handle absolute box-border h-3 w-3 mb-0.5 mr-0.5 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent"
             @mousedown.stop.prevent="startResize(block, $event)">
         </div>
     </div>
 </template>
+
+<style scoped>
+.block-output {
+    anchor-name: --block-output;
+}
+.block-handle {
+    position-anchor: --block-output;
+    bottom: anchor(bottom);
+    right: anchor(right);
+}
+</style>
+

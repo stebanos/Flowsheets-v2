@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
@@ -96,10 +96,14 @@ const code = computed({
     get() { return props.code; },
     set(code) { emit('update:code', code); }
 });
+
+const cm = ref();
+const editorView = computed(() => cm.value?.view);
+const editorState = computed(() => editorView.value?.state);
 </script>
 
 <template>
-    <code-mirror basic :lang :extensions v-model="code" />
+    <code-mirror ref="cm" basic :lang :extensions v-model="code" />
 </template>
 
 <style scoped>
