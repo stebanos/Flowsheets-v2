@@ -113,4 +113,16 @@ const editorState = computed(() => editorView.value?.state);
     padding: 0 .165rem;
     border-radius: 2px;
 }
+
+.vue-codemirror :deep(.cm-scroller) {
+    line-height: 1.5rem;
+}
+
+.vue-codemirror :deep(.cm-content) {
+    padding: 0;
+}
+
+.vue-codemirror :deep(.cm-focused) {
+    outline: none;
+}
 </style>

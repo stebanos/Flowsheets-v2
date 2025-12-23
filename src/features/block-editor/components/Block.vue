@@ -46,15 +46,15 @@ const formattedResult = computed(() => {
 </script>
 
 <template>
-    <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.825rem] leading-[1.4] flex flex-col"
+    <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle">
         <block-name v-model:name="block.name"
-            class="block-name bg-black h-[1.655rem] text-white flex items-center justify-center w-full cursor-move"
+            class="block-name bg-black min-h-6 h-6 text-white flex items-center justify-center w-full cursor-move"
             @mousedown="startDrag(block, $event)" />
         <div class="block-code flex-1 min-h-0 w-full">
             <code-editor class="block-code-editor h-full w-full overflow-auto" v-model:code="block.code" />
         </div>
-        <div class="block-output h-[1.6555rem] w-full flex items-center border-t border-gray-300 bg-white">
+        <div class="block-output min-h-6 w-full flex items-center border-t border-gray-300 bg-white">
             <span v-if="blockEval.error" class="text-red-600 px-2">{{ blockEval.error }}</span>
             <span v-else class="px-2">{{ formattedResult }}</span>
         </div>

@@ -7,7 +7,7 @@ const context = useEvaluationContext();
 const { blocks } = useBlocks();
 const { createBlock } = useBlockManager();
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
-setCellDimensions(150, 26.48);
+setCellDimensions(150, 24);
 
 const onCreate = (event) => {
     const { clientX, clientY } = event;
