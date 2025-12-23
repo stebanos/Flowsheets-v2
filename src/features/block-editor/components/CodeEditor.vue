@@ -50,6 +50,11 @@ function blockNameHighlighter(blockNames) {
 
     const pattern = new RegExp('\\b(' + blockNames.map(escapeRegExp).join('|') + ')\\b', 'g');
 
+    const SKIP_NODE_NAMES = new Set([
+        'String', 'StringLiteral', 'TemplateString', 'TemplateSpan',
+        'LineComment', 'BlockComment', 'Comment'
+    ]);
+
     return ViewPlugin.fromClass(class {
         constructor(view) {
             this.decorations = this.buildDecorations(view);
@@ -70,9 +75,21 @@ function blockNameHighlighter(blockNames) {
             while ((m = pattern.exec(text)) !== null) {
                 const from = m.index;
                 const to = m.index + m[0].length;
-                if (!isInDeclaration(tree, from)) {
-                    builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
+
+                if (isInDeclaration(tree, from)) { continue; }
+
+                let node = tree.resolve(from, 1);
+                let skip = false;
+                while (node) {
+                    if (SKIP_NODE_NAMES.has(node.type.name)) {
+                        skip = true;
+                        break;
+                    }
+                    node = node.parent;
                 }
+                if (skip) { continue; }
+
+                builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
             }
             return builder.finish();
         }
