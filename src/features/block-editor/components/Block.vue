@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { useDrag, useResize } from '../composables';
+import { useDrag, useResize, useHoveredReference } from '../composables';
 import BlockName from './BlockName.vue';
 import CodeEditor from './CodeEditor.vue';
 
@@ -16,6 +16,7 @@ const props = defineProps({
 
 const { startDrag } = useDrag();
 const { startResize } = useResize();
+const { hovered } = useHoveredReference();
 
 const blockEval = computed(() => {
     const c = props.context.getEvaluation(props.block.name);
@@ -43,13 +44,16 @@ const formattedResult = computed(() => {
         return String(v);
     }
 });
+
+const isHighlighted = computed(() => hovered.value === props.block.name);
 </script>
 
 <template>
     <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle">
         <block-name v-model:name="block.name"
-            class="block-name bg-black min-h-6 h-6 text-white flex items-center justify-center w-full cursor-move"
+            class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
+            :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'"
             @mousedown="startDrag(block, $event)" />
         <div class="block-code flex-1 min-h-0 w-full">
             <code-editor class="block-code-editor h-full w-full overflow-auto" v-model:code="block.code" />

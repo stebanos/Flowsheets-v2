@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, ViewPlugin } from '@codemirror/view';
-import { useBlocks } from '../composables';
+import { useBlocks, useHoveredReference } from '../composables';
 
 const props = defineProps({
     code: {
@@ -97,6 +97,7 @@ function blockNameHighlighter(blockNames) {
 }
 
 const { blocks } = useBlocks();
+const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference();
 
 const blockNames = computed(() => blocks.map(b => b.name));
 
@@ -117,6 +118,14 @@ const code = computed({
 const cm = ref();
 const editorView = computed(() => cm.value?.view);
 const editorState = computed(() => editorView.value?.state);
+
+onMounted(() => {
+    attachHoverHandlers(editorView);
+});
+
+onBeforeUnmount(() => {
+    detachHoverHandlers(editorView);
+});
 </script>
 
 <template>
@@ -126,9 +135,17 @@ const editorState = computed(() => editorView.value?.state);
 <style scoped>
 .vue-codemirror :deep(.cm-block-name) {
     background: #000;
+    border: 1px solid transparent;
+    border-radius: 2px;
     color: #fff;
     padding: 0 .165rem;
-    border-radius: 2px;
+}
+
+.vue-codemirror :deep(.cm-block-name:hover) {
+    background: var(--color-yellow-200);
+    border-color: var(--color-yellow-300);
+    color: #000;
+    cursor: default;
 }
 
 .vue-codemirror :deep(.cm-scroller) {

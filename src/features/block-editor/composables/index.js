@@ -5,4 +5,5 @@ export { useBlocks } from './useBlocks';
 export { useCellDimensions } from './useCellDimensions';
 export { useDrag } from './useDrag';
 export { useEvaluationContext } from './useEvaluationContext';
+export { useHoveredReference } from './useHoveredReference';
 export { useResize } from './useResize';
