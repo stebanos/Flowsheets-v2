@@ -5,9 +5,6 @@ import pluginVue from 'eslint-plugin-vue';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     {
-        files: ['**/*.{js,mjs,cjs,vue}']
-    },
-    {
         languageOptions: {
             globals: {
                 ...globals.browser,
@@ -16,12 +13,20 @@ export default [
             }
         }
     },
+    {
+        name: 'app/files-to-lint',
+        files: ['**/*.{js,mjs,cjs,vue}']
+    },
+    {
+        name: 'app/files-to-ignore',
+        ignores: ['**/node_modules/**', '**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/*.d.ts']
+    },
     pluginJs.configs.recommended,
     ...pluginVue.configs['flat/essential'],
     {
         rules: {
             'no-unused-vars': 'warn',
-            'quotes': ['error', 'single'],
+            'quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
             'semi': ['error', 'always'],
             'indent': ['error', 4],
             'space-before-function-paren': ['error', 'always'],

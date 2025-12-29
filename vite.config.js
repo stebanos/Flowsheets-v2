@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
     }
 
     return {
+        base: 'flowsheets',
         plugins,
         resolve: {
             alias: {
@@ -39,6 +40,13 @@ export default defineConfig(({ mode }) => {
         },
         server: {
             host: true
+        },
+        build: {
+            output: {
+                entryFileNames: '[name].js',
+                chunkFileNames: '[name].js',
+                assetFileNames: '[name].[extname]'
+            }
         }
     };
 });
