@@ -52,7 +52,7 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
     <div class="absolute !box-content select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle" :class="isHighlighted ? 'border-black' : 'border-gray-300'">
         <block-name v-model:name="block.name"
-            class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
+            class="px-2 block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move border-b border-gray-300"
             :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'"
             @mousedown="startDrag(block, $event)" />
         <div class="block-code flex-1 min-h-0 w-full">

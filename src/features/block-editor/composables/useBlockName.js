@@ -262,19 +262,27 @@ export function useBlockName(name, nameInput) {
 
     function saveName() {
         const trimmed = (editName.value ?? '').trim();
-        if (trimmed.length) {
-            const newName = generateUniqueNameFromName(trimmed);
-            const old = name.value;
-            name.value = newName;
-            renameReferences(old, newName);
+
+        if (!trimmed || trimmed.length === 0 || trimmed === name.value) {
+            return finishEdit();
         }
-        isEditing.value = false;
-        editName.value = '';
+
+        const newName = generateUniqueNameFromName(trimmed);
+        const old = name.value;
+
+        name.value = newName;
+        renameReferences(old, newName);
+
+        finishEdit();
     }
 
     function cancelEdit() {
         isEditing.value = false;
         editName.value = '';
+    }
+
+    function finishEdit() {
+        cancelEdit();
     }
 
     return {
