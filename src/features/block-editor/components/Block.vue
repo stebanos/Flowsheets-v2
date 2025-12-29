@@ -49,8 +49,8 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
 </script>
 
 <template>
-    <div class="absolute !box-content select-none border border-gray-300 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
-         :style="blockPositionStyle">
+    <div class="absolute !box-content select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
+         :style="blockPositionStyle" :class="isHighlighted ? 'border-black' : 'border-gray-300'">
         <block-name v-model:name="block.name"
             class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
             :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'"
