@@ -27,7 +27,7 @@ const { isEditing, editName, startEdit, saveName, cancelEdit } = useBlockName(na
 
 <template>
     <div>
-        <input v-if="isEditing" ref="nameInput" v-model="editName" name="block" class="py-0.5 outline-none w-full"
+        <p-input-text v-if="isEditing" ref="nameInput" v-model="editName" name="block" class="py-0.5 outline-none w-full"
             @blur="saveName"
             @keydown.enter.prevent="saveName"
             @keydown.esc.prevent="cancelEdit"
