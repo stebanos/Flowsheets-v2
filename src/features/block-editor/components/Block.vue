@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useDrag, useResize, useHoveredReference } from '../composables';
+import BlockMenu from './BlockMenu.vue';
 import BlockName from './BlockName.vue';
 import CodeEditor from './CodeEditor.vue';
 
@@ -46,34 +47,13 @@ const formattedResult = computed(() => {
 });
 
 const isHighlighted = computed(() => hovered.value === props.block.name);
-
-const menu = ref();
-
-const toggleMenu = (event) => menu.value.toggle(event);
-
-const menuItems = [
-    {
-        label: 'Delete (todo)'
-    },
-    {
-        label: 'Make string',
-        command: () => console.log('Make string')
-    },
-    {
-        label: 'Add filter'
-    },
-    {
-        label: 'Visualizations'
-    }
-];
 </script>
 
 <template>
     <div class="absolute !box-content select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle" :class="isHighlighted ? 'border-black' : 'border-gray-300'">
         <div class="block-header relative px-2 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <p-button size="small" :aria-controls="`menu--${block.name}`" @click="toggleMenu" icon="pi pi-caret-down" class="block-menu-button absolute p-button-text p-button-sm bg-black hover:bg-gray-700 text-white w-1 h-full -ml-1" />
-            <p-menu ref="menu" :id="`menu--${block.name}`" :model="menuItems" popup />
+            <block-menu :block class="block-menu absolute" />
             <block-name v-model:name="block.name"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @mousedown="startDrag(block, $event)" />
@@ -103,7 +83,7 @@ const menuItems = [
 .block-header {
     anchor-name: --block-header;
 }
-.block-menu-button {
+.block-menu {
     position-anchor: --block-header;
     left: anchor(left);
     top: anchor(top);

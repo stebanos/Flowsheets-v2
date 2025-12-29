@@ -1,0 +1,46 @@
+<script setup>
+import { ref, computed } from 'vue';
+
+defineOptions({
+    inheritAttrs: false
+});
+
+const props = defineProps({
+    block: {
+        type: Object,
+        required: true
+    }
+});
+
+const menuItems = [
+    {
+        label: 'Delete (todo)'
+    },
+    {
+        label: 'Make string',
+        command: () => console.log('Make string')
+    },
+    {
+        label: 'Add filter'
+    },
+    {
+        label: 'Visualizations'
+    }
+];
+
+const menu = ref(null);
+const menuId = computed(() => `block-menu-${props.block.name}`);
+const toggle = (event) => menu.value?.toggle(event);
+</script>
+
+<template>
+    <p-button
+        size="small"
+        :aria-controls="menuId"
+        @click="toggle"
+        icon="pi pi-caret-down"
+        class="p-button-text p-button-sm bg-black hover:bg-gray-700 text-white w-1 h-full -ml-1"
+        v-bind="$attrs"
+    />
+    <p-menu ref="menu" :id="menuId" :model="menuItems" popup />
+</template>
