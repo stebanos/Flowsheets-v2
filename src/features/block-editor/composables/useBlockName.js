@@ -245,7 +245,7 @@ export function useBlockName(name, nameInput) {
     function startEdit() {
         editName.value = name.value;
         isEditing.value = true;
-        nextTick(() => nameInput.value?.focus());
+        nextTick(() => nameInput.value?.$el.focus());
     }
 
     function renameReferences(oldName, newName) {
