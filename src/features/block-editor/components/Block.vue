@@ -46,14 +46,15 @@ const formattedResult = computed(() => {
     }
 });
 
+const isMenuOpen = ref(false);
 const isHighlighted = computed(() => hovered.value === props.block.name);
 </script>
 
 <template>
-    <div class="absolute !box-content select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
-         :style="blockPositionStyle" :class="isHighlighted ? 'border-black' : 'border-gray-300'">
-        <div class="block-header relative px-2 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block class="block-menu absolute" />
+    <div class="group absolute !box-content select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
+         :style="blockPositionStyle" :class="[isHighlighted ? 'border-black' : 'border-gray-300', {'menu-visible': isMenuOpen}]">
+        <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
+            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" @menu-toggle="isMenuOpen = $event" />
             <block-name v-model:name="block.name"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @mousedown="startDrag(block, $event)" />

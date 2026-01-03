@@ -12,6 +12,8 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits(['menu-toggle']);
+
 const menuItems = [
     {
         label: 'Delete (todo)'
@@ -42,5 +44,5 @@ const toggle = (event) => menu.value?.toggle(event);
         class="p-button-text p-button-sm bg-black hover:bg-gray-700 text-white w-1 h-full -ml-1"
         v-bind="$attrs"
     />
-    <p-menu ref="menu" :id="menuId" :model="menuItems" popup />
+    <p-menu ref="menu" :id="menuId" :model="menuItems" popup @show="emit('menu-toggle', true)" @hide="emit('menu-toggle', false)" />
 </template>
