@@ -20,8 +20,7 @@ const { startResize } = useResize();
 const { hovered } = useHoveredReference();
 
 const blockEval = computed(() => {
-    const c = props.context.getEvaluation(props.block.name);
-    return c ? c.value : { value: null, error: `no block named "${props.block.name}"` };
+    return props.context.getEvaluation(props.block.name);
 });
 
 const blockPositionStyle = computed(() => ({

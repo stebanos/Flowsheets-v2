@@ -61,11 +61,9 @@ export function useEvaluationContext() {
     });
 
     function getEvaluation(name) {
-        return computed(() => {
-            const map = evaluations.value;
-            const c = map && map[name];
-            return c ? c.value : { value: null, error: `no block named "${name}"` };
-        });
+        const map = evaluations.value;
+        const c = map && map[name];
+        return c ? c.value : { value: null, error: `no block named "${name}"` };
     }
 
     return {
