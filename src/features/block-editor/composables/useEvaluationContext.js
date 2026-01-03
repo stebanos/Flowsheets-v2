@@ -68,19 +68,8 @@ export function useEvaluationContext() {
         });
     }
 
-    const values = computed(() => {
-        const out = {};
-        const map = evaluations.value;
-        for (const n in map) {
-            const res = map[n].value;
-            out[n] = res ? res.value : undefined;
-        }
-        return out;
-    });
-
     return {
         ctx,
-        getEvaluation,
-        values
+        getEvaluation
     };
 }
