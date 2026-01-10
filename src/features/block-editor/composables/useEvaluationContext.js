@@ -52,17 +52,15 @@ export function useEvaluationContext() {
     ctx.identifiersByBlock = identifiersByBlock;
 
     const evaluations = computed(() => {
-        const map = {};
+        const map = new Map();
         for (const block of blocks) {
-            const name = block.name;
-            map[name] = createBlockEvaluator(block, results);
+            map.set(block.name, createBlockEvaluator(block, results));
         }
         return map;
     });
 
     function getEvaluation(name) {
-        const map = evaluations.value;
-        const c = map && map[name];
+        const c = evaluations.value.get(name);
         return c ? c.value : { value: null, error: `no block named "${name}"` };
     }
 
