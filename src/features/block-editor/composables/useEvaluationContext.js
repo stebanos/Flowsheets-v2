@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue';
+import { ref, computed, reactive, watchEffect } from 'vue';
 import { useBlockDependencies, useBlocks } from '.';
 
 function tryEvalBodyScoped(body, scope, wrapWithScope = true) {
@@ -51,17 +51,33 @@ export function useEvaluationContext() {
     ctx.dependsOn = dependsOn;
     ctx.identifiersByBlock = identifiersByBlock;
 
-    const evaluations = computed(() => {
-        const map = new Map();
-        for (const block of blocks) {
-            map.set(block.name, createBlockEvaluator(block, results));
+    const evaluations = ref(new Map());
+    const blockNames = ref(new Set());
+
+    watchEffect(() => {
+        const nextBlockNames = new Set(blocks.map(b => b.name));
+
+        // Remove evaluators for deleted/renamed blocks
+        for (const name of blockNames.value) {
+            if (!nextBlockNames.has(name)) {
+                evaluations.value.delete(name);
+                delete results[name];
+            }
         }
-        return map;
+
+        // Add evaluators for new/renamed blocks
+        for (const block of blocks) {
+            if (!evaluations.value.has(block.name)) {
+                evaluations.value.set(block.name, createBlockEvaluator(block, results));
+            }
+        }
+
+        blockNames.value = nextBlockNames;
     });
 
     function getEvaluation(name) {
-        const c = evaluations.value.get(name);
-        return c ? c.value : { value: null, error: `no block named "${name}"` };
+        const evaluator = evaluations.value.get(name);
+        return evaluator ? evaluator.value : { value: null, error: `no block named "${name}"` };
     }
 
     return {
