@@ -30,6 +30,7 @@ export default [
             'semi': ['error', 'always'],
             'indent': ['error', 4],
             'space-before-function-paren': ['error', 'always'],
+            'comma-dangle': ['error', 'never']
         }
     }
 ];
