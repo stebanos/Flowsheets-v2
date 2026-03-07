@@ -23,6 +23,10 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
     watch(
         () => blocks.map(b => ({code: b.code, name: b.name})),
         () => {
+            if (debounceMs === 0) {
+                updateAll();
+                return;
+            }
             if (parseTimer) { clearTimeout(parseTimer); }
             parseTimer = setTimeout(() => {
                 updateAll();
