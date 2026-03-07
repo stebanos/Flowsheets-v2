@@ -47,6 +47,10 @@ export default defineConfig(({ mode }) => {
                 chunkFileNames: '[name].js',
                 assetFileNames: '[name].[extname]'
             }
+        },
+        test: {
+            globals: true,
+            environment: 'node'
         }
     };
 });
