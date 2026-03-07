@@ -41,6 +41,9 @@ jspm_packages
 .idea
 .editorconfig
 
+.env
 .env.local
+.env.example
 components.d.ts
+
 dist/
