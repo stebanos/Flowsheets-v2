@@ -11,7 +11,7 @@ export function extractFreeIdentifiers(code) {
     let ast;
     try {
         ast = parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
-    } catch (e) {
+    } catch (_e) {
         return new Set();
     }
 

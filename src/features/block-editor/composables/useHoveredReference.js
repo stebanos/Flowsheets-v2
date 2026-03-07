@@ -4,11 +4,11 @@ const hovered = ref(null);
 
 const setHovered = (name) => {
     hovered.value = name || null;
-}
+};
 
 const clearHovered = () => {
     hovered.value = null;
-}
+};
 
 const onMouseOver = (e) => {
     const el = e.target?.closest?.('.cm-block-name');

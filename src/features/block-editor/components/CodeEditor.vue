@@ -117,7 +117,6 @@ const code = computed({
 
 const cm = ref();
 const editorView = computed(() => cm.value?.view);
-const editorState = computed(() => editorView.value?.state);
 
 onMounted(() => {
     attachHoverHandlers(editorView);

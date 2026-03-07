@@ -8,7 +8,7 @@ const BLOCKED_GLOBALS = [
     'localStorage',
     'sessionStorage',
     'navigator',
-    'location',
+    'location'
 ];
 
 /**
@@ -89,7 +89,7 @@ function evaluateBlock(code, depNames, depValues, cachedEntry = null) {
                     compiledFn: null,
                     isExpression: null,
                     forCode: code,
-                    forDeps: depSig,
+                    forDeps: depSig
                 };
             }
         }
@@ -102,7 +102,7 @@ function evaluateBlock(code, depNames, depValues, cachedEntry = null) {
         compiledFn: fn,
         isExpression,
         forCode: code,
-        forDeps: depSig,
+        forDeps: depSig
     };
 }
 

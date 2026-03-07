@@ -54,11 +54,13 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
          :style="blockPositionStyle" :class="[isHighlighted ? 'border-black' : 'border-gray-300', {'menu-visible': isMenuOpen}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" @menu-toggle="isMenuOpen = $event" />
+            <!-- eslint-disable-next-line vue/no-mutating-props -->
             <block-name v-model:name="block.name"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @mousedown="startDrag(block, $event)" />
         </div>
         <div class="block-code flex-1 min-h-0 w-full">
+            <!-- eslint-disable-next-line vue/no-mutating-props -->
             <code-editor class="block-code-editor h-full w-full overflow-auto" v-model:code="block.code" />
         </div>
         <div class="block-output min-h-6 w-full flex items-center border-t border-gray-300 bg-white">

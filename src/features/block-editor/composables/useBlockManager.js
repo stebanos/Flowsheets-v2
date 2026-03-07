@@ -6,7 +6,7 @@ export function useBlockManager() {
     const { cellWidth, unitY } = useCellDimensions();
     const { generateUniqueName, generateUniqueNameFromName } = useBlockNameGenerators();
 
-    function createBlock({x, y}, name = null, code = '') {
+    function createBlock({x, y}, name = null, code = '1 + 1') {
         const blockIds = blocks.map(block => block.id);
 
         blocks.push({
@@ -16,7 +16,7 @@ export function useBlockManager() {
             y: Math.floor(y / unitY.value) * unitY.value,
             width: cellWidth.value,
             height: 3 * unitY.value,
-            code: '1 + 1'
+            code
         });
     }
 

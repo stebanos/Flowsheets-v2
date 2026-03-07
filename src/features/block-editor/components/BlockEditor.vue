@@ -16,7 +16,7 @@ const onCreate = (event) => {
         x: clientX - left,
         y: clientY - top
     });
-}
+};
 </script>
 
 <template>

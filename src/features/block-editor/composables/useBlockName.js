@@ -256,7 +256,7 @@ export function useBlockName(name, nameInput) {
                     b.code = replaceIdentifierInCode(b.code || '', oldName, newName);
                 }
             }
-        } catch (err) {
+        } catch {
         }
     }
 
