@@ -24,10 +24,10 @@ const blockEval = computed(() => {
 });
 
 const blockPositionStyle = computed(() => ({
-    top: `${props.block.y}px`,
-    left: `${props.block.x}px`,
-    width: `${props.block.width}px`,
-    height: `${props.block.height}px`
+    top: `${props.block.y + 1}px`,
+    left: `${props.block.x + 1}px`,
+    width: `${props.block.width - 1}px`,
+    height: `${props.block.height - 1}px`
 }));
 
 const formattedResult = computed(() => {
@@ -50,8 +50,8 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
 </script>
 
 <template>
-    <div class="group absolute select-none border bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
-         :style="blockPositionStyle" :class="[isHighlighted ? 'border-black' : 'border-gray-300', {'menu-visible': isMenuOpen}]">
+    <div class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
+         :style="blockPositionStyle" :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" @menu-toggle="isMenuOpen = $event" />
             <!-- eslint-disable-next-line vue/no-mutating-props -->
