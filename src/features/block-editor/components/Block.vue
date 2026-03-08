@@ -24,14 +24,20 @@ const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
 const rawOutputHeight = ref(cellHeight.value);
 
+// Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
+const manualMinEditorHeight = ref(0);
+const manualMinWidth = ref(0);
+
 const MAX_OUTPUT_ROWS = 15;
 
-const snappedEditorHeight = computed(() =>
-    Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value
-);
-const snappedEditorWidth = computed(() =>
-    Math.max(1, Math.ceil(rawEditorWidth.value / cellWidth.value)) * cellWidth.value
-);
+const snappedEditorHeight = computed(() => {
+    const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
+    return Math.max(contentHeight, manualMinEditorHeight.value);
+});
+const snappedEditorWidth = computed(() => {
+    const contentWidth = Math.max(1, Math.ceil(rawEditorWidth.value / cellWidth.value)) * cellWidth.value;
+    return Math.max(contentWidth, manualMinWidth.value);
+});
 const snappedOutputHeight = computed(() => {
     const rows = Math.max(1, Math.ceil(rawOutputHeight.value / cellHeight.value));
     return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
@@ -78,7 +84,10 @@ watch(outputContentEl, el => {
     outputRo.observe(el);
 }, { immediate: true });
 
-onBeforeUnmount(() => { outputRo?.disconnect(); });
+onBeforeUnmount(() => {
+    outputRo?.disconnect();
+    resizeCleanup?.();
+});
 
 const blockEval = computed(() => {
     return props.context.getEvaluation(props.block.name);
@@ -106,6 +115,35 @@ const formattedResult = computed(() => {
     }
 });
 
+const isResizingLocal = ref(false);
+let resizeCleanup = null;
+
+function handleStartResize(block, event) {
+    isResizingLocal.value = true;
+    startResize(block, event);
+    // Add listeners AFTER startResize so useResize's mousemove fires first,
+    // ensuring block.width/height are already updated when we read them.
+    const onMove = () => {
+        manualMinWidth.value = block.width;
+        manualMinEditorHeight.value = Math.max(
+            cellHeight.value,
+            block.height - cellHeight.value - snappedOutputHeight.value
+        );
+    };
+    const onUp = () => {
+        isResizingLocal.value = false;
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        resizeCleanup = null;
+    };
+    resizeCleanup = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+}
+
 const isMenuOpen = ref(false);
 const isHighlighted = computed(() => hovered.value === props.block.name);
 </script>
@@ -114,7 +152,7 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
     <div class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle" :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" @menu-toggle="isMenuOpen = $event" />
+            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" :style="isResizingLocal ? { visibility: 'hidden' } : {}" @menu-toggle="isMenuOpen = $event" />
             <!-- eslint-disable-next-line vue/no-mutating-props -->
             <block-name v-model:name="block.name"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
@@ -132,7 +170,7 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
             </div>
         </div>
         <div class="block-handle absolute box-border h-3 w-3 mb-0.5 mr-0.5 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent"
-            @mousedown.stop.prevent="startResize(block, $event)">
+            @mousedown.stop.prevent="handleStartResize(block, $event)">
         </div>
     </div>
 </template>

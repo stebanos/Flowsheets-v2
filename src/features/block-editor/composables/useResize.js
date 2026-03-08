@@ -34,7 +34,8 @@ export function useResize() {
         // and causes oscillation between the two snap grids on every frame.
         const cols = Math.max(1, Math.round((resizeState.startWidth + dx) / cellWidth.value));
         resizeState.block.width = cols * cellWidth.value;
-        resizeState.block.height = Math.max(cellHeight.value, snapY(resizeState.startHeight + dy));
+        // Minimum 3 rows: header + 1 editor row + 1 output row.
+        resizeState.block.height = Math.max(3 * cellHeight.value, snapY(resizeState.startHeight + dy));
     }
 
     function stopResize() {
@@ -44,8 +45,6 @@ export function useResize() {
     }
 
     return {
-        startResize,
-        onResize,
-        stopResize
+        startResize
     };
 }
