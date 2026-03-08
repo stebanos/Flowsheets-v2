@@ -15,7 +15,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:code', 'update:contentHeight']);
+const emit = defineEmits(['update:code', 'update:contentHeight', 'update:contentWidth']);
 
 const lang = javascript();
 
@@ -129,14 +129,15 @@ watch(editorView, (view) => {
     ro?.disconnect();
     if (!view) { return; }
 
-    const emitHeight = () => {
+    const emitDimensions = () => {
         const scrollbarH = view.scrollDOM.offsetHeight - view.scrollDOM.clientHeight;
         emit('update:contentHeight', view.contentHeight + scrollbarH);
+        emit('update:contentWidth', view.contentDOM.scrollWidth);
     };
 
-    ro = new ResizeObserver(emitHeight);
+    ro = new ResizeObserver(emitDimensions);
     ro.observe(view.contentDOM);
-    emitHeight();
+    emitDimensions();
 }, { immediate: true });
 
 onBeforeUnmount(() => {

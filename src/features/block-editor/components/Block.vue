@@ -18,12 +18,16 @@ const props = defineProps({
 const { startDrag } = useDrag();
 const { startResize } = useResize();
 const { hovered } = useHoveredReference();
-const { cellHeight } = useCellDimensions();
+const { cellHeight, cellWidth } = useCellDimensions();
 
 const rawEditorHeight = ref(cellHeight.value);
+const rawEditorWidth = ref(cellWidth.value);
 
 const snappedEditorHeight = computed(() =>
     Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value
+);
+const snappedEditorWidth = computed(() =>
+    Math.max(1, Math.ceil(rawEditorWidth.value / cellWidth.value)) * cellWidth.value
 );
 
 // Total block height: header + editor + output, always snapped to grid rows.
@@ -37,6 +41,11 @@ watch(snappedBlockHeight, h => {
     props.block.height = h;
 }, { immediate: true });
 
+watch(snappedEditorWidth, w => {
+    // eslint-disable-next-line vue/no-mutating-props
+    props.block.width = w;
+}, { immediate: true });
+
 const blockEval = computed(() => {
     return props.context.getEvaluation(props.block.name);
 });
@@ -44,7 +53,7 @@ const blockEval = computed(() => {
 const blockPositionStyle = computed(() => ({
     top: `${props.block.y + 1}px`,
     left: `${props.block.x + 1}px`,
-    width: `${props.block.width - 1}px`,
+    width: `${snappedEditorWidth.value - 1}px`,
     height: `${snappedBlockHeight.value - 1}px`
 }));
 
@@ -79,7 +88,7 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
         </div>
         <div class="block-code w-full" :style="{ height: snappedEditorHeight + 'px' }">
             <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" @update:content-height="rawEditorHeight = $event" />
+            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
         <div class="block-output min-h-6 w-full flex items-center border-t border-gray-300 bg-white">
             <span v-if="blockEval.error" class="text-red-600 px-2">{{ blockEval.error }}</span>
