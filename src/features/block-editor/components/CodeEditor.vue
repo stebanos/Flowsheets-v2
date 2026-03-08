@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
-import { Decoration, ViewPlugin } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
 import { useBlocks, useHoveredReference } from '../composables';
 
 const props = defineProps({
@@ -15,9 +15,13 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:code']);
+const emit = defineEmits(['update:code', 'update:contentHeight']);
 
 const lang = javascript();
+
+const fillTheme = EditorView.theme({
+    '&': { height: '100%' }
+});
 
 function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -106,6 +110,7 @@ const extensions = computed(() => {
 
     return [
         autocompletion({ activateOnTyping: false }),
+        fillTheme,
         blockPlugin
     ];
 });
@@ -118,12 +123,25 @@ const code = computed({
 const cm = ref();
 const editorView = computed(() => cm.value?.view);
 
-onMounted(() => {
-    attachHoverHandlers(editorView);
-});
+let ro = null;
+
+watch(editorView, (view) => {
+    ro?.disconnect();
+    if (!view) { return; }
+
+    const emitHeight = () => {
+        const scrollbarH = view.scrollDOM.offsetHeight - view.scrollDOM.clientHeight;
+        emit('update:contentHeight', view.contentHeight + scrollbarH);
+    };
+
+    ro = new ResizeObserver(emitHeight);
+    ro.observe(view.contentDOM);
+    emitHeight();
+}, { immediate: true });
 
 onBeforeUnmount(() => {
     detachHoverHandlers(editorView);
+    ro?.disconnect();
 });
 </script>
 

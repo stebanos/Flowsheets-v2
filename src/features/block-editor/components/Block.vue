@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useDrag, useResize, useHoveredReference } from '../composables';
+import { ref, computed, watch } from 'vue';
+import { useDrag, useResize, useHoveredReference, useCellDimensions } from '../composables';
 import BlockMenu from './BlockMenu.vue';
 import BlockName from './BlockName.vue';
 import CodeEditor from './CodeEditor.vue';
@@ -18,6 +18,24 @@ const props = defineProps({
 const { startDrag } = useDrag();
 const { startResize } = useResize();
 const { hovered } = useHoveredReference();
+const { cellHeight } = useCellDimensions();
+
+const rawEditorHeight = ref(cellHeight.value);
+
+const snappedEditorHeight = computed(() =>
+    Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value
+);
+
+// Total block height: header + editor + output, always snapped to grid rows.
+// Drives the visual outline directly. block.height kept in sync for serialization/resize.
+const snappedBlockHeight = computed(() =>
+    cellHeight.value + snappedEditorHeight.value + cellHeight.value
+);
+
+watch(snappedBlockHeight, h => {
+    // eslint-disable-next-line vue/no-mutating-props
+    props.block.height = h;
+}, { immediate: true });
 
 const blockEval = computed(() => {
     return props.context.getEvaluation(props.block.name);
@@ -27,7 +45,7 @@ const blockPositionStyle = computed(() => ({
     top: `${props.block.y + 1}px`,
     left: `${props.block.x + 1}px`,
     width: `${props.block.width - 1}px`,
-    height: `${props.block.height - 1}px`
+    height: `${snappedBlockHeight.value - 1}px`
 }));
 
 const formattedResult = computed(() => {
@@ -59,9 +77,9 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @mousedown="startDrag(block, $event)" />
         </div>
-        <div class="block-code flex-1 min-h-0 w-full">
+        <div class="block-code w-full" :style="{ height: snappedEditorHeight + 'px' }">
             <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <code-editor class="block-code-editor h-full w-full overflow-auto" v-model:code="block.code" />
+            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" @update:content-height="rawEditorHeight = $event" />
         </div>
         <div class="block-output min-h-6 w-full flex items-center border-t border-gray-300 bg-white">
             <span v-if="blockEval.error" class="text-red-600 px-2">{{ blockEval.error }}</span>
