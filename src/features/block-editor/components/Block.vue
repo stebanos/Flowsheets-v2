@@ -150,9 +150,9 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
 
 <template>
     <div class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
-         :style="blockPositionStyle" :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen}]">
+         :style="blockPositionStyle" :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible" :style="isResizingLocal ? { visibility: 'hidden' } : {}" @menu-toggle="isMenuOpen = $event" />
+            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <!-- eslint-disable-next-line vue/no-mutating-props -->
             <block-name v-model:name="block.name"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
