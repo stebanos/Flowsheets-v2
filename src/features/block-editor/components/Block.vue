@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useDrag, useResize, useHoveredReference, useCellDimensions } from '../composables';
 import BlockMenu from './BlockMenu.vue';
 import BlockName from './BlockName.vue';
@@ -21,7 +21,10 @@ const { hovered } = useHoveredReference();
 const { cellHeight, cellWidth } = useCellDimensions();
 
 const rawEditorHeight = ref(cellHeight.value);
-const rawEditorWidth = ref(cellWidth.value);
+const rawEditorWidth = ref(props.block.width);
+const rawOutputHeight = ref(cellHeight.value);
+
+const MAX_OUTPUT_ROWS = 15;
 
 const snappedEditorHeight = computed(() =>
     Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value
@@ -29,11 +32,15 @@ const snappedEditorHeight = computed(() =>
 const snappedEditorWidth = computed(() =>
     Math.max(1, Math.ceil(rawEditorWidth.value / cellWidth.value)) * cellWidth.value
 );
+const snappedOutputHeight = computed(() => {
+    const rows = Math.max(1, Math.ceil(rawOutputHeight.value / cellHeight.value));
+    return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
+});
 
 // Total block height: header + editor + output, always snapped to grid rows.
 // Drives the visual outline directly. block.height kept in sync for serialization/resize.
 const snappedBlockHeight = computed(() =>
-    cellHeight.value + snappedEditorHeight.value + cellHeight.value
+    cellHeight.value + snappedEditorHeight.value + snappedOutputHeight.value
 );
 
 watch(snappedBlockHeight, h => {
@@ -45,6 +52,33 @@ watch(snappedEditorWidth, w => {
     // eslint-disable-next-line vue/no-mutating-props
     props.block.width = w;
 }, { immediate: true });
+
+// Sync external width/height changes (e.g. resize handle) back into raw refs.
+// Guard against our own write-back watches above to avoid circular updates.
+watch(() => props.block.width, w => {
+    if (w !== snappedEditorWidth.value) {
+        rawEditorWidth.value = w;
+    }
+});
+
+watch(() => props.block.height, h => {
+    if (h !== snappedBlockHeight.value) {
+        // block.height = header (1 row) + editor + output; isolate the editor portion
+        rawEditorHeight.value = h - cellHeight.value - snappedOutputHeight.value;
+    }
+});
+
+const outputContentEl = ref(null);
+let outputRo = null;
+
+watch(outputContentEl, el => {
+    outputRo?.disconnect();
+    if (!el) { return; }
+    outputRo = new ResizeObserver(() => { rawOutputHeight.value = el.offsetHeight; });
+    outputRo.observe(el);
+}, { immediate: true });
+
+onBeforeUnmount(() => { outputRo?.disconnect(); });
 
 const blockEval = computed(() => {
     return props.context.getEvaluation(props.block.name);
@@ -90,9 +124,12 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
             <!-- eslint-disable-next-line vue/no-mutating-props -->
             <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
-        <div class="block-output min-h-6 w-full flex items-center border-t border-gray-300 bg-white">
-            <span v-if="blockEval.error" class="text-red-600 px-2">{{ blockEval.error }}</span>
-            <span v-else class="px-2">{{ formattedResult }}</span>
+        <div class="block-output w-full border-t border-gray-300 bg-white"
+            :style="{ height: snappedOutputHeight + 'px', overflowY: rawOutputHeight > MAX_OUTPUT_ROWS * cellHeight ? 'auto' : 'hidden' }">
+            <div ref="outputContentEl" class="px-2 py-1">
+                <span v-if="blockEval.error" class="text-red-600">{{ blockEval.error }}</span>
+                <span v-else>{{ formattedResult }}</span>
+            </div>
         </div>
         <div class="block-handle absolute box-border h-3 w-3 mb-0.5 mr-0.5 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent"
             @mousedown.stop.prevent="startResize(block, $event)">
