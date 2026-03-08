@@ -2,7 +2,7 @@ import { reactive } from 'vue';
 import { useCellDimensions } from '.';
 
 export function useResize() {
-    const { cellWidth, cellHeight, snapX, snapY } = useCellDimensions();
+    const { cellWidth, cellHeight, snapY } = useCellDimensions();
 
     const resizeState = reactive({
         block: null,
@@ -29,15 +29,12 @@ export function useResize() {
         const dx = event.clientX - resizeState.startX;
         const dy = event.clientY - resizeState.startY;
 
-        resizeState.block.width = snapX(resizeState.startWidth + dx);
-        resizeState.block.height = snapY(resizeState.startHeight + dy);
-
-        if (resizeState.block.width < cellWidth.value) {
-            resizeState.block.width = cellWidth.value;
-        }
-        if (resizeState.block.height < cellHeight.value) {
-            resizeState.block.height = cellHeight.value;
-        }
+        // Snap width to full columns (cellWidth), not sub-grid units.
+        // Sub-grid snapping misaligns with snappedEditorWidth in Block.vue
+        // and causes oscillation between the two snap grids on every frame.
+        const cols = Math.max(1, Math.round((resizeState.startWidth + dx) / cellWidth.value));
+        resizeState.block.width = cols * cellWidth.value;
+        resizeState.block.height = Math.max(cellHeight.value, snapY(resizeState.startHeight + dy));
     }
 
     function stopResize() {

@@ -123,8 +123,6 @@ const code = computed({
 const cm = ref();
 const editorView = computed(() => cm.value?.view);
 
-let ro = null;
-
 // defaultCharacterWidth starts at 7 (CM6 hardcoded fallback) and becomes accurate
 // after the first requestMeasure() cycle. Read it via editorView so it's always current.
 const emitWidth = () => {
@@ -141,30 +139,30 @@ const emitWidth = () => {
     emit('update:contentWidth', maxLen * charWidth + gutterWidth);
 };
 
-// Vue's reactivity system: fires whenever the user edits code.
-// By the time the user types, CM6's defaultCharacterWidth is fully measured (not the initial 7).
+const emitHeight = () => {
+    const view = editorView.value;
+    if (!view) { return; }
+    const scrollbarH = view.scrollDOM.offsetHeight - view.scrollDOM.clientHeight;
+    emit('update:contentHeight', view.contentHeight + scrollbarH);
+};
+
+// Watch code changes for both dimensions — same pattern, same rationale:
+// Vue reactivity fires on every user edit; by then CM6 measurements are accurate.
+// Avoids ResizeObserver firing during container resize (block drag/resize handle),
+// which would fight the resize and cause oscillation.
+watch(code, emitHeight);
 watch(code, emitWidth);
 
 watch(editorView, (view) => {
-    ro?.disconnect();
     if (!view) { return; }
-
-    const emitHeight = () => {
-        const scrollbarH = view.scrollDOM.offsetHeight - view.scrollDOM.clientHeight;
-        emit('update:contentHeight', view.contentHeight + scrollbarH);
-    };
-
-    ro = new ResizeObserver(emitHeight);
-    ro.observe(view.contentDOM);
     emitHeight();
-    // Defer initial width emit past CM6's first requestMeasure() cycle,
-    // so defaultCharacterWidth reflects the real font rather than the 7 fallback.
+    // Defer initial width past CM6's first requestMeasure() cycle
+    // so defaultCharacterWidth reflects the real font, not the 7px fallback.
     requestAnimationFrame(emitWidth);
 }, { immediate: true });
 
 onBeforeUnmount(() => {
     detachHoverHandlers(editorView);
-    ro?.disconnect();
 });
 </script>
 
