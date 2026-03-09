@@ -1,5 +1,5 @@
 import { ref, nextTick } from 'vue';
-import { generateUniqueNameFromName } from '@/entities/block';
+import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
 
 function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -183,6 +183,7 @@ function replaceIdentifierInCode(code, oldName, newName) {
  * @param {Object} identifiersByBlock - reactive map of block name → identifier array
  */
 export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
+    const { updateBlock } = useBlockStore();
 
     const isEditing = ref(false);
     const editName = ref('');
@@ -198,7 +199,7 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
             for (const b of blocks) {
                 const ids = identifiersByBlock[b.name] || [];
                 if (ids.includes(oldName)) {
-                    b.code = replaceIdentifierInCode(b.code || '', oldName, newName);
+                    updateBlock(b.id, { code: replaceIdentifierInCode(b.code || '', oldName, newName) });
                 }
             }
         } catch {

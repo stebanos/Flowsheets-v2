@@ -1,6 +1,9 @@
 import { reactive } from 'vue';
+import { useBlockStore } from '@/entities/block';
 
 export function useDrag(snapX, snapY) {
+    const { updateBlock } = useBlockStore();
+
     const dragState = reactive({
         block: null,
         startX: 0,
@@ -26,8 +29,10 @@ export function useDrag(snapX, snapY) {
         const dx = event.clientX - dragState.startX;
         const dy = event.clientY - dragState.startY;
 
-        dragState.block.x = snapX(dragState.startLeft + dx);
-        dragState.block.y = snapY(dragState.startTop + dy);
+        updateBlock(dragState.block.id, {
+            x: snapX(dragState.startLeft + dx),
+            y: snapY(dragState.startTop + dy)
+        });
     }
 
     function stopDrag() {
