@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { compileFn, callFn, evaluateBlock, BLOCKED_GLOBALS } from '../evaluate-fn.js';
+import { compileFn, callFn, evaluateBlock, BLOCKED_GLOBALS } from './evaluate-fn.js';
 
 // ---------------------------------------------------------------------------
 // compileFn
