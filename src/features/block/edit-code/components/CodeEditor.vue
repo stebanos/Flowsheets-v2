@@ -6,11 +6,15 @@ import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
-import { useBlocks, useHoveredReference } from '../composables';
+import { useHoveredReference } from '../composables/useHoveredReference';
 
 const props = defineProps({
     code: {
         type: String,
+        required: true
+    },
+    blocks: {
+        type: Array,
         required: true
     }
 });
@@ -100,10 +104,9 @@ function blockNameHighlighter(blockNames) {
     }, { decorations: v => v.decorations });
 }
 
-const { blocks } = useBlocks();
 const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference();
 
-const blockNames = computed(() => blocks.map(b => b.name));
+const blockNames = computed(() => props.blocks.map(b => b.name));
 
 const extensions = computed(() => {
     const blockPlugin = blockNameHighlighter(blockNames.value);

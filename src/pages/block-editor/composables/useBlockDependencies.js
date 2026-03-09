@@ -1,6 +1,6 @@
 import { reactive, computed, watch } from 'vue';
-import { useBlocks } from '.';
-import { extractFreeIdentifiers } from '../utils/ast';
+import { useBlocks } from './useBlocks';
+import { extractFreeIdentifiers } from '@/domain/evaluator';
 
 export function useBlockDependencies({ debounceMs = 750 } = {}) {
     const { blocks } = useBlocks();

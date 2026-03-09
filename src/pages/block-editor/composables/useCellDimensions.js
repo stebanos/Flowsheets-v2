@@ -1,24 +1,12 @@
 import { ref, computed } from 'vue';
+import { computeUnitX, snapX as pureSnapX, snapY as pureSnapY } from '@/shared/layout/cellDimensions';
 
 const cellWidth = ref(30);
 const cellHeight = ref(30);
 
-const unitX = computed(() => {
-    const divisors = [4, 3, 2];
-    const unit = cellWidth.value;
+const unitX = computed(() => computeUnitX(cellWidth.value));
 
-    for (const divisor of divisors) {
-        if (unit % divisor === 0) {
-            return unit / divisor;
-        }
-    }
-
-    return unit;
-});
-
-const unitY = computed(() => {
-    return cellHeight.value;
-});
+const unitY = computed(() => cellHeight.value);
 
 function setCellDimensions(width, height) {
     cellWidth.value = width;
@@ -26,11 +14,11 @@ function setCellDimensions(width, height) {
 }
 
 function snapX(value) {
-    return Math.round(value / unitX.value) * unitX.value;
+    return pureSnapX(value, unitX.value);
 }
 
 function snapY(value) {
-    return Math.round(value / cellHeight.value) * cellHeight.value;
+    return pureSnapY(value, cellHeight.value);
 }
 
 export function useCellDimensions() {

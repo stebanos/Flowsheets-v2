@@ -1,9 +1,12 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
-import { useDrag, useResize, useHoveredReference, useCellDimensions } from '../composables';
+import { useBlocks, useCellDimensions } from '../composables';
+import { useDrag } from '@/features/block/drag';
+import { useResize } from '@/features/block/resize';
+import { useHoveredReference } from '@/features/block/edit-code';
+import { BlockName } from '@/features/block/name';
+import { CodeEditor } from '@/features/block/edit-code';
 import BlockMenu from './BlockMenu.vue';
-import BlockName from './BlockName.vue';
-import CodeEditor from './CodeEditor.vue';
 
 const props = defineProps({
     block: {
@@ -12,13 +15,18 @@ const props = defineProps({
     },
     context: {
         type: Object
+    },
+    identifiersByBlock: {
+        type: Object,
+        required: true
     }
 });
 
-const { startDrag } = useDrag();
-const { startResize } = useResize();
+const { blocks } = useBlocks();
+const { cellHeight, cellWidth, snapX, snapY } = useCellDimensions();
+const { startDrag } = useDrag(snapX, snapY);
+const { startResize } = useResize(cellWidth, cellHeight, snapY);
 const { hovered } = useHoveredReference();
-const { cellHeight, cellWidth } = useCellDimensions();
 
 const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
@@ -154,13 +162,13 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <block-name v-model:name="block.name"
+            <block-name v-model:name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @mousedown="startDrag(block, $event)" />
         </div>
         <div class="block-code w-full" :style="{ height: snappedEditorHeight + 'px' }">
             <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
+            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" :blocks @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
         <div class="block-output w-full border-t border-gray-300 bg-white"
             :style="{ height: snappedOutputHeight + 'px', overflowY: rawOutputHeight > MAX_OUTPUT_ROWS * cellHeight ? 'auto' : 'hidden' }">
@@ -193,4 +201,3 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
     top: anchor(top);
 }
 </style>
-

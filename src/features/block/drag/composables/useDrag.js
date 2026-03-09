@@ -1,9 +1,6 @@
 import { reactive } from 'vue';
-import { useCellDimensions } from '.';
 
-export function useDrag() {
-    const { snapX, snapY } = useCellDimensions();
-
+export function useDrag(snapX, snapY) {
     const dragState = reactive({
         block: null,
         startX: 0,

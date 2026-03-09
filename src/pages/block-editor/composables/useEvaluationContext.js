@@ -1,6 +1,7 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { useBlockDependencies, useBlocks } from '.';
-import { evaluateBlock } from '../utils/evaluate-fn.js';
+import { useBlockDependencies } from './useBlockDependencies';
+import { useBlocks } from './useBlocks';
+import { evaluateBlock } from '@/domain/evaluator';
 
 // Module-level singletons — shared across all callers (single app instance).
 const results = reactive({});

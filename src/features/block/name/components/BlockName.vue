@@ -1,10 +1,18 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useBlockName } from '../composables';
+import { useBlockName } from '../composables/useBlockName';
 
 const props = defineProps({
     name: {
         type: String,
+        required: true
+    },
+    blocks: {
+        type: Array,
+        required: true
+    },
+    identifiersByBlock: {
+        type: Object,
         required: true
     }
 });
@@ -22,7 +30,7 @@ const name = computed({
     }
 });
 
-const { isEditing, editName, startEdit, saveName, cancelEdit } = useBlockName(name, nameInput);
+const { isEditing, editName, startEdit, saveName, cancelEdit } = useBlockName(name, nameInput, props.blocks, props.identifiersByBlock);
 </script>
 
 <template>

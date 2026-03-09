@@ -1,7 +1,7 @@
 <script setup>
-import { BlockEditor } from '@/features/block-editor/components';
+import { BlockEditorPage } from '@/pages/block-editor';
 </script>
 
 <template>
-    <block-editor />
+    <block-editor-page />
 </template>
