@@ -1,6 +1,6 @@
 import { reactive, computed, watch, effectScope } from 'vue';
 import { useBlockDependencies } from './useBlockDependencies';
-import { useBlocks } from './useBlocks';
+import { useBlockStore } from '@/entities/block';
 import { evaluateBlock } from '@/domain/evaluator';
 
 // Module-level singletons — shared across all callers (single app instance).
@@ -78,7 +78,7 @@ function createBlockEvaluator(block, dependsOn) {
 // ---------------------------------------------------------------------------
 
 export function useEvaluationContext() {
-    const { blocks } = useBlocks();
+    const { blocks } = useBlockStore();
     const { dependsOn } = useBlockDependencies({ debounceMs: 0 });
 
     // Watch block ids only — fires on add/remove, not on rename/code/position changes.

@@ -16,6 +16,14 @@ const props = defineProps({
     blocks: {
         type: Array,
         required: true
+    },
+    setHovered: {
+        type: Function,
+        required: true
+    },
+    clearHovered: {
+        type: Function,
+        required: true
     }
 });
 
@@ -104,7 +112,10 @@ function blockNameHighlighter(blockNames) {
     }, { decorations: v => v.decorations });
 }
 
-const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference();
+const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference({
+    setHovered: props.setHovered,
+    clearHovered: props.clearHovered
+});
 
 const blockNames = computed(() => props.blocks.map(b => b.name));
 
@@ -162,6 +173,7 @@ watch(editorView, (view) => {
     // Defer initial width past CM6's first requestMeasure() cycle
     // so defaultCharacterWidth reflects the real font, not the 7px fallback.
     requestAnimationFrame(emitWidth);
+    attachHoverHandlers(editorView);
 }, { immediate: true });
 
 onBeforeUnmount(() => {

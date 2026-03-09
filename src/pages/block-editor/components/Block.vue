@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
-import { useBlocks, useCellDimensions } from '../composables';
+import { useCellDimensions } from '../composables';
+import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
-import { useHoveredReference } from '@/features/block/edit-code';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
 import BlockMenu from './BlockMenu.vue';
@@ -19,14 +19,25 @@ const props = defineProps({
     identifiersByBlock: {
         type: Object,
         required: true
+    },
+    hovered: {
+        type: String,
+        default: null
+    },
+    setHovered: {
+        type: Function,
+        required: true
+    },
+    clearHovered: {
+        type: Function,
+        required: true
     }
 });
 
-const { blocks } = useBlocks();
+const { blocks, updateBlock } = useBlockStore();
 const { cellHeight, cellWidth, snapX, snapY } = useCellDimensions();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(cellWidth, cellHeight, snapY);
-const { hovered } = useHoveredReference();
 
 const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
@@ -58,13 +69,11 @@ const snappedBlockHeight = computed(() =>
 );
 
 watch(snappedBlockHeight, h => {
-    // eslint-disable-next-line vue/no-mutating-props
-    props.block.height = h;
+    updateBlock(props.block.id, { height: h });
 }, { immediate: true });
 
 watch(snappedEditorWidth, w => {
-    // eslint-disable-next-line vue/no-mutating-props
-    props.block.width = w;
+    updateBlock(props.block.id, { width: w });
 }, { immediate: true });
 
 // Sync external width/height changes (e.g. resize handle) back into raw refs.
@@ -153,7 +162,7 @@ function handleStartResize(block, event) {
 }
 
 const isMenuOpen = ref(false);
-const isHighlighted = computed(() => hovered.value === props.block.name);
+const isHighlighted = computed(() => props.hovered === props.block.name);
 </script>
 
 <template>
@@ -161,14 +170,15 @@ const isHighlighted = computed(() => hovered.value === props.block.name);
          :style="blockPositionStyle" :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
-            <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <block-name v-model:name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
+            <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
+                @update:name="updateBlock(block.id, { name: $event })"
                 @mousedown="startDrag(block, $event)" />
         </div>
         <div class="block-code w-full" :style="{ height: snappedEditorHeight + 'px' }">
-            <!-- eslint-disable-next-line vue/no-mutating-props -->
-            <code-editor class="block-code-editor h-full w-full" v-model:code="block.code" :blocks @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
+            <code-editor class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
+                @update:code="updateBlock(block.id, { code: $event })"
+                @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
         <div class="block-output w-full border-t border-gray-300 bg-white"
             :style="{ height: snappedOutputHeight + 'px', overflowY: rawOutputHeight > MAX_OUTPUT_ROWS * cellHeight ? 'auto' : 'hidden' }">

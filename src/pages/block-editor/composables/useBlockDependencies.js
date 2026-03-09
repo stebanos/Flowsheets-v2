@@ -1,9 +1,9 @@
 import { reactive, computed, watch } from 'vue';
-import { useBlocks } from './useBlocks';
+import { useBlockStore } from '@/entities/block';
 import { extractFreeIdentifiers } from '@/domain/evaluator';
 
 export function useBlockDependencies({ debounceMs = 750 } = {}) {
-    const { blocks } = useBlocks();
+    const { blocks } = useBlockStore();
     const identifiersByBlock = reactive({});
     let parseTimer = null;
 
