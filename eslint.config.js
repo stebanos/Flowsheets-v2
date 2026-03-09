@@ -71,8 +71,8 @@ export default [
                             'domain', 'entities', 'shared'
                         ]
                     },
-                    { from: 'domain',   allow: ['entities', 'shared'] },
-                    { from: 'entities', allow: ['shared'] },
+                    { from: 'entities', allow: ['domain', 'shared'] },
+                    { from: 'domain',   allow: ['shared'] },
                     { from: 'shared',   allow: [] }
                 ]
             }]
