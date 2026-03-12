@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { useBlockStore } from '@/entities/block';
 
 defineOptions({
     inheritAttrs: false
@@ -14,9 +15,12 @@ const props = defineProps({
 
 const emit = defineEmits(['menu-toggle']);
 
+const { removeBlock } = useBlockStore();
+
 const menuItems = [
     {
-        label: 'Delete (todo)'
+        label: 'Delete',
+        command: () => removeBlock(props.block.id)
     },
     {
         label: 'Make string',
