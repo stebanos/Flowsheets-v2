@@ -21,16 +21,46 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         let lastCache = null;
 
         return computed(() => {
-            const out = evaluateInContext(
-                block.code || '',
-                block.name,
-                dependsOn.value,
-                n => results[n],
-                lastCache
-            );
-            lastCache = out.cache;
-            results[block.name] = out.value;
-            return { value: out.value, error: out.error };
+            const myDeps = dependsOn.value[block.name] || [];
+            const modes = block.inputModes || {};
+
+            // Deps in "each" mode whose current value is an array
+            const iterDeps = myDeps.filter(dep => {
+                const mode = modes[dep] ?? 'each';
+                return mode === 'each' && Array.isArray(results[dep]);
+            });
+
+            if (iterDeps.length === 0) {
+                const out = evaluateInContext(
+                    block.code || '',
+                    block.name,
+                    dependsOn.value,
+                    n => results[n],
+                    lastCache
+                );
+                lastCache = out.cache;
+                results[block.name] = out.value;
+                return { value: out.value, error: out.error };
+            }
+
+            // Iterate — zip to longest, filling short arrays with undefined
+            const len = Math.max(...iterDeps.map(dep => results[dep].length));
+            const resultArr = [];
+            let firstError = null;
+
+            for (let i = 0; i < len; i++) {
+                const getVal = (n) => {
+                    const mode = modes[n] ?? 'each';
+                    return mode === 'each' && Array.isArray(results[n]) ? results[n][i] : results[n];
+                };
+                const out = evaluateInContext(block.code || '', block.name, dependsOn.value, getVal, null);
+                resultArr.push(out.error ? undefined : out.value);
+                if (out.error && !firstError) { firstError = out.error; }
+            }
+
+            lastCache = null;
+            results[block.name] = resultArr;
+            return { value: resultArr, error: firstError };
         });
     }
 

@@ -17,7 +17,8 @@ export function useBlockManager() {
             y: Math.floor(y / unitY.value) * unitY.value,
             width: cellWidth.value,
             height: 3 * unitY.value,
-            code
+            code,
+            inputModes: {}
         });
     }
 
