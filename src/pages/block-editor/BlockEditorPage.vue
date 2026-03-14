@@ -26,15 +26,6 @@ const onCreate = (event) => {
 <template>
     <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
     <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered />
-    <p-button icon="pi pi-code" severity="secondary" text class="sidebar-toggle" @click="toggleSidebar" />
+    <p-button icon="pi pi-code" severity="secondary" text class="fixed top-2 right-2 z-[200] rounded-full" @click="toggleSidebar" />
     <p-drawer v-model:visible="sidebarOpen" position="right" header="Sidebar" class="w-[31.25rem]" />
 </template>
-
-<style scoped>
-.sidebar-toggle {
-    position: fixed;
-    top: 0.5rem;
-    right: 0.5rem;
-    z-index: 200;
-}
-</style>
