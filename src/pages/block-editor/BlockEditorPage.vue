@@ -1,9 +1,8 @@
 <script setup>
-import { useSidebar } from '@/shared/useSidebar';
+import { useSidebar } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useBlockManager, useCellDimensions, useEvaluationContext, useBlockDependencies, useHoveredReference } from './composables';
-import BlockGrid from './components/BlockGrid.vue';
-import Block from './components/Block.vue';
+import { BlockGrid, Block } from './components';
 
 const context = useEvaluationContext();
 const { blocks } = useBlockStore();
