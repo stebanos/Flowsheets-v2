@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { useCellDimensions } from '../composables';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
@@ -163,6 +163,18 @@ function handleStartResize(block, event) {
 
 const isMenuOpen = ref(false);
 const isHighlighted = computed(() => props.hovered === props.block.name);
+
+const flashType = ref(null);
+watch(
+    () => {
+        const ev = blockEval.value;
+        return ev?.error ? `error:${ev.error}` : `ok:${formattedResult.value}`;
+    },
+    (sig) => {
+        flashType.value = null;
+        nextTick(() => { flashType.value = sig.startsWith('error') ? 'error' : 'ok'; });
+    }
+);
 </script>
 
 <template>
@@ -181,7 +193,9 @@ const isHighlighted = computed(() => props.hovered === props.block.name);
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
         <div class="block-output w-full border-t border-gray-300 bg-white"
-            :style="{ height: snappedOutputHeight + 'px', overflowY: rawOutputHeight > MAX_OUTPUT_ROWS * cellHeight ? 'auto' : 'hidden' }">
+            :style="{ height: snappedOutputHeight + 'px', overflowY: rawOutputHeight > MAX_OUTPUT_ROWS * cellHeight ? 'auto' : 'hidden' }"
+            :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error' }"
+            @animationend="flashType = null">
             <div ref="outputContentEl" class="px-2 py-1">
                 <span v-if="blockEval.error" class="text-red-600">{{ blockEval.error }}</span>
                 <span v-else>{{ formattedResult }}</span>
@@ -209,5 +223,20 @@ const isHighlighted = computed(() => props.hovered === props.block.name);
     position-anchor: --block-header;
     left: anchor(left);
     top: anchor(top);
+}
+
+.output-flash-ok {
+    animation: output-flash-ok 0.5s ease-out;
+}
+.output-flash-error {
+    animation: output-flash-error 0.5s ease-out;
+}
+@keyframes output-flash-ok {
+    0%   { background-color: #fef08a; }
+    100% { background-color: white; }
+}
+@keyframes output-flash-error {
+    0%   { background-color: #fca5a5; }
+    100% { background-color: white; }
 }
 </style>
