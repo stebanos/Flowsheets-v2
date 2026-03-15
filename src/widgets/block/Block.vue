@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import { useCellDimensions } from '@/shared/composables';
+import { useSidebar } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
@@ -8,6 +9,7 @@ import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
 import { BlockMenu } from '@/widgets/block-menu';
 import { VIZ_TYPES } from '@/features/block/visualize';
+import { useCustomViz } from '@/features/block/visualize/useCustomViz';
 
 const props = defineProps({
     block: {
@@ -144,6 +146,56 @@ const activeVizComponent = computed(() =>
     VIZ_TYPES[props.block.visualizationType ?? 'default']?.component ?? VIZ_TYPES.default.component
 );
 
+// Viz selector bar
+const showVizBar = ref(false);
+const vizMenu = ref(null);
+const { customVizes, activeVizName: sidebarActiveVizName } = useCustomViz();
+const { open: openSidebar } = useSidebar();
+
+const currentVizType = computed(() => props.block.visualizationType ?? 'default');
+const currentVizLabel = computed(() => {
+    if (currentVizType.value === 'custom') {
+        return props.block.vizOptions?.customVizName ?? 'Custom';
+    }
+    return VIZ_TYPES[currentVizType.value]?.label ?? 'Default';
+});
+
+const vizMenuItems = computed(() => {
+    const items = [];
+    for (const [key, { label }] of Object.entries(VIZ_TYPES)) {
+        if (key === 'custom') { continue; }
+        items.push({
+            label: currentVizType.value === key ? `✔ ${label}` : label,
+            command: () => updateBlock(props.block.id, { visualizationType: key })
+        });
+    }
+    const customNames = Object.keys(customVizes);
+    if (customNames.length > 0) {
+        items.push({ separator: true });
+        for (const name of customNames) {
+            const isActive = currentVizType.value === 'custom' && props.block.vizOptions?.customVizName === name;
+            items.push({
+                label: isActive ? `✔ ${name}` : name,
+                command: () => updateBlock(props.block.id, {
+                    visualizationType: 'custom',
+                    vizOptions: { ...(props.block.vizOptions ?? {}), customVizName: name }
+                })
+            });
+        }
+    }
+    if (currentVizType.value === 'custom') {
+        items.push({ separator: true });
+        items.push({
+            label: 'Edit viz code…',
+            command: () => {
+                openSidebar();
+                sidebarActiveVizName.value = props.block.vizOptions?.customVizName ?? null;
+            }
+        });
+    }
+    return items;
+});
+
 // Inputs panel
 const panelOpen = ref(false);
 
@@ -211,20 +263,50 @@ watch(
 <template>
     <div class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle"
-         :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}]">
+         :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <block-menu :block class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @update:name="updateBlock(block.id, { name: $event })"
                 @mousedown="startDrag(block, $event)" />
-            <button v-if="hasInputs"
-                class="inputs-toggle absolute right-0 top-0 h-full px-2 text-[10px] tracking-wide cursor-pointer opacity-60 hover:opacity-100 not-group-hover:invisible group-[.resizing-local]:invisible group-[.inputs-panel-open]:visible group-[.inputs-panel-open]:opacity-100"
-                @click.stop="panelOpen = !panelOpen">
-                inputs {{ panelOpen ? '▴' : '▾' }}
-            </button>
+            <div class="absolute right-0 top-0 h-full flex items-center
+                        not-group-hover:invisible group-[.resizing-local]:invisible
+                        group-[.inputs-panel-open]:visible group-[.viz-bar-open]:visible">
+                <button v-if="hasInputs"
+                        class="h-full px-1.5 flex items-center opacity-60 hover:opacity-100 cursor-pointer"
+                        :class="{ 'opacity-100 bg-white/20': panelOpen }"
+                        title="Inputs"
+                        @click.stop="panelOpen = !panelOpen">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                        <rect x="2" y="3" width="12" height="2" rx="1"/>
+                        <rect x="2" y="7" width="12" height="2" rx="1"/>
+                        <rect x="2" y="11" width="12" height="2" rx="1"/>
+                    </svg>
+                </button>
+                <button class="h-full px-1.5 flex items-center opacity-60 hover:opacity-100 cursor-pointer"
+                        :class="{ 'opacity-100 bg-white/20': showVizBar }"
+                        title="Visualization"
+                        @click.stop="showVizBar = !showVizBar">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                        <rect x="1" y="1" width="6" height="6" rx="1"/>
+                        <rect x="9" y="1" width="6" height="6" rx="1"/>
+                        <rect x="1" y="9" width="6" height="6" rx="1"/>
+                        <rect x="9" y="9" width="6" height="6" rx="1"/>
+                    </svg>
+                </button>
+            </div>
         </div>
-        <div v-if="panelOpen && hasInputs" class="inputs-panel absolute left-0 right-0 bg-gray-50 border border-gray-300 shadow-md z-50" style="top: 24px;">
+        <div v-if="showVizBar"
+             class="absolute left-0 right-0 bg-white border-b border-gray-200 px-2 py-1 flex items-center z-50"
+             style="top: 24px;">
+            <button class="flex items-center gap-0.5 text-xs border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50 cursor-pointer bg-white"
+                    @click.stop="vizMenu.toggle($event)">
+                {{ currentVizLabel }}<span class="text-[10px] opacity-50">▾</span>
+            </button>
+            <p-menu ref="vizMenu" :model="vizMenuItems" popup />
+        </div>
+        <div v-if="panelOpen && hasInputs" class="inputs-panel absolute left-0 right-0 bg-gray-50 border border-gray-300 shadow-md z-50" :style="{ top: showVizBar ? '56px' : '24px' }">
             <div v-for="ref in blockDeps" :key="ref"
                 class="input-row flex items-center justify-between h-7 px-2 gap-2"
                 :class="{ 'border-t border-gray-200': blockDeps.indexOf(ref) > 0 }">

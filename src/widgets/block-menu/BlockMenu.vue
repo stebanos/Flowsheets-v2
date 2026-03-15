@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { VIZ_TYPES } from '@/features/block/visualize';
 
 defineOptions({
     inheritAttrs: false
@@ -18,8 +17,6 @@ const emit = defineEmits(['menu-toggle']);
 
 const { removeBlock, updateBlock } = useBlockStore();
 
-const vizType = computed(() => props.block.visualizationType ?? 'default');
-
 const menuItems = computed(() => [
     {
         label: 'Delete',
@@ -31,13 +28,6 @@ const menuItems = computed(() => [
     },
     {
         label: 'Add filter'
-    },
-    {
-        label: 'Visualizations',
-        items: Object.entries(VIZ_TYPES).map(([key, { label }]) => ({
-            label: vizType.value === key ? `✔ ${label}` : label,
-            command: () => updateBlock(props.block.id, { visualizationType: key })
-        }))
     }
 ]);
 

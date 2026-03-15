@@ -8,6 +8,7 @@ import { useBlockDependencies } from '@/entities/block';
 import { useCellDimensions } from '@/shared/composables';
 import { Block } from '@/widgets/block';
 import { BlockGrid } from '@/widgets/block-grid';
+import SidebarContent from './components/SidebarContent.vue';
 
 const context = useEvaluationContext();
 const { blocks } = useBlockStore();
@@ -32,5 +33,7 @@ const onCreate = (event) => {
     <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
     <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered />
     <p-button icon="pi pi-code" severity="secondary" text class="fixed top-2 right-2 z-[200] rounded-full" @click="toggleSidebar" />
-    <p-drawer v-model:visible="sidebarOpen" position="right" header="Sidebar" class="w-[31.25rem]" />
+    <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem]">
+        <sidebar-content class="h-full" />
+    </p-drawer>
 </template>
