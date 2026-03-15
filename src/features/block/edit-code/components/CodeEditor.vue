@@ -24,12 +24,16 @@ const props = defineProps({
     clearHovered: {
         type: Function,
         required: true
+    },
+    isStringConcat: {
+        type: Boolean,
+        default: false
     }
 });
 
 const emit = defineEmits(['update:code', 'update:contentHeight', 'update:contentWidth']);
 
-const lang = javascript();
+const lang = computed(() => props.isStringConcat ? null : javascript());
 
 const fillTheme = EditorView.theme({
     '&': { height: '100%' }
@@ -182,7 +186,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <code-mirror ref="cm" basic :lang :extensions v-model="code" />
+    <code-mirror ref="cm" basic :lang :extensions v-model="code" :class="{ 'is-string-mode': isStringConcat }" />
 </template>
 
 <style scoped>
@@ -211,5 +215,16 @@ onBeforeUnmount(() => {
 
 .vue-codemirror :deep(.cm-focused) {
     outline: none;
+}
+
+.is-string-mode :deep(.cm-editor) {
+    background-color: #f5f5f5;
+}
+
+.is-string-mode :deep(.cm-content) {
+    font-style: italic;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ctext x='2' y='20' font-size='22' font-family='serif' fill='%23999' opacity='0.35'%22%3E%22%3C/text%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: top right;
 }
 </style>

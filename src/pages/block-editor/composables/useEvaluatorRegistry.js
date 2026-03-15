@@ -1,5 +1,5 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { evaluateInContext } from '@/domain/evaluator';
+import { evaluateInContext, buildTemplateExpression } from '@/domain/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -31,8 +31,11 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             });
 
             if (iterDeps.length === 0) {
+                const code = block.isStringConcat
+                    ? buildTemplateExpression(block.code || '')
+                    : (block.code || '');
                 const out = evaluateInContext(
-                    block.code || '',
+                    code,
                     block.name,
                     dependsOn.value,
                     n => results[n],
@@ -53,7 +56,10 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     const mode = modes[n] ?? 'each';
                     return mode === 'each' && Array.isArray(results[n]) ? results[n][i] : results[n];
                 };
-                const out = evaluateInContext(block.code || '', block.name, dependsOn.value, getVal, null);
+                const iterCode = block.isStringConcat
+                    ? buildTemplateExpression(block.code || '')
+                    : (block.code || '');
+                const out = evaluateInContext(iterCode, block.name, dependsOn.value, getVal, null);
                 resultArr.push(out.error ? undefined : out.value);
                 if (out.error && !firstError) { firstError = out.error; }
             }

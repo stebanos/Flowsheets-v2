@@ -248,8 +248,9 @@ watch(
                 </div>
             </div>
         </div>
-        <div class="block-code w-full" :style="{ height: snappedEditorHeight + 'px' }">
+        <div class="block-code w-full" :class="{ 'is-string': block.isStringConcat }" :style="{ height: snappedEditorHeight + 'px' }">
             <code-editor class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
+                :isStringConcat="block.isStringConcat"
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>

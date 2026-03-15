@@ -15,16 +15,16 @@ const props = defineProps({
 
 const emit = defineEmits(['menu-toggle']);
 
-const { removeBlock } = useBlockStore();
+const { removeBlock, updateBlock } = useBlockStore();
 
-const menuItems = [
+const menuItems = computed(() => [
     {
         label: 'Delete',
         command: () => removeBlock(props.block.id)
     },
     {
-        label: 'Make string',
-        command: () => console.log('Make string')
+        label: props.block.isStringConcat ? '✔ Make string' : 'Make string',
+        command: () => updateBlock(props.block.id, { isStringConcat: !props.block.isStringConcat })
     },
     {
         label: 'Add filter'
@@ -32,7 +32,7 @@ const menuItems = [
     {
         label: 'Visualizations'
     }
-];
+]);
 
 const menu = ref(null);
 const menuId = computed(() => `block-menu-${props.block.name}`);
