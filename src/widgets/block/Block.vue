@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
-import { useCellDimensions } from '../composables';
+import { useCellDimensions } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
-import BlockMenu from './BlockMenu.vue';
+import BlockMenu from '@/widgets/block-menu';
 
 const props = defineProps({
     block: {

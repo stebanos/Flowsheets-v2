@@ -1,6 +1,6 @@
 import { generateUniqueId } from '@/shared/utils';
 import { generateUniqueName, generateUniqueNameFromName, useBlockStore } from '@/entities/block';
-import { useCellDimensions } from './useCellDimensions';
+import { useCellDimensions } from '@/shared/composables';
 
 export function useBlockManager() {
     const { blocks, addBlock } = useBlockStore();

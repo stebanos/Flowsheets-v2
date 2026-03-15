@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { nextTick, createApp } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useBlockDependencies } from '../composables/useBlockDependencies';
-import { useEvaluatorRegistry } from '../composables/useEvaluatorRegistry';
+import { useBlockDependencies } from '@/entities/block';
+import { useEvaluatorRegistry } from '@/features/block/evaluation';
 
 function withSetup(fn) {
     let result;

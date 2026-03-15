@@ -1,8 +1,13 @@
 <script setup>
 import { useSidebar } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
-import { useBlockManager, useCellDimensions, useEvaluationContext, useBlockDependencies, useHoveredReference } from './composables';
-import { BlockGrid, Block } from './components';
+import { useHoveredReference } from './composables';
+import { useBlockManager } from '@/features/block/manage';
+import { useEvaluationContext } from '@/features/block/evaluation';
+import { useBlockDependencies } from '@/entities/block';
+import { useCellDimensions } from '@/shared/composables';
+import { Block } from '@/widgets/block';
+import { BlockGrid } from '@/widgets/block-grid';
 
 const context = useEvaluationContext();
 const { blocks } = useBlockStore();

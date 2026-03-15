@@ -1,5 +1,5 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { evaluateInContext, buildTemplateExpression } from '@/domain/evaluator';
+import { evaluateInContext, buildTemplateExpression } from '@/shared/lib/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory

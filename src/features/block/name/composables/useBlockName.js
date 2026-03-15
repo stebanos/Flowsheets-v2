@@ -1,6 +1,6 @@
 import { ref, nextTick } from 'vue';
 import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
-import { renameIdentifier } from '@/domain/evaluator/renameIdentifier';
+import { renameIdentifier } from '@/shared/lib/evaluator';
 
 /**
  * @param {import('vue').WritableComputedRef<string>} name

@@ -52,7 +52,7 @@ export default [
                 // Each feature slice (block/drag, block/name, etc.) is captured separately
                 // so cross-feature imports are detectable as cross-element imports.
                 { type: 'features', pattern: 'src/features/block/(**)', capture: ['featureName'] },
-                { type: 'domain',   pattern: 'src/domain/**' },
+                { type: 'widgets',  pattern: 'src/widgets/**' },
                 { type: 'entities', pattern: 'src/entities/**' },
                 { type: 'shared',   pattern: 'src/shared/**' }
             ],
@@ -62,17 +62,17 @@ export default [
             'boundaries/element-types': ['error', {
                 default: 'disallow',
                 rules: [
-                    { from: 'app',      allow: ['pages', 'features', 'domain', 'entities', 'shared'] },
-                    { from: 'pages',    allow: ['features', 'domain', 'entities', 'shared'] },
+                    { from: 'app',      allow: ['pages', 'widgets', 'features', 'entities', 'shared'] },
+                    { from: 'pages',    allow: ['widgets', 'features', 'entities', 'shared'] },
+                    { from: 'widgets',  allow: ['features', 'entities', 'shared'] },
                     {
                         from: [['features', { featureName: '*' }]],
                         allow: [
                             ['features', { featureName: '${from.captured.featureName}' }],
-                            'domain', 'entities', 'shared'
+                            'entities', 'shared'
                         ]
                     },
-                    { from: 'entities', allow: ['domain', 'shared'] },
-                    { from: 'domain',   allow: ['shared'] },
+                    { from: 'entities', allow: ['shared'] },
                     { from: 'shared',   allow: [] }
                 ]
             }]

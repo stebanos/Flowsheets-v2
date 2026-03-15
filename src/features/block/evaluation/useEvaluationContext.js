@@ -1,4 +1,4 @@
-import { useBlockDependencies } from './useBlockDependencies';
+import { useBlockDependencies } from '@/entities/block';
 import { useBlockStore } from '@/entities/block';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
