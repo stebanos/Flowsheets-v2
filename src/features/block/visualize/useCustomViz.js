@@ -1,5 +1,6 @@
-import { reactive, ref, shallowRef } from 'vue';
+import { reactive, ref } from 'vue';
 import * as Vue from 'vue';
+import { useBlockStore } from '@/entities/block/blockStore';
 
 const DEFAULT_STUB = `{
   props: ['value', 'error', 'block'],
@@ -17,15 +18,23 @@ function createViz() {
     let n = 1;
     while (customVizes[`Viz ${n}`]) { n++; }
     const name = `Viz ${n}`;
-    customVizes[name] = { source: null, draft: DEFAULT_STUB, component: shallowRef(null), error: null };
+    customVizes[name] = { source: null, draft: DEFAULT_STUB, component: null, error: null };
     activeVizName.value = name;
 }
 
 function renameViz(oldName, newName) {
     if (!customVizes[oldName] || customVizes[newName]) { return false; }
-    customVizes[newName] = customVizes[oldName];
-    delete customVizes[oldName];
+    // Rebuild in original key order so the renamed tab stays in place
+    const entries = Object.entries(customVizes).map(([k, v]) => [k === oldName ? newName : k, v]);
+    for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
+    for (const [k, v] of entries) { customVizes[k] = v; }
     if (activeVizName.value === oldName) { activeVizName.value = newName; }
+    const { blocks, updateBlock } = useBlockStore();
+    for (const block of blocks) {
+        if (block.vizOptions?.customVizName === oldName) {
+            updateBlock(block.id, { vizOptions: { ...block.vizOptions, customVizName: newName } });
+        }
+    }
     return true;
 }
 
@@ -35,7 +44,7 @@ function runViz(name, draft) {
     entry.draft = draft;
     try {
          
-        entry.component.value = new Function('Vue', `return (${draft})`)(Vue);
+        entry.component = new Function('Vue', `return (${draft})`)(Vue);
         entry.source = draft;
         entry.error = null;
     } catch (err) {
@@ -55,7 +64,7 @@ function revertDraft(name) {
 }
 
 function getComponent(name) {
-    return customVizes[name]?.component.value ?? null;
+    return customVizes[name]?.component ?? null;
 }
 
 export function useCustomViz() {

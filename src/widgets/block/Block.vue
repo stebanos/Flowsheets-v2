@@ -270,12 +270,10 @@ watch(
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @update:name="updateBlock(block.id, { name: $event })"
                 @mousedown="startDrag(block, $event)" />
-            <div class="absolute right-0 top-0 h-full flex items-center
-                        not-group-hover:invisible group-[.resizing-local]:invisible
-                        group-[.inputs-panel-open]:visible group-[.viz-bar-open]:visible">
+            <div class="absolute right-0 top-0 h-full flex items-center group-[.resizing-local]:invisible">
                 <button v-if="hasInputs"
-                        class="h-full px-1.5 flex items-center opacity-60 hover:opacity-100 cursor-pointer"
-                        :class="{ 'opacity-100 bg-white/20': panelOpen }"
+                        class="h-full px-1.5 flex items-center opacity-30 group-hover:opacity-60 hover:!opacity-100 cursor-pointer transition-opacity"
+                        :class="{ '!opacity-100 bg-white/20': panelOpen }"
                         title="Inputs"
                         @click.stop="panelOpen = !panelOpen">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
@@ -284,8 +282,8 @@ watch(
                         <rect x="2" y="11" width="12" height="2" rx="1"/>
                     </svg>
                 </button>
-                <button class="h-full px-1.5 flex items-center opacity-60 hover:opacity-100 cursor-pointer"
-                        :class="{ 'opacity-100 bg-white/20': showVizBar }"
+                <button class="h-full px-1.5 flex items-center opacity-30 group-hover:opacity-60 hover:!opacity-100 cursor-pointer transition-opacity"
+                        :class="{ '!opacity-100 bg-white/20': showVizBar }"
                         title="Visualization"
                         @click.stop="showVizBar = !showVizBar">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
