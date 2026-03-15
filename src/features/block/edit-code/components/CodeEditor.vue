@@ -61,7 +61,30 @@ function isInDeclaration(tree, pos) {
     return false;
 }
 
-function blockNameHighlighter(blockNames) {
+// Returns [{from, to}] of each ${...} expression body (brace-depth aware, excludes delimiters).
+function findExpressionRanges(text) {
+    const ranges = [];
+    let i = 0;
+    while (i < text.length) {
+        if (text[i] === '$' && text[i + 1] === '{') {
+            const start = i + 2;
+            let depth = 1;
+            let j = start;
+            while (j < text.length && depth > 0) {
+                if (text[j] === '{') { depth++; }
+                else if (text[j] === '}') { depth--; }
+                j++;
+            }
+            if (depth === 0) { ranges.push({ from: start, to: j - 1 }); }
+            i = j;
+        } else {
+            i++;
+        }
+    }
+    return ranges;
+}
+
+function blockNameHighlighter(blockNames, isStringConcat) {
     if (!blockNames || blockNames.length === 0) {
         return ViewPlugin.fromClass(class {
             constructor() { this.decorations = Decoration.none; }
@@ -91,26 +114,35 @@ function blockNameHighlighter(blockNames) {
             const text = view.state.doc.toString();
             pattern.lastIndex = 0;
             let m;
-            const tree = syntaxTree(view.state);
-            while ((m = pattern.exec(text)) !== null) {
-                const from = m.index;
-                const to = m.index + m[0].length;
 
-                if (isInDeclaration(tree, from)) { continue; }
-
-                let node = tree.resolve(from, 1);
-                let skip = false;
-                while (node) {
-                    if (SKIP_NODE_NAMES.has(node.type.name)) {
-                        skip = true;
-                        break;
-                    }
-                    node = node.parent;
+            if (isStringConcat) {
+                const exprRanges = findExpressionRanges(text);
+                while ((m = pattern.exec(text)) !== null) {
+                    const from = m.index;
+                    const to = m.index + m[0].length;
+                    if (!exprRanges.some(r => from >= r.from && to <= r.to)) { continue; }
+                    builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
                 }
-                if (skip) { continue; }
+            } else {
+                const tree = syntaxTree(view.state);
+                while ((m = pattern.exec(text)) !== null) {
+                    const from = m.index;
+                    const to = m.index + m[0].length;
 
-                builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
+                    if (isInDeclaration(tree, from)) { continue; }
+
+                    let node = tree.resolve(from, 1);
+                    let skip = false;
+                    while (node) {
+                        if (SKIP_NODE_NAMES.has(node.type.name)) { skip = true; break; }
+                        node = node.parent;
+                    }
+                    if (skip) { continue; }
+
+                    builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
+                }
             }
+
             return builder.finish();
         }
     }, { decorations: v => v.decorations });
@@ -124,7 +156,7 @@ const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference({
 const blockNames = computed(() => props.blocks.map(b => b.name));
 
 const extensions = computed(() => {
-    const blockPlugin = blockNameHighlighter(blockNames.value);
+    const blockPlugin = blockNameHighlighter(blockNames.value, props.isStringConcat);
 
     return [
         autocompletion({ activateOnTyping: false }),
@@ -217,14 +249,30 @@ onBeforeUnmount(() => {
     outline: none;
 }
 
-.is-string-mode :deep(.cm-editor) {
-    background-color: #f5f5f5;
+.is-string-mode :deep(.cm-gutters) {
+    display: none;
 }
 
+.is-string-mode :deep(.cm-editor) {
+    background-color: #ddd;
+    position: relative;
+}
+
+.is-string-mode :deep(.cm-editor)::after {
+    content: '\201D';
+    position: absolute;
+    font-size: 40px;
+    opacity: .25;
+    font-family: "Helvetica";
+    font-weight: bold;
+    top: 10px;
+    right: 7px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.is-string-mode :deep(.cm-editor)::after,
 .is-string-mode :deep(.cm-content) {
     font-style: italic;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ctext x='2' y='20' font-size='22' font-family='serif' fill='%23999' opacity='0.35'%22%3E%22%3C/text%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: top right;
 }
 </style>
