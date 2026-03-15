@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
-export function useResize(cellWidth, cellHeight, snapY) {
+export function useResize(snapX, snapY, cellWidth, cellHeight) {
     const { updateBlock } = useBlockStore();
 
     const resizeState = reactive({
@@ -29,13 +29,9 @@ export function useResize(cellWidth, cellHeight, snapY) {
         const dx = event.clientX - resizeState.startX;
         const dy = event.clientY - resizeState.startY;
 
-        // Snap width to full columns (cellWidth), not sub-grid units.
-        // Sub-grid snapping misaligns with snappedEditorWidth in Block.vue
-        // and causes oscillation between the two snap grids on every frame.
-        const cols = Math.max(1, Math.round((resizeState.startWidth + dx) / cellWidth.value));
         updateBlock(resizeState.block.id, {
-            // Minimum 3 rows: header + 1 editor row + 1 output row.
-            width: cols * cellWidth.value,
+            // Minimum 1 full column; snap to sub-grid units (same as drag).
+            width: Math.max(cellWidth.value, snapX(resizeState.startWidth + dx)),
             height: Math.max(3 * cellHeight.value, snapY(resizeState.startHeight + dy))
         });
     }

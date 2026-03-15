@@ -35,9 +35,9 @@ const props = defineProps({
 });
 
 const { blocks, updateBlock } = useBlockStore();
-const { cellHeight, cellWidth, snapX, snapY } = useCellDimensions();
+const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { startDrag } = useDrag(snapX, snapY);
-const { startResize } = useResize(cellWidth, cellHeight, snapY);
+const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
 const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
@@ -54,7 +54,7 @@ const snappedEditorHeight = computed(() => {
     return Math.max(contentHeight, manualMinEditorHeight.value);
 });
 const snappedEditorWidth = computed(() => {
-    const contentWidth = Math.max(1, Math.ceil(rawEditorWidth.value / cellWidth.value)) * cellWidth.value;
+    const contentWidth = Math.max(cellWidth.value, Math.ceil(rawEditorWidth.value / unitX.value) * unitX.value);
     return Math.max(contentWidth, manualMinWidth.value);
 });
 
