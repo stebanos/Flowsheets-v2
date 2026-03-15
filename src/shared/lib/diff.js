@@ -83,20 +83,19 @@ export function diffLines(oldStr, newStr) {
     for (const [co, cn] of [...common, [oldLines.length, newLines.length]]) {
         const dels = oldLines.slice(oi, co);
         const adds = newLines.slice(ni, cn);
-        const pairCount = Math.min(dels.length, adds.length);
-        // Paired del+add lines → character-level diff
-        for (let p = 0; p < pairCount; p++) {
-            const charSpans = diffChars(dels[p], adds[p]);
-            rows.push({ type: 'del', text: dels[p], spans: charSpans.filter(s => s.type !== 'add') });
-            rows.push({ type: 'add', text: adds[p], spans: charSpans.filter(s => s.type !== 'del') });
-        }
-        // Unpaired deletions
-        for (let p = pairCount; p < dels.length; p++) {
-            rows.push({ type: 'del', text: dels[p], spans: null });
-        }
-        // Unpaired additions
-        for (let p = pairCount; p < adds.length; p++) {
-            rows.push({ type: 'add', text: adds[p], spans: null });
+        if (dels.length === adds.length && dels.length > 0) {
+            // Equal counts: 1:1 pairing with character-level diff (true "changed lines").
+            // Interleaved del/add preserves sequential line numbers on each side.
+            for (let p = 0; p < dels.length; p++) {
+                const charSpans = diffChars(dels[p], adds[p]);
+                rows.push({ type: 'del', text: dels[p], spans: charSpans.filter(s => s.type !== 'add') });
+                rows.push({ type: 'add', text: adds[p], spans: charSpans.filter(s => s.type !== 'del') });
+            }
+        } else {
+            // Unequal counts: emit all dels then all adds, no character-level diff.
+            // This keeps each side's line numbers contiguous in the output.
+            for (const line of dels) { rows.push({ type: 'del', text: line, spans: null }); }
+            for (const line of adds) { rows.push({ type: 'add', text: line, spans: null }); }
         }
         // Common line (skip sentinel)
         if (co < oldLines.length) {

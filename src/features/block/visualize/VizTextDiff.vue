@@ -24,7 +24,7 @@ function setCompareBlock(name) {
 function stringify(v) {
     if (v === undefined || v === null) { return String(v); }
     if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+    try { return JSON.stringify(v); } catch { return String(v); }
 }
 
 const thisText = computed(() => props.error ? '' : stringify(props.value));

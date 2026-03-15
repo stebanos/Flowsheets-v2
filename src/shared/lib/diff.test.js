@@ -142,18 +142,33 @@ describe('diffLines — changed lines (adjacent del+add pairs)', () => {
     });
 });
 
-describe('diffLines — unpaired deletions after pairs', () => {
-    test('3 old lines vs 1 new line: paired del has spans, remaining dels have spans: null', () => {
+describe('diffLines — unequal del/add counts (no char-level pairing)', () => {
+    test('3 old lines vs 1 new line: all dels then all adds, all spans: null', () => {
         const rows = diffLines('line1\nline2\nline3', 'lineA');
         const delRows = rows.filter(r => r.type === 'del');
         const addRows = rows.filter(r => r.type === 'add');
         expect(delRows).toHaveLength(3);
         expect(addRows).toHaveLength(1);
-        // The first del is paired with the only add → has spans
-        expect(delRows[0].spans).not.toBeNull();
-        // The remaining dels are unpaired → spans: null
-        expect(delRows[1].spans).toBeNull();
-        expect(delRows[2].spans).toBeNull();
+        // Unequal counts → no character-level diff, all spans null
+        delRows.forEach(r => expect(r.spans).toBeNull());
+        addRows.forEach(r => expect(r.spans).toBeNull());
+        // All dels come before all adds in the output
+        const delIndices = rows.map((r, i) => r.type === 'del' ? i : -1).filter(i => i >= 0);
+        const addIndices = rows.map((r, i) => r.type === 'add' ? i : -1).filter(i => i >= 0);
+        expect(Math.max(...delIndices)).toBeLessThan(Math.min(...addIndices));
+    });
+
+    test('1 old line vs 3 new lines: all dels before all adds, all spans: null', () => {
+        const rows = diffLines('lineA', 'line1\nline2\nline3');
+        const delRows = rows.filter(r => r.type === 'del');
+        const addRows = rows.filter(r => r.type === 'add');
+        expect(delRows).toHaveLength(1);
+        expect(addRows).toHaveLength(3);
+        delRows.forEach(r => expect(r.spans).toBeNull());
+        addRows.forEach(r => expect(r.spans).toBeNull());
+        const delIndices = rows.map((r, i) => r.type === 'del' ? i : -1).filter(i => i >= 0);
+        const addIndices = rows.map((r, i) => r.type === 'add' ? i : -1).filter(i => i >= 0);
+        expect(Math.max(...delIndices)).toBeLessThan(Math.min(...addIndices));
     });
 });
 
@@ -163,38 +178,30 @@ describe('diffLines — empty strings', () => {
         expect(rows).toEqual([{ type: 'eq', text: '', spans: null }]);
     });
 
-    test('empty old, non-empty new → empty string pairs with first add, rest are unpaired adds', () => {
-        // ''.split('\n') yields [''], so the empty old line pairs with 'a' as a changed pair.
-        // 'b' is left as an unpaired add.
+    test('empty old, non-empty new (2 lines) → 1 del and 2 adds, all spans: null (unequal counts)', () => {
+        // ''.split('\n') yields [''], so there is 1 del and 2 adds — unequal, no char-level pairing.
         const rows = diffLines('', 'a\nb');
         const delRows = rows.filter(r => r.type === 'del');
         const addRows = rows.filter(r => r.type === 'add');
-        // The empty old line becomes a paired del (with spans, not null)
         expect(delRows).toHaveLength(1);
         expect(delRows[0].text).toBe('');
-        expect(delRows[0].spans).not.toBeNull();
-        // Two add rows: the paired 'a' (with spans) and the unpaired 'b' (spans: null)
+        expect(delRows[0].spans).toBeNull();
         expect(addRows).toHaveLength(2);
         expect(addRows.map(r => r.text)).toEqual(['a', 'b']);
-        expect(addRows[0].spans).not.toBeNull();
-        expect(addRows[1].spans).toBeNull();
+        addRows.forEach(r => expect(r.spans).toBeNull());
     });
 
-    test('non-empty old, empty new → empty string pairs with first del, rest are unpaired dels', () => {
-        // ''.split('\n') yields [''], so the empty new line pairs with 'a' as a changed pair.
-        // 'b' is left as an unpaired del.
+    test('non-empty old (2 lines), empty new → 2 dels and 1 add, all spans: null (unequal counts)', () => {
+        // ''.split('\n') yields [''], so there is 1 add and 2 dels — unequal, no char-level pairing.
         const rows = diffLines('a\nb', '');
         const delRows = rows.filter(r => r.type === 'del');
         const addRows = rows.filter(r => r.type === 'add');
-        // Two del rows: the paired 'a' (with spans) and the unpaired 'b' (spans: null)
         expect(delRows).toHaveLength(2);
         expect(delRows.map(r => r.text)).toEqual(['a', 'b']);
-        expect(delRows[0].spans).not.toBeNull();
-        expect(delRows[1].spans).toBeNull();
-        // The empty new line becomes a paired add (with spans, not null)
+        delRows.forEach(r => expect(r.spans).toBeNull());
         expect(addRows).toHaveLength(1);
         expect(addRows[0].text).toBe('');
-        expect(addRows[0].spans).not.toBeNull();
+        expect(addRows[0].spans).toBeNull();
     });
 });
 
