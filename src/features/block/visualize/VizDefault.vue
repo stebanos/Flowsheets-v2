@@ -33,13 +33,15 @@ onBeforeUnmount(() => { ro?.disconnect(); });
 </script>
 
 <template>
-    <template v-if="isList">
-        <div v-for="(item, i) in outputItems" :key="i"
-            class="h-6 min-h-6 flex items-center px-2 font-mono text-[13px]"
-            :class="{ 'border-t border-gray-100': i > 0 }">{{ item }}</div>
-    </template>
-    <div v-else ref="contentEl" class="px-2 py-1">
-        <span v-if="error" class="text-red-600">{{ error }}</span>
-        <span v-else>{{ formatValue(value) }}</span>
+    <div>
+        <template v-if="isList">
+            <div v-for="(item, i) in outputItems" :key="i"
+                class="h-6 min-h-6 flex items-center px-2 font-mono text-[13px]"
+                :class="{ 'border-t border-gray-100': i > 0 }">{{ item }}</div>
+        </template>
+        <div v-else ref="contentEl" class="px-2 py-1">
+            <span v-if="error" class="text-red-600">{{ error }}</span>
+            <span v-else>{{ formatValue(value) }}</span>
+        </div>
     </div>
 </template>

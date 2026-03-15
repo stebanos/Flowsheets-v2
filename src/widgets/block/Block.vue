@@ -74,10 +74,12 @@ const isList = computed(() => Array.isArray(outputValue.value));
 const outputItems = computed(() => isList.value ? outputValue.value.map(formatValue) : []);
 
 const snappedOutputHeight = computed(() => {
-    if (isList.value) {
+    const vizType = props.block.visualizationType ?? 'default';
+    if (vizType === 'default' && isList.value) {
         return Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
     }
-    const rows = Math.max(1, Math.ceil(rawOutputHeight.value / cellHeight.value));
+    const minRows = vizType !== 'default' ? 3 : 1;
+    const rows = Math.max(minRows, Math.ceil(rawOutputHeight.value / cellHeight.value));
     return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
 });
 
