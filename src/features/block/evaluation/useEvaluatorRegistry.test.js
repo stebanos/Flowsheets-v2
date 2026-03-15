@@ -66,6 +66,36 @@ describe('renaming a block', () => {
     });
 });
 
+describe('getEvaluation reactivity — block added after initial call', () => {
+    test('computed re-runs when a block with the queried name is added', async () => {
+        const blocks = reactive([]);
+        const { getEvaluation } = createRegistry(blocks);
+
+        // Call getEvaluation in a computed before the block exists
+        const result = computed(() => getEvaluation('a'));
+        expect(result.value.error).toMatch(/no block named/);
+
+        // Add the block — result should update reactively
+        blocks.push({ id: '1', name: 'a', code: '7' });
+        await nextTick();
+        expect(result.value.value).toBe(7);
+        expect(result.value.error).toBeNull();
+    });
+
+    test('computed re-runs when a block is renamed to the queried name', async () => {
+        const blocks = reactive([{ id: '1', name: 'x', code: '42' }]);
+        const { getEvaluation } = createRegistry(blocks);
+        await nextTick();
+
+        const result = computed(() => getEvaluation('a'));
+        expect(result.value.error).toMatch(/no block named/);
+
+        blocks[0].name = 'a';
+        await nextTick();
+        expect(result.value.value).toBe(42);
+    });
+});
+
 describe('circular dependency', () => {
     test('getEvaluation returns a cycle error', async () => {
         const blocks = reactive([

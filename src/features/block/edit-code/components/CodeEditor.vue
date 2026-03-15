@@ -28,6 +28,10 @@ const props = defineProps({
     isStringConcat: {
         type: Boolean,
         default: false
+    },
+    inputModes: {
+        type: Object,
+        default: () => ({})
     }
 });
 
@@ -84,7 +88,7 @@ function findExpressionRanges(text) {
     return ranges;
 }
 
-function blockNameHighlighter(blockNames, isStringConcat) {
+function blockNameHighlighter(blockNames, isStringConcat, inputModes) {
     if (!blockNames || blockNames.length === 0) {
         return ViewPlugin.fromClass(class {
             constructor() { this.decorations = Decoration.none; }
@@ -97,6 +101,10 @@ function blockNameHighlighter(blockNames, isStringConcat) {
         'String', 'StringLiteral', 'TemplateString', 'TemplateSpan',
         'LineComment', 'BlockComment', 'Comment'
     ]);
+
+    function modeClass(name) {
+        return (inputModes[name] ?? 'each') === 'all' ? 'cm-block-name cm-block-name-all' : 'cm-block-name cm-block-name-each';
+    }
 
     return ViewPlugin.fromClass(class {
         constructor(view) {
@@ -121,7 +129,7 @@ function blockNameHighlighter(blockNames, isStringConcat) {
                     const from = m.index;
                     const to = m.index + m[0].length;
                     if (!exprRanges.some(r => from >= r.from && to <= r.to)) { continue; }
-                    builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
+                    builder.add(from, to, Decoration.mark({ class: modeClass(m[0]) }));
                 }
             } else {
                 const tree = syntaxTree(view.state);
@@ -139,7 +147,7 @@ function blockNameHighlighter(blockNames, isStringConcat) {
                     }
                     if (skip) { continue; }
 
-                    builder.add(from, to, Decoration.mark({ class: 'cm-block-name' }));
+                    builder.add(from, to, Decoration.mark({ class: modeClass(m[0]) }));
                 }
             }
 
@@ -156,7 +164,7 @@ const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference({
 const blockNames = computed(() => props.blocks.map(b => b.name));
 
 const extensions = computed(() => {
-    const blockPlugin = blockNameHighlighter(blockNames.value, props.isStringConcat);
+    const blockPlugin = blockNameHighlighter(blockNames.value, props.isStringConcat, props.inputModes);
 
     return [
         autocompletion({ activateOnTyping: false }),
@@ -223,11 +231,21 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .vue-codemirror :deep(.cm-block-name) {
-    background: #000;
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     border-radius: 2px;
-    color: #fff;
     padding: 0 .165rem;
+}
+
+.vue-codemirror :deep(.cm-block-name-each) {
+    background: #000;
+    border-color: transparent;
+    color: #fff;
+}
+
+.vue-codemirror :deep(.cm-block-name-all) {
+    background: transparent;
+    border-color: #000;
+    color: #000;
 }
 
 .vue-codemirror :deep(.cm-block-name:hover) {

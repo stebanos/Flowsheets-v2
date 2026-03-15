@@ -213,13 +213,13 @@ watch(
          :style="blockPositionStyle"
          :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block class="block-menu absolute not-group-hover:invisible group-has-[input]:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
+            <block-menu :block class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @update:name="updateBlock(block.id, { name: $event })"
                 @mousedown="startDrag(block, $event)" />
             <button v-if="hasInputs"
-                class="inputs-toggle absolute right-0 top-0 h-full px-2 text-[10px] tracking-wide cursor-pointer opacity-60 hover:opacity-100 not-group-hover:invisible group-has-[input]:invisible group-[.resizing-local]:invisible group-[.inputs-panel-open]:visible group-[.inputs-panel-open]:opacity-100"
+                class="inputs-toggle absolute right-0 top-0 h-full px-2 text-[10px] tracking-wide cursor-pointer opacity-60 hover:opacity-100 not-group-hover:invisible group-[.resizing-local]:invisible group-[.inputs-panel-open]:visible group-[.inputs-panel-open]:opacity-100"
                 @click.stop="panelOpen = !panelOpen">
                 inputs {{ panelOpen ? '▴' : '▾' }}
             </button>
@@ -244,6 +244,7 @@ watch(
         <div class="block-code w-full" :class="{ 'is-string': block.isStringConcat }" :style="{ height: snappedEditorHeight + 'px' }">
             <code-editor class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :isStringConcat="block.isStringConcat"
+                :inputModes="block.inputModes || {}"
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>

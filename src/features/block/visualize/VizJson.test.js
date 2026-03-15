@@ -3,9 +3,10 @@ import { shallowMount } from '@vue/test-utils';
 import VizJson from './VizJson.vue';
 
 describe('VizJson — number', () => {
-    test('renders the number as a plain string', () => {
+    test('shows error for number value', () => {
         const wrapper = shallowMount(VizJson, { props: { value: 2 } });
-        expect(wrapper.text()).toContain('2');
+        expect(wrapper.text()).toContain('JSON viz requires an object or array');
+        expect(wrapper.text()).toContain('number');
     });
 });
 
@@ -31,9 +32,18 @@ describe('VizJson — null', () => {
 });
 
 describe('VizJson — string value', () => {
-    test('renders a string value as JSON (with quotes)', () => {
+    test('shows error for string value', () => {
         const wrapper = shallowMount(VizJson, { props: { value: 'hello' } });
-        expect(wrapper.text()).toContain('"hello"');
+        expect(wrapper.text()).toContain('JSON viz requires an object or array');
+        expect(wrapper.text()).toContain('string');
+    });
+});
+
+describe('VizJson — boolean value', () => {
+    test('shows error for boolean value', () => {
+        const wrapper = shallowMount(VizJson, { props: { value: true } });
+        expect(wrapper.text()).toContain('JSON viz requires an object or array');
+        expect(wrapper.text()).toContain('boolean');
     });
 });
 
@@ -43,19 +53,24 @@ describe('VizJson — error prop', () => {
         expect(wrapper.text()).toContain('ReferenceError: x is not defined');
     });
 
-    test('error takes precedence over value', () => {
+    test('error prop takes precedence over primitive error', () => {
         const wrapper = shallowMount(VizJson, { props: { value: 99, error: 'oops' } });
         expect(wrapper.text()).toContain('oops');
-        expect(wrapper.text()).not.toContain('99');
+        expect(wrapper.text()).not.toContain('JSON viz requires');
     });
 
-    test('pre element has text-red-600 class when error is set', () => {
+    test('pre element has text-red-600 class when error prop is set', () => {
         const wrapper = shallowMount(VizJson, { props: { value: null, error: 'oops' } });
         expect(wrapper.find('pre').classes()).toContain('text-red-600');
     });
 
-    test('pre element does not have text-red-600 class when there is no error', () => {
+    test('pre element has text-red-600 class when value is primitive', () => {
         const wrapper = shallowMount(VizJson, { props: { value: 42 } });
+        expect(wrapper.find('pre').classes()).toContain('text-red-600');
+    });
+
+    test('pre element does not have text-red-600 class for object value', () => {
+        const wrapper = shallowMount(VizJson, { props: { value: { a: 1 } } });
         expect(wrapper.find('pre').classes()).not.toContain('text-red-600');
     });
 });

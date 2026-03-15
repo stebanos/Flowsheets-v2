@@ -15,7 +15,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
     const results = reactive({});
     const evaluatorMap = new Map(); // Map<blockId, { scope: EffectScope, evaluator: ComputedRef }>
     const idToName = new Map();     // Map<blockId, blockName>
-    const nameToId = new Map();     // Map<blockName, blockId>
+    const nameToId = reactive({});  // reactive: blockName → blockId; enables getEvaluation reactivity
 
     function createBlockEvaluator(block) {
         let lastCache = null;
@@ -87,7 +87,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                 const name = idToName.get(id);
                 if (name) {
                     delete results[name];
-                    nameToId.delete(name);
+                    delete nameToId[name];
                 }
                 idToName.delete(id);
             }
@@ -109,10 +109,10 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                         (newName, oldName) => {
                             if (oldName && oldName !== newName) {
                                 delete results[oldName];
-                                nameToId.delete(oldName);
+                                delete nameToId[oldName];
                             }
                             idToName.set(id, newName);
-                            nameToId.set(newName, id);
+                            nameToId[newName] = id;
                         },
                         { immediate: true }
                     );
@@ -125,7 +125,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
     );
 
     function getEvaluation(name) {
-        const id = nameToId.get(name);
+        const id = nameToId[name]; // reactive read — Vue tracks this dependency
         if (!id) { return { value: null, error: `no block named "${name}"` }; }
         const entry = evaluatorMap.get(id);
         return entry ? entry.evaluator.value : { value: null, error: `no block named "${name}"` };
@@ -135,7 +135,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         for (const { scope } of evaluatorMap.values()) { scope.stop(); }
         evaluatorMap.clear();
         idToName.clear();
-        nameToId.clear();
+        for (const key of Object.keys(nameToId)) { delete nameToId[key]; }
     }
 
     return { getEvaluation, dispose };
