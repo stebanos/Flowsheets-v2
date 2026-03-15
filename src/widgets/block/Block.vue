@@ -6,7 +6,7 @@ import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
-import BlockMenu from '@/widgets/block-menu';
+import { BlockMenu } from '@/widgets/block-menu';
 
 const props = defineProps({
     block: {
