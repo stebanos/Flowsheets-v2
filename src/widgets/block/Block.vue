@@ -7,6 +7,7 @@ import { useResize } from '@/features/block/resize';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
 import { BlockMenu } from '@/widgets/block-menu';
+import { VIZ_TYPES } from '@/features/block/visualize';
 
 const props = defineProps({
     block: {
@@ -109,18 +110,7 @@ watch(() => props.block.height, h => {
     }
 });
 
-const outputContentEl = ref(null);
-let outputRo = null;
-
-watch(outputContentEl, el => {
-    outputRo?.disconnect();
-    if (!el) { return; }
-    outputRo = new ResizeObserver(() => { rawOutputHeight.value = el.offsetHeight; });
-    outputRo.observe(el);
-}, { immediate: true });
-
 onBeforeUnmount(() => {
-    outputRo?.disconnect();
     resizeCleanup?.();
 });
 
@@ -132,6 +122,8 @@ const blockPositionStyle = computed(() => ({
 }));
 
 const outputOverflowY = computed(() => {
+    const vizType = props.block.visualizationType ?? 'default';
+    if (vizType !== 'default') { return 'hidden'; }
     if (isList.value) { return outputItems.value.length > MAX_OUTPUT_ROWS ? 'auto' : 'hidden'; }
     return rawOutputHeight.value > MAX_OUTPUT_ROWS * cellHeight.value ? 'auto' : 'hidden';
 });
@@ -139,17 +131,16 @@ const outputOverflowY = computed(() => {
 const formattedResult = computed(() => {
     const evaluation = blockEval.value;
     if (evaluation?.error) { return 'null'; }
-
     const v = evaluation ? evaluation.value : undefined;
     if (v === undefined) { return 'undefined'; }
     if (v === null) { return 'null'; }
     if (typeof v === 'string') { return v; }
-    try {
-        return JSON.stringify(v);
-    } catch {
-        return String(v);
-    }
+    try { return JSON.stringify(v); } catch { return String(v); }
 });
+
+const activeVizComponent = computed(() =>
+    VIZ_TYPES[props.block.visualizationType ?? 'default']?.component ?? VIZ_TYPES.default.component
+);
 
 // Inputs panel
 const panelOpen = ref(false);
@@ -258,15 +249,16 @@ watch(
             :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error' }"
             @animationend="flashType = null">
-            <template v-if="isList">
-                <div v-for="(item, i) in outputItems" :key="i"
-                    class="h-6 min-h-6 flex items-center px-2 font-mono text-[13px]"
-                    :class="{ 'border-t border-gray-100': i > 0 }">{{ item }}</div>
-            </template>
-            <div v-else ref="outputContentEl" class="px-2 py-1">
-                <span v-if="blockEval.error" class="text-red-600">{{ blockEval.error }}</span>
-                <span v-else>{{ formattedResult }}</span>
-            </div>
+            <component
+                :is="activeVizComponent"
+                :value="outputValue"
+                :error="blockEval?.error ?? null"
+                :block="block"
+                :is-list="isList"
+                :output-items="outputItems"
+                class="h-full w-full"
+                @update:content-height="rawOutputHeight = $event"
+            />
         </div>
         <div class="block-handle absolute box-border h-3 w-3 mb-0.5 mr-0.5 cursor-se-resize select-none border-r-2 border-b-2 border-gray-300 bg-transparent"
             @mousedown.stop.prevent="handleStartResize(block, $event)">

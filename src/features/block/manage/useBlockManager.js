@@ -18,7 +18,9 @@ export function useBlockManager() {
             width: cellWidth.value,
             height: 3 * unitY.value,
             code,
-            inputModes: {}
+            inputModes: {},
+            visualizationType: 'default',
+            vizOptions: {}
         });
     }
 
