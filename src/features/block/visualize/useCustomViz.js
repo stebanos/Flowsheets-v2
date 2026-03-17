@@ -67,6 +67,18 @@ function getComponent(name) {
     return customVizes[name]?.component ?? null;
 }
 
+// Bulk-load vizes from a persisted map { [name]: { source } }.
+// Clears existing state (delete old keys — never replace the reactive object).
+// Each viz is compiled via runViz; draft initializes to source.
+function loadVizes(vizMap) {
+    for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
+    activeVizName.value = null;
+    for (const [name, { source }] of Object.entries(vizMap)) {
+        customVizes[name] = { source: null, draft: source, component: null, error: null };
+        runViz(name, source);
+    }
+}
+
 export function useCustomViz() {
-    return { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent };
+    return { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes };
 }

@@ -20,7 +20,10 @@ export function useBlockManager() {
             code,
             inputModes: {},
             visualizationType: 'default',
-            vizOptions: {}
+            vizOptions: {},
+            isStringConcat: false,
+            userMinWidth: null,
+            userMinEditorHeight: null
         });
     }
 

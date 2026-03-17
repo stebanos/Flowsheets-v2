@@ -1,0 +1,102 @@
+import { ref, watch } from 'vue';
+import { useBlockStore } from '@/entities/block';
+import { useCustomViz } from '@/features/block/visualize/useCustomViz';
+import { useSheetStore } from '@/entities/sheet';
+import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
+
+// Module-level singletons — shared across all callers (BlockEditorPage + TopBar)
+// Values: null | 'saving' | 'saved' | 'restored' | 'error'
+const localStatus = ref(null);
+const localError = ref(null);
+
+let initialised = false;
+
+export function useLocalStorage() {
+    const { blocks } = useBlockStore();
+    const { customVizes, loadVizes } = useCustomViz();
+    const { ensureActiveSheet } = useSheetStore();
+
+    // Plain variable — not reactive, only read inside watcher callback
+    let loading = false;
+    let saveTimer = null;
+
+    function _save() {
+        const { id, name } = ensureActiveSheet();
+        try {
+            const serialized = serializeSheet(blocks, customVizes, name);
+            const sheetsRaw = localStorage.getItem('flowsheets.sheets');
+            const sheets = sheetsRaw ? JSON.parse(sheetsRaw) : {};
+            sheets[id] = { name, blocks: serialized.blocks };
+            localStorage.setItem('flowsheets.sheets', JSON.stringify(sheets));
+            localStorage.setItem('flowsheets.customVizes', JSON.stringify(serialized.customVizes));
+            localStatus.value = 'saved';
+        } catch (err) {
+            if (err.name === 'QuotaExceededError') {
+                localStatus.value = 'error';
+                localError.value = 'Auto-save failed — your browser storage is full. Save your work as a file to avoid losing it.';
+            } else {
+                localStatus.value = 'error';
+                localError.value = err.message;
+            }
+        }
+    }
+
+    function _scheduleSave() {
+        if (saveTimer !== null) { clearTimeout(saveTimer); }
+        localStatus.value = 'saving';
+        saveTimer = setTimeout(() => {
+            saveTimer = null;
+            _save();
+        }, 500);
+    }
+
+    function loadFromStorage() {
+        loading = true;
+        const { id } = ensureActiveSheet();
+        const sheetsRaw = localStorage.getItem('flowsheets.sheets');
+        const sheets = sheetsRaw ? JSON.parse(sheetsRaw) : {};
+        const sheetData = sheets[id];
+
+        if (sheetData?.blocks) {
+            const vizesRaw = localStorage.getItem('flowsheets.customVizes');
+            const savedVizes = vizesRaw ? JSON.parse(vizesRaw) : {};
+
+            const { blocks: loadedBlocks } = deserializeSheet({
+                version: 1,
+                name: sheetData.name ?? 'Untitled',
+                blocks: sheetData.blocks,
+                customVizes: savedVizes
+            });
+
+            // Clear and repopulate blocks — splice, never replace the reactive array
+            blocks.splice(0, blocks.length);
+            for (const block of loadedBlocks) { blocks.push(block); }
+
+            loadVizes(savedVizes);
+
+            localStatus.value = 'restored';
+            setTimeout(() => {
+                if (localStatus.value === 'restored') { localStatus.value = 'saved'; }
+            }, 2500);
+        } else {
+            // First open — no saved data
+            localStatus.value = null;
+        }
+
+        loading = false;
+    }
+
+    if (!initialised) {
+        initialised = true;
+        watch(
+            [blocks, customVizes],
+            () => {
+                if (loading) { return; }
+                _scheduleSave();
+            },
+            { deep: true }
+        );
+    }
+
+    return { localStatus, localError, loadFromStorage };
+}

@@ -47,8 +47,8 @@ const rawEditorWidth = ref(props.block.width);
 const rawOutputHeight = ref(cellHeight.value);
 
 // Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
-const manualMinEditorHeight = ref(0);
-const manualMinWidth = ref(0);
+const manualMinEditorHeight = ref(props.block.userMinEditorHeight ?? 0);
+const manualMinWidth = ref(props.block.userMinWidth ?? 0);
 
 const MAX_OUTPUT_ROWS = 15;
 
@@ -232,6 +232,10 @@ function handleStartResize(block, event) {
     };
     const onUp = () => {
         isResizingLocal.value = false;
+        updateBlock(props.block.id, {
+            userMinWidth: manualMinWidth.value,
+            userMinEditorHeight: manualMinEditorHeight.value
+        });
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
         resizeCleanup = null;
