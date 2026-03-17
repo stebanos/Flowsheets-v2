@@ -94,7 +94,7 @@ const showSaveFile = computed(() => fileName.value !== null);
 </script>
 
 <template>
-    <div class="flex items-center h-10 px-3 bg-[#111827] text-white flex-shrink-0 gap-4">
+    <div class="relative flex items-center h-10 px-3 bg-[#111827] text-white flex-shrink-0">
         <!-- Left: sheet name -->
         <div class="flex items-center gap-1.5 min-w-0">
             <span
@@ -118,47 +118,33 @@ const showSaveFile = computed(() => fileName.value !== null);
             <span class="text-[#6b7280] text-xs select-none">▾</span>
         </div>
 
-        <!-- Center: status zone -->
-        <div class="flex-1 text-center text-xs" :class="[statusClass, 'text-[#9ca3af]']">
+        <!-- Center: status zone (absolutely centered so left/right sections don't affect it) -->
+        <div
+            class="absolute left-1/2 -translate-x-1/2 text-xs pointer-events-none"
+            :class="[statusClass, 'text-[#9ca3af]']"
+        >
             {{ statusText }}
         </div>
 
         <!-- Right: actions -->
-        <div class="flex items-center gap-1 flex-shrink-0">
-            <p-button
-                label="Open"
-                severity="secondary"
-                text
-                size="small"
-                class="text-[#9ca3af] hover:text-white px-2"
+        <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
+            <button
+                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
                 @click="openFilePicker"
-            />
-            <p-button
+            >Open</button>
+            <button
                 v-if="showSaveFile"
-                label="Save file"
-                severity="secondary"
-                text
-                size="small"
-                class="text-[#9ca3af] hover:text-white px-2"
+                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
                 @click="saveSheet"
-            />
-            <p-button
-                label="Save As"
-                severity="secondary"
-                text
-                size="small"
-                class="text-[#9ca3af] hover:text-white px-2"
+            >Save file</button>
+            <button
+                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
                 @click="saveSheetAs"
-            />
-            <p-button
-                icon="pi pi-code"
-                severity="secondary"
-                text
-                rounded
-                size="small"
-                class="text-[#9ca3af] hover:text-white"
+            >Save As</button>
+            <button
+                class="text-[#9ca3af] hover:text-white hover:bg-white/10 p-1.5 rounded transition-colors"
                 @click="toggleSidebar"
-            />
+            ><i class="pi pi-code text-sm" /></button>
         </div>
     </div>
 

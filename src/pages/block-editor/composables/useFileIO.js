@@ -1,5 +1,8 @@
 import { ref, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
+
+// Prevent Vite HMR from resetting module-level state (fileHandle would be lost on hot reload)
+if (import.meta.hot) { import.meta.hot.decline(); }
 import { useCustomViz } from '@/features/block/visualize/useCustomViz';
 import { useSheetStore } from '@/entities/sheet';
 import { serializeSheet, deserializeSheet, migrate } from '@/shared/lib/persistence';
