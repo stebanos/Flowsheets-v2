@@ -1,12 +1,13 @@
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onBeforeUnmount, toRaw } from 'vue';
 import { useCellDimensions } from '@/shared/composables';
 import { useSidebar } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
-import { BlockName } from '@/features/block/name';
+import { BlockName, usePendingNameFocus } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
+import { useBlockManager } from '@/features/block/manage';
 import { BlockMenu } from '@/widgets/block-menu';
 import { VIZ_TYPES } from '@/features/block/visualize';
 import { useCustomViz } from '@/features/block/visualize/useCustomViz';
@@ -39,6 +40,8 @@ const props = defineProps({
 
 const { blocks, updateBlock } = useBlockStore();
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
+const { createBlock } = useBlockManager();
+const { pendingFocusBlockName } = usePendingNameFocus();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
@@ -248,6 +251,29 @@ function handleStartResize(block, event) {
     window.addEventListener('mouseup', onUp);
 }
 
+function outputsEqual(a, b) {
+    if (a === b) { return true; }
+    try { return JSON.stringify(toRaw(a)) === JSON.stringify(toRaw(b)); } catch { return false; }
+}
+
+function onExtract(selectedText) {
+    const outputBefore = blockEval.value?.error ? null : toRaw(blockEval.value?.value);
+    const x = props.block.x + snappedEditorWidth.value + cellWidth.value;
+    const y = props.block.y;
+    const newName = createBlock({ x, y }, null, selectedText);
+    updateBlock(props.block.id, { inputModes: { ...props.block.inputModes, [newName]: 'each' } });
+    pendingFocusBlockName.value = newName;
+
+    nextTick(() => {
+        const outputAfter = blockEval.value?.error ? null : toRaw(blockEval.value?.value);
+        if (!outputsEqual(outputBefore, outputAfter)) {
+            updateBlock(props.block.id, { inputModes: { ...props.block.inputModes, [newName]: 'all' } });
+        }
+    });
+
+    return newName;
+}
+
 const isMenuOpen = ref(false);
 const isHighlighted = computed(() => props.hovered === props.block.name);
 
@@ -329,6 +355,7 @@ watch(
             <code-editor class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :isStringConcat="block.isStringConcat"
                 :inputModes="block.inputModes || {}"
+                :onExtract
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>

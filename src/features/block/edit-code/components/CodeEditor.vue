@@ -5,8 +5,9 @@ import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
-import { Decoration, EditorView, ViewPlugin } from '@codemirror/view';
+import { Decoration, EditorView, ViewPlugin, keymap } from '@codemirror/view';
 import { useHoveredReference } from '../composables/useHoveredReference';
+import { useExtractSelection } from '../composables/useExtractSelection';
 
 const props = defineProps({
     code: {
@@ -32,6 +33,10 @@ const props = defineProps({
     inputModes: {
         type: Object,
         default: () => ({})
+    },
+    onExtract: {
+        type: Function,
+        default: null
     }
 });
 
@@ -163,14 +168,27 @@ const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference({
 
 const blockNames = computed(() => props.blocks.map(b => b.name));
 
+const extractKeymap = keymap.of([{
+    key: 'Mod-Shift-x',
+    run() {
+        if (props.onExtract && hasSelection.value && selectionIsValid.value) {
+            extractSelection();
+            return true;
+        }
+        return false;
+    }
+}]);
+
 const extensions = computed(() => {
     const blockPlugin = blockNameHighlighter(blockNames.value, props.isStringConcat, props.inputModes);
-
-    return [
+    const ext = [
         autocompletion({ activateOnTyping: false }),
         fillTheme,
-        blockPlugin
+        blockPlugin,
+        updateListenerExtension
     ];
+    if (props.onExtract) { ext.push(extractKeymap); }
+    return ext;
 });
 
 const code = computed({
@@ -180,6 +198,14 @@ const code = computed({
 
 const cm = ref();
 const editorView = computed(() => cm.value?.view);
+
+const {
+    hasSelection,
+    selectionIsValid,
+    selectionInvalidReason,
+    extractSelection,
+    updateListenerExtension
+} = useExtractSelection(editorView, props.onExtract);
 
 // defaultCharacterWidth starts at 7 (CM6 hardcoded fallback) and becomes accurate
 // after the first requestMeasure() cycle. Read it via editorView so it's always current.
@@ -226,7 +252,18 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <code-mirror ref="cm" basic :lang :extensions v-model="code" :class="{ 'is-string-mode': isStringConcat }" />
+    <div class="extract-wrapper relative h-full w-full">
+        <code-mirror ref="cm" basic :lang :extensions v-model="code" :class="{ 'is-string-mode': isStringConcat }" class="h-full w-full" />
+        <button
+            v-if="onExtract && hasSelection"
+            class="extract-btn absolute top-0.5 right-0.5 z-10 h-5 w-5 flex items-center justify-center text-xs font-bold leading-none rounded cursor-pointer border select-none"
+            :class="selectionIsValid ? 'bg-black text-white border-black hover:bg-gray-700' : 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed'"
+            :disabled="!selectionIsValid"
+            :title="selectionIsValid ? 'Extract to new block (⌘⇧X)' : selectionInvalidReason"
+            @mousedown.prevent="extractSelection">
+            →
+        </button>
+    </div>
 </template>
 
 <style scoped>

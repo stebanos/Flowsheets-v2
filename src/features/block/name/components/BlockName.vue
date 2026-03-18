@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useBlockName } from '../composables/useBlockName';
+import { usePendingNameFocus } from '../composables/usePendingNameFocus';
 
 const props = defineProps({
     name: {
@@ -31,6 +32,15 @@ const name = computed({
 });
 
 const { isEditing, editName, startEdit, saveName, cancelEdit } = useBlockName(name, nameInput, props.blocks, props.identifiersByBlock);
+
+const { pendingFocusBlockName } = usePendingNameFocus();
+
+onMounted(() => {
+    if (pendingFocusBlockName.value === props.name) {
+        pendingFocusBlockName.value = null;
+        startEdit();
+    }
+});
 </script>
 
 <template>

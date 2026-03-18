@@ -9,10 +9,11 @@ export function useBlockManager() {
     function createBlock({x, y}, name = null, code = '1 + 1') {
         const blockIds = blocks.map(block => block.id);
         const existingNames = blocks.map(block => block.name);
+        const resolvedName = name ? generateUniqueNameFromName(name, existingNames) : generateUniqueName(existingNames);
 
         addBlock({
             id: generateUniqueId(blockIds),
-            name: name ? generateUniqueNameFromName(name, existingNames) : generateUniqueName(existingNames),
+            name: resolvedName,
             x: Math.floor(x / cellWidth.value) * cellWidth.value,
             y: Math.floor(y / unitY.value) * unitY.value,
             width: cellWidth.value,
@@ -25,6 +26,8 @@ export function useBlockManager() {
             userMinWidth: null,
             userMinEditorHeight: null
         });
+
+        return resolvedName;
     }
 
     return {
