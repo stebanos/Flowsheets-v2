@@ -13,7 +13,7 @@ let initialised = false;
 
 export function useLocalStorage() {
     const { blocks } = useBlockStore();
-    const { customVizes, loadVizes } = useCustomViz();
+    const { customVizes, activeVizName, loadVizes } = useCustomViz();
     const { ensureActiveSheet } = useSheetStore();
 
     // Plain variable — not reactive, only read inside watcher callback
@@ -29,6 +29,7 @@ export function useLocalStorage() {
             sheets[id] = { name, blocks: serialized.blocks };
             localStorage.setItem('flowsheets.sheets', JSON.stringify(sheets));
             localStorage.setItem('flowsheets.customVizes', JSON.stringify(serialized.customVizes));
+            if (activeVizName.value) { localStorage.setItem('flowsheets.activeVizName', activeVizName.value); }
             localStatus.value = 'saved';
         } catch (err) {
             if (err.name === 'QuotaExceededError') {
@@ -73,6 +74,8 @@ export function useLocalStorage() {
             for (const block of loadedBlocks) { blocks.push(block); }
 
             loadVizes(savedVizes);
+            const savedActive = localStorage.getItem('flowsheets.activeVizName');
+            if (savedActive && customVizes[savedActive]) { activeVizName.value = savedActive; }
 
             localStatus.value = 'restored';
             setTimeout(() => {
@@ -89,7 +92,7 @@ export function useLocalStorage() {
     if (!initialised) {
         initialised = true;
         watch(
-            [blocks, customVizes],
+            [blocks, customVizes, activeVizName],
             () => {
                 if (loading) { return; }
                 _scheduleSave();

@@ -30,7 +30,7 @@ const props = defineProps({
     block: { type: Object, required: true }
 });
 
-const { getComponent, customVizes } = useCustomViz();
+const { getComponent, customVizes, setErrorPanel } = useCustomViz();
 
 const name = computed(() => props.block.vizOptions?.customVizName ?? null);
 const component = computed(() => name.value ? getComponent(name.value) : null);
@@ -38,7 +38,10 @@ const component = computed(() => name.value ? getComponent(name.value) : null);
 const isStale = computed(() => {
     if (!name.value || !customVizes[name.value]) { return false; }
     const entry = customVizes[name.value];
-    return entry.source !== null && entry.draft !== entry.source;
+    if (entry.source === null) { return false; }
+    return entry.draft.template !== entry.source.template
+        || entry.draft.script !== entry.source.script
+        || entry.draft.style !== entry.source.style;
 });
 
 const renderError = ref(null);
@@ -46,6 +49,7 @@ const isFlashing = ref(false);
 
 onErrorCaptured((err) => {
     renderError.value = String(err?.message ?? err);
+    if (name.value) { setErrorPanel(name.value, 'template'); }
     return false;
 });
 

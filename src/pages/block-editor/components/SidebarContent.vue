@@ -1,9 +1,9 @@
 <template>
     <div class="flex flex-col h-full">
-        <!-- Tab strip -->
+        <!-- Outer tab strip -->
         <div class="flex items-end border-b border-gray-200 bg-gray-50 flex-shrink-0 overflow-x-auto">
             <div v-for="name in vizNames" :key="name"
-                 class="flex items-center px-3 h-8 border-r border-gray-200 cursor-pointer select-none text-sm whitespace-nowrap"
+                 class="flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
                  :class="name === activeVizName ? 'bg-white border-t-2 border-t-black -mt-px' : 'text-gray-500 hover:text-gray-800'"
                  @click="switchTab(name)"
                  @dblclick="startRename(name)">
@@ -23,7 +23,7 @@
                           title="Unsaved changes" />
                 </template>
             </div>
-            <button class="px-3 h-8 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none flex-shrink-0"
+            <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none flex-shrink-0"
                     title="New visualization"
                     @click="handleCreate">+</button>
         </div>
@@ -36,10 +36,35 @@
                     @click="handleCreate">Create your first visualization</button>
         </div>
 
-        <!-- Editor -->
-        <div v-else class="flex-1 min-h-0 overflow-hidden">
-            <code-mirror ref="cm" basic :lang="jsLang" :extensions v-model="editorCode" class="h-full" />
-        </div>
+        <!-- Panel sub-tab strip + editors -->
+        <template v-else>
+            <!-- Inner sub-tab strip -->
+            <div class="flex items-center border-b border-gray-200 flex-shrink-0"
+                 style="background: #f3f4f6; height: 30px;">
+                <button v-for="panel in panels" :key="panel.id"
+                        class="relative px-3 h-full cursor-pointer select-none flex items-center gap-1"
+                        style="font-size: 12px;"
+                        :class="panel.id === activePanel ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+                        @click="activePanel = panel.id">
+                    <span>{{ panel.label }}</span>
+                    <!-- Error dot -->
+                    <span v-if="activeEntry?.errorPanel === panel.id"
+                          class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block flex-shrink-0"
+                          title="Error in this panel" />
+                    <!-- Active underline -->
+                    <span v-if="panel.id === activePanel"
+                          class="absolute bottom-0 left-0 right-0"
+                          style="border-bottom: 2px solid #111827;" />
+                </button>
+            </div>
+
+            <!-- Editors (v-show keeps CM instances alive) -->
+            <div class="flex-1 min-h-0 overflow-hidden">
+                <code-mirror v-show="activePanel === 'template'" ref="cmTemplate" basic :lang="htmlLang" :extensions v-model="templateCode" class="h-full text-sm" />
+                <code-mirror v-show="activePanel === 'script'" ref="cmScript" basic :lang="jsLang" :extensions v-model="scriptCode" class="h-full text-sm" />
+                <code-mirror v-show="activePanel === 'style'" ref="cmStyle" basic :lang="cssLang" :extensions v-model="styleCode" class="h-full text-sm" />
+            </div>
+        </template>
 
         <!-- Run bar -->
         <div v-if="vizNames.length > 0"
@@ -65,16 +90,32 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { javascript } from '@codemirror/lang-javascript';
+import { html } from '@codemirror/lang-html';
+import { css } from '@codemirror/lang-css';
 import { keymap, EditorView } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
 import { useCustomViz } from '@/features/block/visualize/useCustomViz';
 
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
 
+const htmlLang = html();
 const jsLang = javascript();
+const cssLang = css();
 const fillTheme = EditorView.theme({ '&': { height: '100%' } });
 
-const editorCode = ref('');
+const panels = [
+    { id: 'template', label: 'Template' },
+    { id: 'script', label: 'Script' },
+    { id: 'style', label: 'Style' }
+];
+
+// Per-panel editor refs
+const templateCode = ref('');
+const scriptCode = ref('');
+const styleCode = ref('');
+
+// Active sub-panel (resets to 'template' on viz tab switch)
+const activePanel = ref('template');
 
 // --- Tab state ---
 const editingTabName = ref(null);
@@ -83,11 +124,20 @@ const renameInput = ref(null);
 
 const vizNames = computed(() => Object.keys(customVizes));
 const activeEntry = computed(() => activeVizName.value ? customVizes[activeVizName.value] : null);
-const isDirty = computed(() => !!activeEntry.value && activeEntry.value.draft !== activeEntry.value.source);
+
+const isDirty = computed(() => {
+    if (!activeEntry.value) { return false; }
+    const { draft, source } = activeEntry.value;
+    if (!source) { return false; }
+    return draft.template !== source.template || draft.script !== source.script || draft.style !== source.style;
+});
 
 function isDirtyTab(name) {
     const entry = customVizes[name];
-    return entry && entry.draft !== entry.source;
+    if (!entry || !entry.source) { return false; }
+    return entry.draft.template !== entry.source.template
+        || entry.draft.script !== entry.source.script
+        || entry.draft.style !== entry.source.style;
 }
 
 // --- Run bar state ---
@@ -117,13 +167,39 @@ function switchTab(name) {
 watch(activeVizName, (newName) => {
     editingTabName.value = null;
     showSuccess.value = false;
-    editorCode.value = newName && customVizes[newName] ? customVizes[newName].draft : '';
+    activePanel.value = 'template';
+    const entry = newName && customVizes[newName] ? customVizes[newName] : null;
+    templateCode.value = entry ? entry.draft.template : '';
+    scriptCode.value = entry ? entry.draft.script : '';
+    styleCode.value = entry ? entry.draft.style : '';
 }, { immediate: true });
 
-// Save draft on every edit
-watch(editorCode, (code) => {
-    if (activeVizName.value) { saveDraft(activeVizName.value, code); }
-    showSuccess.value = false;
+// Save draft on every edit — each panel watcher updates only its field
+watch(templateCode, (code) => {
+    if (!activeVizName.value) { return; }
+    const entry = customVizes[activeVizName.value];
+    if (entry) {
+        saveDraft(activeVizName.value, { ...entry.draft, template: code });
+        showSuccess.value = false;
+    }
+});
+
+watch(scriptCode, (code) => {
+    if (!activeVizName.value) { return; }
+    const entry = customVizes[activeVizName.value];
+    if (entry) {
+        saveDraft(activeVizName.value, { ...entry.draft, script: code });
+        showSuccess.value = false;
+    }
+});
+
+watch(styleCode, (code) => {
+    if (!activeVizName.value) { return; }
+    const entry = customVizes[activeVizName.value];
+    if (entry) {
+        saveDraft(activeVizName.value, { ...entry.draft, style: code });
+        showSuccess.value = false;
+    }
 });
 
 // --- Create ---
@@ -158,8 +234,8 @@ function cancelRename() {
 
 // --- Run ---
 function handleRun() {
-    if (!activeVizName.value) { return; }
-    runViz(activeVizName.value, editorCode.value);
+    if (!activeVizName.value || !activeEntry.value) { return; }
+    runViz(activeVizName.value, activeEntry.value.draft);
     if (!activeEntry.value?.error) {
         showSuccess.value = true;
         clearTimeout(successTimeout);
@@ -170,7 +246,12 @@ function handleRun() {
 function handleRevert() {
     if (!activeVizName.value) { return; }
     revertDraft(activeVizName.value);
-    editorCode.value = activeEntry.value?.source ?? '';
+    const entry = activeEntry.value;
+    if (entry?.source) {
+        templateCode.value = entry.source.template;
+        scriptCode.value = entry.source.script;
+        styleCode.value = entry.source.style;
+    }
 }
 
 // --- Platform ---
