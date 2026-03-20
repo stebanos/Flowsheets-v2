@@ -126,7 +126,7 @@ function runViz(name, draft) {
             ? () => ({})
             : new Function('Vue', 'props', draft.script);
 
-        const scopeId = `data-v-viz-${name.toLowerCase().replace(/\s+/g, '-')}`;
+        const scopeId = `data-v-viz-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         injectStyle(name, draft.style || '', scopeId);
 
         entry.component = markRaw({
