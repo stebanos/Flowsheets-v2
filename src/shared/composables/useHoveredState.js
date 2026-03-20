@@ -2,7 +2,7 @@ import { ref } from 'vue';
 
 const hovered = ref(null);
 
-export function useHoveredReference() {
+export function useHoveredState() {
     function setHovered(name) {
         hovered.value = name || null;
     }

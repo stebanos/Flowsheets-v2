@@ -9,7 +9,7 @@ vi.mock('@/entities/block', () => ({
 // Controlled getEvaluation — returns whatever compareValue is set to
 let compareValue = null;
 vi.mock('@/features/block/evaluation', () => ({
-    useEvaluationContext: () => ({
+    useBlockEvaluation: () => ({
         getEvaluation: () => ({ value: compareValue, error: null })
     })
 }));

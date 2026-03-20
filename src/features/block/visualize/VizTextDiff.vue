@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useEvaluationContext } from '@/features/block/evaluation';
+import { useBlockEvaluation } from '@/features/block/evaluation';
 import { diffLines } from '@/shared/lib/diff';
 
 const props = defineProps({
@@ -13,7 +13,7 @@ const props = defineProps({
 });
 
 const { updateBlock } = useBlockStore();
-const { getEvaluation } = useEvaluationContext();
+const { getEvaluation } = useBlockEvaluation();
 
 const compareBlockName = computed(() => props.block.vizOptions?.compareBlock ?? '');
 

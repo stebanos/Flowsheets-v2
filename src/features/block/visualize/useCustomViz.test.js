@@ -122,13 +122,13 @@ describe('runViz', () => {
         expect(styleEl.textContent).toContain('div');
     });
 
-    test('wraps template in scoping div', () => {
+    test('sets __scopeId on the compiled component', () => {
         createViz();
         const name = activeVizName.value;
         runViz(name, { template: '<span>hi</span>', script: '', style: '' });
         const comp = customVizes[name].component;
-        expect(comp.template).toMatch(/^<div class="viz-scope-/);
-        expect(comp.template).toContain('<span>hi</span>');
+        expect(comp.__scopeId).toMatch(/^data-v-viz-/);
+        expect(comp.template).toBe('<span>hi</span>');
     });
 });
 
@@ -186,7 +186,7 @@ describe('loadVizes', () => {
         loadVizes({ MyViz: { source } });
         expect(Object.keys(customVizes)).toEqual(['MyViz']);
         expect(customVizes['MyViz'].component).not.toBeNull();
-        expect(activeVizName.value).toBeNull();
+        expect(activeVizName.value).toBe('MyViz');
     });
 
     test('compiles each viz via runViz', () => {

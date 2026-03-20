@@ -1,22 +1,16 @@
 <script setup>
-import { useSidebar } from '@/shared/composables';
-import { useBlockStore } from '@/entities/block';
-import { useHoveredReference } from './composables';
+import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
+import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useBlockManager } from '@/features/block/manage';
-import { useEvaluationContext } from '@/features/block/evaluation';
-import { useBlockDependencies } from '@/entities/block';
-import { useCellDimensions } from '@/shared/composables';
-import { Block } from '@/widgets/block';
-import { BlockGrid } from '@/widgets/block-grid';
-import SidebarContent from './components/SidebarContent.vue';
-import TopBar from './components/TopBar.vue';
-import { useLocalStorage } from './composables/useLocalStorage';
-import { useFileIO } from './composables/useFileIO';
+import { useBlockEvaluation } from '@/features/block/evaluation';
+import { Block, BlockGrid } from '@/widgets';
+import { useFileIO, useLocalStorage } from './composables';
+import { SidebarContent, TopBar } from './components';
 
-const context = useEvaluationContext();
+const context = useBlockEvaluation();
 const { blocks } = useBlockStore();
 const { createBlock } = useBlockManager();
-const { hovered, setHovered, clearHovered } = useHoveredReference();
+const { hovered, setHovered, clearHovered } = useHoveredState();
 const { isOpen: sidebarOpen } = useSidebar();
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
 const { identifiersByBlock } = useBlockDependencies();

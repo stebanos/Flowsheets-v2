@@ -1,2 +1,3 @@
-export { useSidebar } from './useSidebar';
 export { useCellDimensions } from './useCellDimensions';
+export { useHoveredState } from './useHoveredState';
+export { useSidebar } from './useSidebar';
