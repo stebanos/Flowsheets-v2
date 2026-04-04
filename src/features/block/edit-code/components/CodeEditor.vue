@@ -8,6 +8,7 @@ import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, keymap } from '@codemirror/view';
 import { useHoveredReference } from '../composables/useHoveredReference';
 import { useExtractSelection } from '../composables/useExtractSelection';
+import { templateLiteralHighlighting, findExpressionRanges } from '../cm-extensions/templateLiteralLanguage';
 
 const props = defineProps({
     code: {
@@ -70,28 +71,6 @@ function isInDeclaration(tree, pos) {
     return false;
 }
 
-// Returns [{from, to}] of each ${...} expression body (brace-depth aware, excludes delimiters).
-function findExpressionRanges(text) {
-    const ranges = [];
-    let i = 0;
-    while (i < text.length) {
-        if (text[i] === '$' && text[i + 1] === '{') {
-            const start = i + 2;
-            let depth = 1;
-            let j = start;
-            while (j < text.length && depth > 0) {
-                if (text[j] === '{') { depth++; }
-                else if (text[j] === '}') { depth--; }
-                j++;
-            }
-            if (depth === 0) { ranges.push({ from: start, to: j - 1 }); }
-            i = j;
-        } else {
-            i++;
-        }
-    }
-    return ranges;
-}
 
 function blockNameHighlighter(blockNames, isStringConcat, inputModes) {
     if (!blockNames || blockNames.length === 0) {
@@ -187,6 +166,7 @@ const extensions = computed(() => {
         blockPlugin,
         updateListenerExtension
     ];
+    if (props.isStringConcat) { ext.push(templateLiteralHighlighting()); }
     if (props.onExtract) { ext.push(extractKeymap); }
     return ext;
 });
