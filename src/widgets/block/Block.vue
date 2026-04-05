@@ -308,7 +308,7 @@ watch(() => props.block.sortClause, (val, old) => {
 
 function onSortToggle() {
     if (props.block.sortClause === null) {
-        updateBlock(props.block.id, { sortClause: '' });
+        updateBlock(props.block.id, { sortClause: 'item' });
     } else {
         sortOpen.value = !sortOpen.value;
     }
