@@ -14,6 +14,9 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
             const ids = b.isStringConcat
                 ? extractTemplateIdentifiers(code)
                 : extractFreeIdentifiers(code);
+            if (b.filterClause) {
+                for (const id of extractFreeIdentifiers(b.filterClause)) { ids.add(id); }
+            }
             identifiersByBlock[b.name] = Array.from(ids);
         }
 
@@ -23,7 +26,7 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
     }
 
     watch(
-        () => blocks.map(b => ({ code: b.code, name: b.name, isStringConcat: b.isStringConcat })),
+        () => blocks.map(b => ({ code: b.code, name: b.name, isStringConcat: b.isStringConcat, filterClause: b.filterClause })),
         () => {
             if (debounceMs === 0) {
                 updateAll();

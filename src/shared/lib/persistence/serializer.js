@@ -9,7 +9,8 @@ const PERSISTED_BLOCK_FIELDS = [
     'visualizationType',
     'vizOptions',
     'userMinWidth',
-    'userMinEditorHeight'
+    'userMinEditorHeight',
+    'filterClause'
 ];
 
 /**
@@ -69,7 +70,8 @@ export function deserializeSheet(json) {
         visualizationType: block.visualizationType ?? 'default',
         vizOptions: block.vizOptions ?? {},
         userMinWidth: block.userMinWidth ?? null,
-        userMinEditorHeight: block.userMinEditorHeight ?? null
+        userMinEditorHeight: block.userMinEditorHeight ?? null,
+        filterClause: block.filterClause ?? null
     }));
 
     const vizes = json.customVizes ?? {};

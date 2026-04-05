@@ -1,5 +1,5 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { evaluateInContext, buildTemplateExpression } from '@/shared/lib/evaluator';
+import { evaluateInContext, buildTemplateExpression, applyFilter } from '@/shared/lib/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -30,6 +30,8 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                 return mode === 'each' && Array.isArray(results[dep]);
             });
 
+            const allBlockNames = new Set(blocks.map(b => b.name));
+
             if (iterDeps.length === 0) {
                 const code = block.isStringConcat
                     ? buildTemplateExpression(block.code || '')
@@ -42,6 +44,13 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     lastCache
                 );
                 lastCache = out.cache;
+
+                if (block.filterClause && !out.error) {
+                    const filtered = applyFilter(out.value, block.filterClause, n => results[n], allBlockNames);
+                    results[block.name] = filtered.value;
+                    return { value: filtered.value, error: filtered.error };
+                }
+
                 results[block.name] = out.value;
                 return { value: out.value, error: out.error };
             }
@@ -65,6 +74,13 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             }
 
             lastCache = null;
+
+            if (block.filterClause && !firstError) {
+                const filtered = applyFilter(resultArr, block.filterClause, n => results[n], allBlockNames);
+                results[block.name] = filtered.value;
+                return { value: filtered.value, error: filtered.error };
+            }
+
             results[block.name] = resultArr;
             return { value: resultArr, error: firstError };
         });

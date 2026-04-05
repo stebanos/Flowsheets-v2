@@ -47,6 +47,7 @@ const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
 const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
+const rawFilterHeight = ref(cellHeight.value);
 const rawOutputHeight = ref(cellHeight.value);
 
 // Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
@@ -58,6 +59,10 @@ const MAX_OUTPUT_ROWS = 15;
 const snappedEditorHeight = computed(() => {
     const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
     return Math.max(contentHeight, manualMinEditorHeight.value);
+});
+const snappedFilterHeight = computed(() => {
+    if (props.block.filterClause === null) { return 0; }
+    return Math.max(1, Math.ceil(rawFilterHeight.value / cellHeight.value)) * cellHeight.value;
 });
 const snappedEditorWidth = computed(() => {
     const contentWidth = Math.max(cellWidth.value, Math.ceil(rawEditorWidth.value / unitX.value) * unitX.value);
@@ -88,10 +93,10 @@ const snappedOutputHeight = computed(() => {
     return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
 });
 
-// Total block height: header + editor + output, always snapped to grid rows.
+// Total block height: header + editor + filter (if any) + output, always snapped to grid rows.
 // Drives the visual outline directly. block.height kept in sync for serialization/resize.
 const snappedBlockHeight = computed(() =>
-    cellHeight.value + snappedEditorHeight.value + snappedOutputHeight.value
+    cellHeight.value + snappedEditorHeight.value + snappedFilterHeight.value + snappedOutputHeight.value
 );
 
 watch(snappedBlockHeight, h => {
@@ -112,8 +117,8 @@ watch(() => props.block.width, w => {
 
 watch(() => props.block.height, h => {
     if (h !== snappedBlockHeight.value) {
-        // block.height = header (1 row) + editor + output; isolate the editor portion
-        rawEditorHeight.value = h - cellHeight.value - snappedOutputHeight.value;
+        // block.height = header (1 row) + editor + filter + output; isolate the editor portion
+        rawEditorHeight.value = h - cellHeight.value - snappedFilterHeight.value - snappedOutputHeight.value;
     }
 });
 
@@ -358,6 +363,14 @@ watch(
                 :onExtract
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
+        </div>
+        <div v-if="block.filterClause !== null" class="block-filter w-full border-t border-gray-300 flex items-stretch" :style="{ height: snappedFilterHeight + 'px' }">
+            <span class="flex items-center px-1.5 text-[10px] text-gray-400 font-mono select-none border-r border-gray-200 bg-gray-50">filter:</span>
+            <code-editor class="block-filter-editor flex-1 h-full min-w-0" :code="block.filterClause" :blocks :setHovered :clearHovered
+                :isStringConcat="false"
+                :inputModes="{}"
+                @update:code="updateBlock(block.id, { filterClause: $event })"
+                @update:content-height="rawFilterHeight = $event" />
         </div>
         <div class="block-output w-full border-t border-gray-300 bg-white"
             :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"

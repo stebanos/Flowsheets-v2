@@ -27,7 +27,8 @@ const menuItems = computed(() => [
         command: () => updateBlock(props.block.id, { isStringConcat: !props.block.isStringConcat })
     },
     {
-        label: 'Add filter'
+        label: props.block.filterClause !== null ? 'Remove filter' : 'Add filter',
+        command: () => updateBlock(props.block.id, { filterClause: props.block.filterClause !== null ? null : '' })
     }
 ]);
 
