@@ -12,6 +12,6 @@
  * @param {{ id: string, name: string, x: number, y: number, width: number, height: number, code?: string }} fields
  * @returns {Block}
  */
-export function createBlock({ id, name, x, y, width, height, code = '', isStringConcat = false, visualizationType = 'default', vizOptions = {}, filterClause = null }) {
-    return { id, name, x, y, width, height, code, isStringConcat, visualizationType, vizOptions, filterClause };
+export function createBlock({ id, name, x, y, width, height, code = '', isStringConcat = false, visualizationType = 'default', vizOptions = {}, filterClause = null, sortClause = null }) {
+    return { id, name, x, y, width, height, code, isStringConcat, visualizationType, vizOptions, filterClause, sortClause };
 }

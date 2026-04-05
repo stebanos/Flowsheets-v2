@@ -48,6 +48,7 @@ const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 const rawEditorHeight = ref(cellHeight.value);
 const rawEditorWidth = ref(props.block.width);
 const rawFilterHeight = ref(cellHeight.value);
+const rawSortHeight = ref(cellHeight.value);
 const rawOutputHeight = ref(cellHeight.value);
 
 // Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
@@ -56,6 +57,7 @@ const manualMinWidth = ref(props.block.userMinWidth ?? 0);
 
 const MAX_OUTPUT_ROWS = 15;
 const filterOpen = ref(false);
+const sortOpen = ref(false);
 
 const snappedEditorHeight = computed(() => {
     const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
@@ -64,6 +66,10 @@ const snappedEditorHeight = computed(() => {
 const snappedFilterHeight = computed(() => {
     if (!filterOpen.value || props.block.filterClause === null) { return 0; }
     return Math.max(1, Math.ceil(rawFilterHeight.value / cellHeight.value)) * cellHeight.value;
+});
+const snappedSortHeight = computed(() => {
+    if (!sortOpen.value || props.block.sortClause === null) { return 0; }
+    return Math.max(1, Math.ceil(rawSortHeight.value / cellHeight.value)) * cellHeight.value;
 });
 const snappedEditorWidth = computed(() => {
     const contentWidth = Math.max(cellWidth.value, Math.ceil(rawEditorWidth.value / unitX.value) * unitX.value);
@@ -94,10 +100,10 @@ const snappedOutputHeight = computed(() => {
     return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
 });
 
-// Total block height: header + editor + filter (if any) + output, always snapped to grid rows.
+// Total block height: header + editor + filter (if any) + sort (if any) + output, always snapped to grid rows.
 // Drives the visual outline directly. block.height kept in sync for serialization/resize.
 const snappedBlockHeight = computed(() =>
-    cellHeight.value + snappedEditorHeight.value + snappedFilterHeight.value + snappedOutputHeight.value
+    cellHeight.value + snappedEditorHeight.value + snappedFilterHeight.value + snappedSortHeight.value + snappedOutputHeight.value
 );
 
 watch(snappedBlockHeight, h => {
@@ -118,8 +124,8 @@ watch(() => props.block.width, w => {
 
 watch(() => props.block.height, h => {
     if (h !== snappedBlockHeight.value) {
-        // block.height = header (1 row) + editor + filter + output; isolate the editor portion
-        rawEditorHeight.value = h - cellHeight.value - snappedFilterHeight.value - snappedOutputHeight.value;
+        // block.height = header (1 row) + editor + filter + sort + output; isolate the editor portion
+        rawEditorHeight.value = h - cellHeight.value - snappedFilterHeight.value - snappedSortHeight.value - snappedOutputHeight.value;
     }
 });
 
@@ -294,6 +300,19 @@ function onFilterToggle() {
         filterOpen.value = !filterOpen.value;
     }
 }
+
+watch(() => props.block.sortClause, (val, old) => {
+    if (old === null && val !== null) { sortOpen.value = true; }
+    if (val === null || val === '') { sortOpen.value = false; }
+});
+
+function onSortToggle() {
+    if (props.block.sortClause === null) {
+        updateBlock(props.block.id, { sortClause: '' });
+    } else {
+        sortOpen.value = !sortOpen.value;
+    }
+}
 const isHighlighted = computed(() => props.hovered === props.block.name);
 
 const flashType = ref(null);
@@ -314,7 +333,7 @@ watch(
          :style="blockPositionStyle"
          :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block :onFilterToggle class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
+            <block-menu :block :onFilterToggle :onSortToggle class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @update:name="updateBlock(block.id, { name: $event })"
@@ -386,6 +405,14 @@ watch(
                 @update:code="updateBlock(block.id, { filterClause: $event })"
                 @update:content-height="rawFilterHeight = $event" />
         </div>
+        <div v-if="sortOpen && block.sortClause !== null" class="block-sort w-full border-t border-gray-300 flex items-stretch" :style="{ height: snappedSortHeight + 'px' }">
+            <span class="flex items-center px-1.5 text-[10px] text-gray-400 font-mono select-none border-r border-gray-200 bg-gray-50">sort:</span>
+            <code-editor class="block-sort-editor flex-1 h-full min-w-0" :code="block.sortClause" :blocks :setHovered :clearHovered
+                :isStringConcat="false"
+                :inputModes="{}"
+                @update:code="updateBlock(block.id, { sortClause: $event })"
+                @update:content-height="rawSortHeight = $event" />
+        </div>
         <div class="block-output w-full border-t border-gray-300 bg-white"
             :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error' }"
@@ -439,7 +466,8 @@ watch(
     0%   { background-color: #fca5a5; }
     100% { background-color: white; }
 }
-.block-filter :deep(.cm-gutters) {
+.block-filter :deep(.cm-gutters),
+.block-sort :deep(.cm-gutters) {
     display: none;
 }
 </style>

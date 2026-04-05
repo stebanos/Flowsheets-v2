@@ -1,5 +1,5 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { evaluateInContext, buildTemplateExpression, applyFilter } from '@/shared/lib/evaluator';
+import { evaluateInContext, buildTemplateExpression, applyFilter, applySort } from '@/shared/lib/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -47,8 +47,19 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
 
                 if (block.filterClause && !out.error) {
                     const filtered = applyFilter(out.value, block.filterClause, n => results[n], allBlockNames);
+                    if (block.sortClause && !filtered.error) {
+                        const sorted = applySort(filtered.value, block.sortClause, n => results[n], allBlockNames);
+                        results[block.name] = sorted.value;
+                        return { value: sorted.value, error: sorted.error };
+                    }
                     results[block.name] = filtered.value;
                     return { value: filtered.value, error: filtered.error };
+                }
+
+                if (block.sortClause && !out.error) {
+                    const sorted = applySort(out.value, block.sortClause, n => results[n], allBlockNames);
+                    results[block.name] = sorted.value;
+                    return { value: sorted.value, error: sorted.error };
                 }
 
                 results[block.name] = out.value;
@@ -77,8 +88,19 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
 
             if (block.filterClause && !firstError) {
                 const filtered = applyFilter(resultArr, block.filterClause, n => results[n], allBlockNames);
+                if (block.sortClause && !filtered.error) {
+                    const sorted = applySort(filtered.value, block.sortClause, n => results[n], allBlockNames);
+                    results[block.name] = sorted.value;
+                    return { value: sorted.value, error: sorted.error };
+                }
                 results[block.name] = filtered.value;
                 return { value: filtered.value, error: filtered.error };
+            }
+
+            if (block.sortClause && !firstError) {
+                const sorted = applySort(resultArr, block.sortClause, n => results[n], allBlockNames);
+                results[block.name] = sorted.value;
+                return { value: sorted.value, error: sorted.error };
             }
 
             results[block.name] = resultArr;

@@ -17,6 +17,9 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
             if (b.filterClause) {
                 for (const id of extractFreeIdentifiers(b.filterClause)) { ids.add(id); }
             }
+            if (b.sortClause) {
+                for (const id of extractFreeIdentifiers(b.sortClause)) { ids.add(id); }
+            }
             identifiersByBlock[b.name] = Array.from(ids);
         }
 
@@ -26,7 +29,7 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
     }
 
     watch(
-        () => blocks.map(b => ({ code: b.code, name: b.name, isStringConcat: b.isStringConcat, filterClause: b.filterClause })),
+        () => blocks.map(b => ({ code: b.code, name: b.name, isStringConcat: b.isStringConcat, filterClause: b.filterClause, sortClause: b.sortClause })),
         () => {
             if (debounceMs === 0) {
                 updateAll();

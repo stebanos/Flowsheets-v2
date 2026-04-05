@@ -29,6 +29,9 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
                 if (b.filterClause) {
                     updates.filterClause = renameIdentifier(b.filterClause, oldName, newName);
                 }
+                if (b.sortClause) {
+                    updates.sortClause = renameIdentifier(b.sortClause, oldName, newName);
+                }
                 updateBlock(b.id, updates);
             }
         } catch {

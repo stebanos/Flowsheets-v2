@@ -14,6 +14,10 @@ const props = defineProps({
     onFilterToggle: {
         type: Function,
         default: null
+    },
+    onSortToggle: {
+        type: Function,
+        default: null
     }
 });
 
@@ -33,6 +37,10 @@ const menuItems = computed(() => [
     {
         label: props.block.filterClause !== null ? 'Toggle filter' : 'Add filter',
         command: () => props.onFilterToggle?.()
+    },
+    {
+        label: props.block.sortClause !== null ? 'Toggle sort' : 'Add sort',
+        command: () => props.onSortToggle?.()
     }
 ]);
 
