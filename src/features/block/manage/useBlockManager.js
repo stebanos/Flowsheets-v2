@@ -24,7 +24,9 @@ export function useBlockManager() {
             vizOptions: {},
             isStringConcat: false,
             userMinWidth: null,
-            userMinEditorHeight: null
+            userMinEditorHeight: null,
+            filterClause: null,
+            sortClause: null
         });
 
         return resolvedName;

@@ -47,3 +47,5 @@ jspm_packages
 components.d.ts
 
 dist/
+
+test-results
