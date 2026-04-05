@@ -10,6 +10,10 @@ const props = defineProps({
     block: {
         type: Object,
         required: true
+    },
+    onFilterToggle: {
+        type: Function,
+        default: null
     }
 });
 
@@ -27,8 +31,8 @@ const menuItems = computed(() => [
         command: () => updateBlock(props.block.id, { isStringConcat: !props.block.isStringConcat })
     },
     {
-        label: props.block.filterClause !== null ? 'Remove filter' : 'Add filter',
-        command: () => updateBlock(props.block.id, { filterClause: props.block.filterClause !== null ? null : '' })
+        label: props.block.filterClause !== null ? 'Toggle filter' : 'Add filter',
+        command: () => props.onFilterToggle?.()
     }
 ]);
 

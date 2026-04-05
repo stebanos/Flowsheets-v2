@@ -55,13 +55,14 @@ const manualMinEditorHeight = ref(props.block.userMinEditorHeight ?? 0);
 const manualMinWidth = ref(props.block.userMinWidth ?? 0);
 
 const MAX_OUTPUT_ROWS = 15;
+const filterOpen = ref(false);
 
 const snappedEditorHeight = computed(() => {
     const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
     return Math.max(contentHeight, manualMinEditorHeight.value);
 });
 const snappedFilterHeight = computed(() => {
-    if (props.block.filterClause === null) { return 0; }
+    if (!filterOpen.value || props.block.filterClause === null) { return 0; }
     return Math.max(1, Math.ceil(rawFilterHeight.value / cellHeight.value)) * cellHeight.value;
 });
 const snappedEditorWidth = computed(() => {
@@ -280,6 +281,19 @@ function onExtract(selectedText) {
 }
 
 const isMenuOpen = ref(false);
+
+watch(() => props.block.filterClause, (val, old) => {
+    if (old === null && val !== null) { filterOpen.value = true; }
+    if (val === null) { filterOpen.value = false; }
+});
+
+function onFilterToggle() {
+    if (props.block.filterClause === null) {
+        updateBlock(props.block.id, { filterClause: '' });
+    } else {
+        filterOpen.value = !filterOpen.value;
+    }
+}
 const isHighlighted = computed(() => props.hovered === props.block.name);
 
 const flashType = ref(null);
@@ -300,7 +314,7 @@ watch(
          :style="blockPositionStyle"
          :class="[isHighlighted ? 'outline-black' : 'outline-gray-300', {'menu-visible': isMenuOpen, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
         <div class="block-header relative px-2 has-[input]:px-0.25 border-b border-gray-300" :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
-            <block-menu :block class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
+            <block-menu :block :onFilterToggle class="block-menu absolute not-group-hover:invisible group-[.menu-visible]:visible group-[.resizing-local]:invisible" @menu-toggle="isMenuOpen = $event" />
             <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                 class="block-name min-h-6 h-6 flex items-center justify-center w-full cursor-move"
                 @update:name="updateBlock(block.id, { name: $event })"
@@ -364,7 +378,7 @@ watch(
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
-        <div v-if="block.filterClause !== null" class="block-filter w-full border-t border-gray-300 flex items-stretch" :style="{ height: snappedFilterHeight + 'px' }">
+        <div v-if="filterOpen && block.filterClause !== null" class="block-filter w-full border-t border-gray-300 flex items-stretch" :style="{ height: snappedFilterHeight + 'px' }">
             <span class="flex items-center px-1.5 text-[10px] text-gray-400 font-mono select-none border-r border-gray-200 bg-gray-50">filter:</span>
             <code-editor class="block-filter-editor flex-1 h-full min-w-0" :code="block.filterClause" :blocks :setHovered :clearHovered
                 :isStringConcat="false"
@@ -424,5 +438,8 @@ watch(
 @keyframes output-flash-error {
     0%   { background-color: #fca5a5; }
     100% { background-color: white; }
+}
+.block-filter :deep(.cm-gutters) {
+    display: none;
 }
 </style>
