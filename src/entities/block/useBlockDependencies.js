@@ -1,6 +1,6 @@
 import { reactive, computed, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { extractFreeIdentifiers, extractTemplateIdentifiers } from '@/shared/lib/evaluator';
+import { extractFreeIdentifiers, extractTemplateIdentifiers, detectStringMode } from '@/shared/lib/evaluator';
 
 export function useBlockDependencies({ debounceMs = 750 } = {}) {
     const { blocks } = useBlockStore();
@@ -11,15 +11,9 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
         const nameSet = new Set(blocks.map(b => b.name));
         for (const b of blocks) {
             const code = b.code || '';
-            const ids = b.isStringConcat
+            const ids = detectStringMode(code)
                 ? extractTemplateIdentifiers(code)
                 : extractFreeIdentifiers(code);
-            if (b.filterClause) {
-                for (const id of extractFreeIdentifiers(b.filterClause)) { ids.add(id); }
-            }
-            if (b.sortClause) {
-                for (const id of extractFreeIdentifiers(b.sortClause)) { ids.add(id); }
-            }
             identifiersByBlock[b.name] = Array.from(ids);
         }
 
@@ -29,7 +23,7 @@ export function useBlockDependencies({ debounceMs = 750 } = {}) {
     }
 
     watch(
-        () => blocks.map(b => ({ code: b.code, name: b.name, isStringConcat: b.isStringConcat, filterClause: b.filterClause, sortClause: b.sortClause })),
+        () => blocks.map(b => ({ code: b.code, name: b.name })),
         () => {
             if (debounceMs === 0) {
                 updateAll();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildTemplateExpression, extractTemplateIdentifiers } from './string-template';
+import { buildTemplateExpression, extractTemplateIdentifiers, detectStringMode } from './string-template';
 
 describe('buildTemplateExpression', () => {
     it('wraps plain text in backticks', () => {
@@ -59,5 +59,31 @@ describe('extractTemplateIdentifiers', () => {
     it('returns empty set on broken expression syntax', () => {
         const ids = extractTemplateIdentifiers('${(((broken}');
         expect(ids.size).toBe(0);
+    });
+});
+
+describe('detectStringMode', () => {
+    it('returns true for text with ${} interpolation', () => {
+        expect(detectStringMode('hello ${name}')).toBe(true);
+    });
+
+    it('returns true when expression starts with ${}', () => {
+        expect(detectStringMode('${greeting}, world!')).toBe(true);
+    });
+
+    it('returns false for valid JS expressions', () => {
+        expect(detectStringMode('numbers.filter(n => n > 0)')).toBe(false);
+    });
+
+    it('returns false for a plain identifier', () => {
+        expect(detectStringMode('name')).toBe(false);
+    });
+
+    it('returns false for a JS template literal (already backtick-wrapped)', () => {
+        expect(detectStringMode('`hello ${name}`')).toBe(false);
+    });
+
+    it('returns false for JS code that uses template syntax internally', () => {
+        expect(detectStringMode('obj[`${key}`]')).toBe(false);
     });
 });

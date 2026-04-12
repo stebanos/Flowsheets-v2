@@ -8,7 +8,6 @@ const makeBlock = (overrides = {}) => ({
     width: 300,
     height: 120,
     code: '42',
-    isStringConcat: false,
     inputModes: {},
     visualizationType: 'default',
     vizOptions: {},
@@ -33,7 +32,6 @@ describe('serializeSheet', () => {
         expect(b.x).toBe(150);
         expect(b.y).toBe(48);
         expect(b.code).toBe('42');
-        expect(b.isStringConcat).toBe(false);
         expect(b.inputModes).toEqual({});
         expect(b.visualizationType).toBe('default');
         expect(b.vizOptions).toEqual({});
@@ -89,7 +87,6 @@ describe('deserializeSheet', () => {
         const { blocks } = deserializeSheet(json);
         const b = blocks[0];
 
-        expect(b.isStringConcat).toBe(false);
         expect(b.inputModes).toEqual({});
         expect(b.visualizationType).toBe('default');
         expect(b.vizOptions).toEqual({});
@@ -107,7 +104,6 @@ describe('deserializeSheet', () => {
                 x: 0,
                 y: 0,
                 code: '1',
-                isStringConcat: true,
                 inputModes: { bar: 'each' },
                 visualizationType: 'html',
                 vizOptions: { customVizName: 'Table' },
@@ -120,7 +116,6 @@ describe('deserializeSheet', () => {
         const { blocks } = deserializeSheet(json);
         const b = blocks[0];
 
-        expect(b.isStringConcat).toBe(true);
         expect(b.inputModes).toEqual({ bar: 'each' });
         expect(b.visualizationType).toBe('html');
         expect(b.vizOptions).toEqual({ customVizName: 'Table' });

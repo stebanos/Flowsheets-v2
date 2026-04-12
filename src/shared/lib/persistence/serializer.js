@@ -4,14 +4,11 @@ const PERSISTED_BLOCK_FIELDS = [
     'x',
     'y',
     'code',
-    'isStringConcat',
     'inputModes',
     'visualizationType',
     'vizOptions',
     'userMinWidth',
-    'userMinEditorHeight',
-    'filterClause',
-    'sortClause'
+    'userMinEditorHeight'
 ];
 
 /**
@@ -66,14 +63,11 @@ export function deserializeSheet(json) {
 
     const blocks = (json.blocks ?? []).map((block) => ({
         ...block,
-        isStringConcat: block.isStringConcat ?? false,
         inputModes: block.inputModes ?? {},
         visualizationType: block.visualizationType ?? 'default',
         vizOptions: block.vizOptions ?? {},
         userMinWidth: block.userMinWidth ?? null,
-        userMinEditorHeight: block.userMinEditorHeight ?? null,
-        filterClause: block.filterClause ?? null,
-        sortClause: block.sortClause ?? null
+        userMinEditorHeight: block.userMinEditorHeight ?? null
     }));
 
     const vizes = json.customVizes ?? {};

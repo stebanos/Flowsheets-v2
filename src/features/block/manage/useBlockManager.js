@@ -22,11 +22,8 @@ export function useBlockManager() {
             inputModes: {},
             visualizationType: 'default',
             vizOptions: {},
-            isStringConcat: false,
             userMinWidth: null,
-            userMinEditorHeight: null,
-            filterClause: null,
-            sortClause: null
+            userMinEditorHeight: null
         });
 
         return resolvedName;

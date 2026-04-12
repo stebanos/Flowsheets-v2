@@ -25,14 +25,7 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
             for (const b of blocks) {
                 const ids = identifiersByBlock[b.name] || [];
                 if (!ids.includes(oldName)) { continue; }
-                const updates = { code: renameIdentifier(b.code || '', oldName, newName) };
-                if (b.filterClause) {
-                    updates.filterClause = renameIdentifier(b.filterClause, oldName, newName);
-                }
-                if (b.sortClause) {
-                    updates.sortClause = renameIdentifier(b.sortClause, oldName, newName);
-                }
-                updateBlock(b.id, updates);
+                updateBlock(b.id, { code: renameIdentifier(b.code || '', oldName, newName) });
             }
         } catch {
         }

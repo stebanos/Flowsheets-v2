@@ -80,7 +80,6 @@ describe('createBlock — block shape', () => {
         expect(block).toHaveProperty('inputModes');
         expect(block).toHaveProperty('visualizationType');
         expect(block).toHaveProperty('vizOptions');
-        expect(block).toHaveProperty('isStringConcat');
         expect(block).toHaveProperty('userMinWidth');
         expect(block).toHaveProperty('userMinEditorHeight');
     });

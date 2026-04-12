@@ -187,21 +187,21 @@ describe('S6 — name uniqueness', () => {
 });
 
 // ---------------------------------------------------------------------------
-// S7 — isStringConcat end-to-end
+// S7 — string mode auto-detection end-to-end
 // ---------------------------------------------------------------------------
 
-describe('S7 — isStringConcat end-to-end', () => {
-    test('string concat block interpolates dependency value', async () => {
+describe('S7 — string mode auto-detection end-to-end', () => {
+    test('block with ${} interpolation evaluates as template literal', async () => {
         addTestBlock('1', 'who', "'world'");
-        addTestBlock('2', 'msg', 'hello ${who}', { isStringConcat: true });
+        addTestBlock('2', 'msg', 'hello ${who}');
         await nextTick();
         await prime('who');
         expect(getEvaluation('msg').value).toBe('hello world');
     });
 
-    test('string concat block reacts when dependency changes', async () => {
+    test('template literal block reacts when dependency changes', async () => {
         addTestBlock('1', 'who', "'world'");
-        addTestBlock('2', 'msg', 'hello ${who}', { isStringConcat: true });
+        addTestBlock('2', 'msg', 'hello ${who}');
         await nextTick();
         await prime('who');
         expect(getEvaluation('msg').value).toBe('hello world');
@@ -210,168 +210,6 @@ describe('S7 — isStringConcat end-to-end', () => {
         await nextTick();
         await prime('who');
         expect(getEvaluation('msg').value).toBe('hello there');
-    });
-
-    test('isStringConcat block with no interpolation evaluates as plain string', async () => {
-        addTestBlock('1', 'greeting', 'hello world', { isStringConcat: true });
-        await nextTick();
-        expect(getEvaluation('greeting').value).toBe('hello world');
-    });
-});
-
-// ---------------------------------------------------------------------------
-// S9 — filterClause end-to-end
-// ---------------------------------------------------------------------------
-
-describe('S9 — filterClause end-to-end', () => {
-    test('block with filterClause filters its array result', async () => {
-        addTestBlock('1', 'nums', '[1, 2, 3, 4, 5]', { filterClause: 'item > 2' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 4, 5]);
-    });
-
-    test('filterClause updates reactively when clause changes', async () => {
-        addTestBlock('1', 'nums', '[1, 2, 3, 4, 5]', { filterClause: 'item > 2' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 4, 5]);
-
-        updateBlock('1', { filterClause: 'item > 3' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([4, 5]);
-    });
-
-    test('filterClause updates reactively when code changes', async () => {
-        addTestBlock('1', 'nums', '[1, 2, 3]', { filterClause: 'item > 1' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([2, 3]);
-
-        updateBlock('1', { code: '[10, 20, 30]' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([10, 20, 30]);
-    });
-
-    test('filterClause uses another block value as a dep', async () => {
-        addTestBlock('1', 'threshold', '3');
-        addTestBlock('2', 'nums', '[1, 2, 3, 4, 5]', { filterClause: 'item > threshold' });
-        await nextTick();
-        await prime('threshold');
-        expect(getEvaluation('nums').value).toEqual([4, 5]);
-    });
-
-    test('filterClause passes through non-array value unchanged', async () => {
-        addTestBlock('1', 'val', '42', { filterClause: 'item > 0' });
-        await nextTick();
-        expect(getEvaluation('val').value).toBe(42);
-        expect(getEvaluation('val').error).toBeNull();
-    });
-});
-
-// ---------------------------------------------------------------------------
-// S10 — sortClause end-to-end
-// ---------------------------------------------------------------------------
-
-describe('S10 — sortClause end-to-end', () => {
-    test('block with sortClause sorts its array result', async () => {
-        addTestBlock('1', 'nums', '[3, 1, 2]', { sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([1, 2, 3]);
-    });
-
-    test('sortClause updates reactively when clause changes', async () => {
-        addTestBlock('1', 'nums', '[1, 3, 2]', { sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([1, 2, 3]);
-
-        updateBlock('1', { sortClause: '-item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 2, 1]);
-    });
-
-    test('sortClause updates reactively when code changes', async () => {
-        addTestBlock('1', 'nums', '[3, 1, 2]', { sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([1, 2, 3]);
-
-        updateBlock('1', { code: '[30, 10, 20]' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([10, 20, 30]);
-    });
-
-    test('sortClause uses another block value as a dep', async () => {
-        addTestBlock('1', 'field', "'age'");
-        addTestBlock('2', 'people', "[{ age: 30 }, { age: 25 }, { age: 35 }]", { sortClause: 'item[field]' });
-        await nextTick();
-        await prime('field');
-        expect(getEvaluation('people').value).toEqual([{ age: 25 }, { age: 30 }, { age: 35 }]);
-    });
-
-    test('sortClause passes through non-array value unchanged', async () => {
-        addTestBlock('1', 'val', '42', { sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('val').value).toBe(42);
-        expect(getEvaluation('val').error).toBeNull();
-    });
-});
-
-// ---------------------------------------------------------------------------
-// S11 — filterClause + sortClause combined
-// ---------------------------------------------------------------------------
-
-describe('S11 — filterClause + sortClause combined', () => {
-    test('filter applied before sort: only filtered items are sorted', async () => {
-        addTestBlock('1', 'nums', '[5, 1, 4, 2, 3]', { filterClause: 'item > 2', sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 4, 5]);
-    });
-
-    test('combined clauses update reactively when filter changes', async () => {
-        addTestBlock('1', 'nums', '[5, 1, 4, 2, 3]', { filterClause: 'item > 2', sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 4, 5]);
-
-        updateBlock('1', { filterClause: 'item > 3' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([4, 5]);
-    });
-
-    test('combined clauses update reactively when sort changes', async () => {
-        addTestBlock('1', 'nums', '[5, 1, 4, 2, 3]', { filterClause: 'item > 2', sortClause: 'item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([3, 4, 5]);
-
-        updateBlock('1', { sortClause: '-item' });
-        await nextTick();
-        expect(getEvaluation('nums').value).toEqual([5, 4, 3]);
-    });
-});
-
-// ---------------------------------------------------------------------------
-// S12 — filterClause + sortClause on each-mode (iterated) results
-// ---------------------------------------------------------------------------
-
-describe('S12 — filterClause + sortClause on iterated results', () => {
-    test('filterClause applies to each-mode iteration result', async () => {
-        addTestBlock('1', 'nums', '[1, 2, 3, 4, 5]');
-        addTestBlock('2', 'doubled', 'nums * 2', { filterClause: 'item > 4' });
-        await nextTick();
-        await prime('nums');
-        expect(getEvaluation('doubled').value).toEqual([6, 8, 10]);
-    });
-
-    test('sortClause applies to each-mode iteration result', async () => {
-        addTestBlock('1', 'nums', '[3, 1, 2]');
-        addTestBlock('2', 'doubled', 'nums * 2', { sortClause: 'item' });
-        await nextTick();
-        await prime('nums');
-        expect(getEvaluation('doubled').value).toEqual([2, 4, 6]);
-    });
-
-    test('filter + sort combined on each-mode iteration result', async () => {
-        addTestBlock('1', 'nums', '[1, 2, 3, 4, 5]');
-        addTestBlock('2', 'doubled', 'nums * 2', { filterClause: 'item > 4', sortClause: '-item' });
-        await nextTick();
-        await prime('nums');
-        expect(getEvaluation('doubled').value).toEqual([10, 8, 6]);
     });
 });
 

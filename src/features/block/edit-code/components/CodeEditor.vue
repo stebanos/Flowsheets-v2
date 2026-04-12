@@ -9,6 +9,7 @@ import { Decoration, EditorView, ViewPlugin, keymap } from '@codemirror/view';
 import { useHoveredReference } from '../composables/useHoveredReference';
 import { useExtractSelection } from '../composables/useExtractSelection';
 import { templateLiteralHighlighting, findExpressionRanges } from '../cm-extensions/templateLiteralLanguage';
+import { detectStringMode } from '@/shared/lib/evaluator';
 
 const props = defineProps({
     code: {
@@ -27,10 +28,6 @@ const props = defineProps({
         type: Function,
         required: true
     },
-    isStringConcat: {
-        type: Boolean,
-        default: false
-    },
     inputModes: {
         type: Object,
         default: () => ({})
@@ -43,7 +40,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:code', 'update:contentHeight', 'update:contentWidth']);
 
-const lang = computed(() => props.isStringConcat ? null : javascript());
+const isStringConcat = computed(() => detectStringMode(props.code));
+const lang = computed(() => isStringConcat.value ? null : javascript());
 
 const fillTheme = EditorView.theme({
     '&': { height: '100%' }
@@ -159,14 +157,14 @@ const extractKeymap = keymap.of([{
 }]);
 
 const extensions = computed(() => {
-    const blockPlugin = blockNameHighlighter(blockNames.value, props.isStringConcat, props.inputModes);
+    const blockPlugin = blockNameHighlighter(blockNames.value, isStringConcat.value, props.inputModes);
     const ext = [
         autocompletion({ activateOnTyping: false }),
         fillTheme,
         blockPlugin,
         updateListenerExtension
     ];
-    if (props.isStringConcat) { ext.push(templateLiteralHighlighting()); }
+    if (isStringConcat.value) { ext.push(templateLiteralHighlighting()); }
     if (props.onExtract) { ext.push(extractKeymap); }
     return ext;
 });
@@ -289,7 +287,6 @@ onBeforeUnmount(() => {
 }
 
 .is-string-mode :deep(.cm-editor) {
-    background-color: #ddd;
     position: relative;
 }
 

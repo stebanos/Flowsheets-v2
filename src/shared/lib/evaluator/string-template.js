@@ -1,3 +1,4 @@
+import { parser } from '@lezer/javascript';
 import { extractFreeIdentifiers } from './ast';
 
 /**
@@ -26,4 +27,23 @@ export function buildTemplateExpression(code) {
 export function extractTemplateIdentifiers(code) {
     const escaped = code.replace(/`/g, '\\`');
     return extractFreeIdentifiers('`' + escaped + '`');
+}
+
+/**
+ * Auto-detect whether code should be treated as a template literal body.
+ * Returns true if the code contains a ${...} interpolation AND is not valid JavaScript —
+ * i.e., the entire expression is a template literal body, not JS that uses template syntax internally.
+ *
+ * @param {string} code
+ * @returns {boolean}
+ */
+function isValidJS(code) {
+    const tree = parser.parse(code);
+    let hasError = false;
+    tree.iterate({ enter: node => { if (node.type.isError) hasError = true; } });
+    return !hasError;
+}
+
+export function detectStringMode(code) {
+    return /\$\{/.test(code) && !isValidJS(code);
 }

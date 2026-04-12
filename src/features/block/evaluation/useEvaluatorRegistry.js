@@ -1,5 +1,5 @@
 import { reactive, computed, watch, effectScope } from 'vue';
-import { evaluateInContext, buildTemplateExpression, applyFilter, applySort } from '@/shared/lib/evaluator';
+import { evaluateInContext, buildTemplateExpression, detectStringMode } from '@/shared/lib/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -30,10 +30,8 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                 return mode === 'each' && Array.isArray(results[dep]);
             });
 
-            const allBlockNames = new Set(blocks.map(b => b.name));
-
             if (iterDeps.length === 0) {
-                const code = block.isStringConcat
+                const code = detectStringMode(block.code || '')
                     ? buildTemplateExpression(block.code || '')
                     : (block.code || '');
                 const out = evaluateInContext(
@@ -44,24 +42,6 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     lastCache
                 );
                 lastCache = out.cache;
-
-                if (block.filterClause && !out.error) {
-                    const filtered = applyFilter(out.value, block.filterClause, n => results[n], allBlockNames);
-                    if (block.sortClause && !filtered.error) {
-                        const sorted = applySort(filtered.value, block.sortClause, n => results[n], allBlockNames);
-                        results[block.name] = sorted.value;
-                        return { value: sorted.value, error: sorted.error };
-                    }
-                    results[block.name] = filtered.value;
-                    return { value: filtered.value, error: filtered.error };
-                }
-
-                if (block.sortClause && !out.error) {
-                    const sorted = applySort(out.value, block.sortClause, n => results[n], allBlockNames);
-                    results[block.name] = sorted.value;
-                    return { value: sorted.value, error: sorted.error };
-                }
-
                 results[block.name] = out.value;
                 return { value: out.value, error: out.error };
             }
@@ -76,7 +56,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     const mode = modes[n] ?? 'each';
                     return mode === 'each' && Array.isArray(results[n]) ? results[n][i] : results[n];
                 };
-                const iterCode = block.isStringConcat
+                const iterCode = detectStringMode(block.code || '')
                     ? buildTemplateExpression(block.code || '')
                     : (block.code || '');
                 const out = evaluateInContext(iterCode, block.name, dependsOn.value, getVal, null);
@@ -85,24 +65,6 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             }
 
             lastCache = null;
-
-            if (block.filterClause && !firstError) {
-                const filtered = applyFilter(resultArr, block.filterClause, n => results[n], allBlockNames);
-                if (block.sortClause && !filtered.error) {
-                    const sorted = applySort(filtered.value, block.sortClause, n => results[n], allBlockNames);
-                    results[block.name] = sorted.value;
-                    return { value: sorted.value, error: sorted.error };
-                }
-                results[block.name] = filtered.value;
-                return { value: filtered.value, error: filtered.error };
-            }
-
-            if (block.sortClause && !firstError) {
-                const sorted = applySort(resultArr, block.sortClause, n => results[n], allBlockNames);
-                results[block.name] = sorted.value;
-                return { value: sorted.value, error: sorted.error };
-            }
-
             results[block.name] = resultArr;
             return { value: resultArr, error: firstError };
         });
