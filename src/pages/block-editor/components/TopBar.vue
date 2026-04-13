@@ -8,7 +8,7 @@ import { useSidebar } from '@/shared/composables';
 const { activeSheetName, renameActiveSheet } = useSheetStore();
 const { localStatus, localError } = useLocalStorage();
 const { fileStatus, fileName, fileDirty, pendingImport, saveSheet, saveSheetAs, prepareImport, confirmImport, cancelImport } = useFileIO();
-const { toggle: toggleSidebar } = useSidebar();
+const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
 
 // Inline rename
 const renaming = ref(false);
@@ -94,13 +94,10 @@ const showSaveFile = computed(() => fileName.value !== null);
 </script>
 
 <template>
-    <div class="relative flex items-center h-10 px-3 bg-[#111827] text-white flex-shrink-0">
+    <div class="relative z-[1200] flex items-center h-10 px-3 bg-gray-900 text-white flex-shrink-0">
         <!-- Left: sheet name -->
         <div class="flex items-center gap-1.5 min-w-0">
-            <span
-                v-if="fileDirty"
-                class="w-1.5 h-1.5 rounded-full bg-[#6b7280] flex-shrink-0"
-            />
+            <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
             <span
                 v-if="!renaming"
                 class="text-white text-sm font-medium cursor-default select-none truncate"
@@ -112,7 +109,7 @@ const showSaveFile = computed(() => fileName.value !== null);
                 v-model="renameInput"
                 class="bg-transparent text-white text-sm font-medium border-b border-white/40 outline-none px-0 w-32"
                 @keydown.enter.stop="commitRename"
-                @keydown.escape="cancelRename"
+                @keydown.esc="cancelRename"
                 @blur="commitRename"
             />
             <span class="text-[#6b7280] text-xs select-none">▾</span>
@@ -129,22 +126,29 @@ const showSaveFile = computed(() => fileName.value !== null);
         <!-- Right: actions -->
         <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
             <button
-                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
+                class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
                 @click="openFilePicker"
             >Open</button>
             <button
                 v-if="showSaveFile"
-                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
+                class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
                 @click="saveSheet"
             >Save file</button>
             <button
-                class="text-[#9ca3af] hover:text-white hover:bg-white/10 text-sm px-2 py-1 rounded transition-colors"
+                class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
                 @click="saveSheetAs"
             >Save As</button>
             <button
-                class="text-[#9ca3af] hover:text-white hover:bg-white/10 p-1.5 rounded transition-colors"
+                :class="sidebarOpen
+                    ? 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-white bg-white/15'
+                    : 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-gray-400'"
                 @click="toggleSidebar"
-            ><i class="pi pi-code text-sm" /></button>
+            >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="2" y="2" width="12" height="12" rx="1"></rect>
+                    <line x1="11" y1="2" x2="11" y2="14"></line>
+                </svg>
+            </button>
         </div>
     </div>
 

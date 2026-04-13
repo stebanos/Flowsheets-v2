@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="extract-wrapper relative h-full w-full">
-        <code-mirror ref="cm" basic :lang :extensions v-model="code" :class="{ 'is-string-mode': isStringConcat }" class="h-full w-full" />
+        <code-mirror ref="cm" basic :lang :extensions v-model="code" :class="{ 'is-string-mode': isStringConcat }" class="h-full w-full text-xs" />
         <button
             v-if="onExtract && hasSelection"
             class="extract-btn absolute top-0.5 right-0.5 z-10 h-5 w-5 flex items-center justify-center text-xs font-bold leading-none rounded cursor-pointer border select-none"
@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
     opacity: .25;
     font-family: "Helvetica";
     font-weight: bold;
-    top: 10px;
+    top: -7px;
     right: 7px;
     pointer-events: none;
     z-index: 10;

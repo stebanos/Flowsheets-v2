@@ -49,8 +49,10 @@ async function onDrop(e) {
             <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
             <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered />
         </div>
-        <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem]">
-            <sidebar-content class="h-full" />
+        <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem] top-9.75">
+            <template #container>
+                <sidebar-content class="h-full -ml-0.25" />
+            </template>
         </p-drawer>
         <!-- Undo delete toast -->
         <transition

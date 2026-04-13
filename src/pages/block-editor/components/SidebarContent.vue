@@ -60,9 +60,9 @@
 
             <!-- Editors (v-show keeps CM instances alive) -->
             <div class="flex-1 min-h-0 overflow-hidden">
-                <code-mirror v-show="activePanel === 'template'" ref="cmTemplate" basic :lang="htmlLang" :extensions v-model="templateCode" class="h-full text-sm" />
-                <code-mirror v-show="activePanel === 'script'" ref="cmScript" basic :lang="jsLang" :extensions v-model="scriptCode" class="h-full text-sm" />
-                <code-mirror v-show="activePanel === 'style'" ref="cmStyle" basic :lang="cssLang" :extensions v-model="styleCode" class="h-full text-sm" />
+                <code-mirror v-show="activePanel === 'template'" ref="cmTemplate" basic :lang="htmlLang" :extensions v-model="templateCode" class="h-full text-xs" />
+                <code-mirror v-show="activePanel === 'script'" ref="cmScript" basic :lang="jsLang" :extensions v-model="scriptCode" class="h-full text-xs" />
+                <code-mirror v-show="activePanel === 'style'" ref="cmStyle" basic :lang="cssLang" :extensions v-model="styleCode" class="h-full text-xs" />
             </div>
         </template>
 
