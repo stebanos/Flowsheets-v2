@@ -42,7 +42,7 @@ const { blocks, updateBlock } = useBlockStore();
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { createBlock } = useBlockManager();
 const { deleteBlock } = useDeleteBlock();
-const { pendingFocusBlockName } = usePendingNameFocus();
+const { requestFocus } = usePendingNameFocus();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
@@ -272,7 +272,7 @@ function onExtract(selectedText) {
     const y = props.block.y;
     const newName = createBlock({ x, y }, null, selectedText);
     updateBlock(props.block.id, { inputModes: { ...props.block.inputModes, [newName]: 'each' } });
-    pendingFocusBlockName.value = newName;
+    requestFocus(newName);
 
     nextTick(() => {
         const outputAfter = blockEval.value?.error ? null : toRaw(blockEval.value?.value);

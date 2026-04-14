@@ -35,13 +35,10 @@ const { isEditing, editName, startEdit, saveName, cancelEdit } = useBlockName(na
 
 watch(isEditing, (val) => emit('editing-change', val));
 
-const { pendingFocusBlockName } = usePendingNameFocus();
+const { consumeFocus } = usePendingNameFocus();
 
 onMounted(() => {
-    if (pendingFocusBlockName.value === props.name) {
-        pendingFocusBlockName.value = null;
-        startEdit();
-    }
+    if (consumeFocus(props.name)) { startEdit(); }
 });
 </script>
 
