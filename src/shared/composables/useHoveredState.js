@@ -1,8 +1,8 @@
 import { ref } from 'vue';
 
-const hovered = ref(null);
-
 export function useHoveredState() {
+    const hovered = ref(null);
+
     function setHovered(name) {
         hovered.value = name || null;
     }
