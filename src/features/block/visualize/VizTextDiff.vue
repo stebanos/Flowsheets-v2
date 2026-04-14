@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useBlockEvaluation } from '@/features/block/evaluation';
 import { diffLines } from '@/shared/lib/diff';
 
 const props = defineProps({
@@ -9,11 +8,11 @@ const props = defineProps({
     error: { type: String, default: null },
     block: { type: Object, required: true },
     isList: { type: Boolean, default: false },
-    outputItems: { type: Array, default: () => [] }
+    outputItems: { type: Array, default: () => [] },
+    getEvaluation: { type: Function, required: true }
 });
 
 const { updateBlock } = useBlockStore();
-const { getEvaluation } = useBlockEvaluation();
 
 const compareBlockName = computed(() => props.block.vizOptions?.compareBlock ?? '');
 
@@ -32,7 +31,7 @@ const thisText = computed(() => props.error ? '' : stringify(props.value));
 const compareText = computed(() => {
     const name = compareBlockName.value;
     if (!name) { return ''; }
-    const ev = getEvaluation(name);
+    const ev = props.getEvaluation(name);
     if (!ev || ev.error) { return ''; }
     return stringify(ev.value);
 });
@@ -40,7 +39,7 @@ const compareText = computed(() => {
 const compareError = computed(() => {
     const name = compareBlockName.value;
     if (!name) { return null; }
-    const ev = getEvaluation(name);
+    const ev = props.getEvaluation(name);
     return ev?.error ?? null;
 });
 

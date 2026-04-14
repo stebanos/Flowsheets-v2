@@ -389,6 +389,7 @@ watch(
                 :block="block"
                 :is-list="isList"
                 :output-items="outputItems"
+                :get-evaluation="context.getEvaluation"
                 class="h-full w-full"
                 @update:content-height="rawOutputHeight = $event"
             />

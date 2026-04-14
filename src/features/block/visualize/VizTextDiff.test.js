@@ -6,23 +6,16 @@ vi.mock('@/entities/block', () => ({
     useBlockStore: () => ({ updateBlock: vi.fn() })
 }));
 
-// Controlled getEvaluation — returns whatever compareValue is set to
-let compareValue = null;
-vi.mock('@/features/block/evaluation', () => ({
-    useBlockEvaluation: () => ({
-        getEvaluation: () => ({ value: compareValue, error: null })
-    })
-}));
-
 function mount(thisValue, compareVal) {
-    compareValue = compareVal;
+    const getEvaluation = () => ({ value: compareVal, error: null });
     return shallowMount(VizTextDiff, {
         props: {
             value: thisValue,
             error: null,
             block: { id: '1', vizOptions: { compareBlock: 'other' } },
             isList: Array.isArray(thisValue),
-            outputItems: []
+            outputItems: [],
+            getEvaluation
         }
     });
 }
