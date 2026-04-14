@@ -1,6 +1,6 @@
 import { reactive, ref, markRaw } from 'vue';
 import * as Vue from 'vue';
-import { useBlockStore } from '@/entities/block/blockStore';
+import { useBlockStore } from '@/entities/block';
 
 const DEFAULT_TEMPLATE = `<div class="root">\n  {{ display }}\n</div>`;
 const DEFAULT_SCRIPT = `const { computed } = Vue;\nconst display = computed(() => props.value);\nreturn { display };`;

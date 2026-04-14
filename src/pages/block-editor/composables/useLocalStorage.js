@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useCustomViz } from '@/features/block/visualize/useCustomViz';
+import { useCustomViz } from '@/features/block/visualize';
 import { useSheetStore } from '@/entities/sheet';
 import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 

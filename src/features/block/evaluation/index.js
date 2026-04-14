@@ -1,2 +1,1 @@
-export { useBlockEvaluation } from './useBlockEvaluation.js';
-export { useEvaluatorRegistry } from './useEvaluatorRegistry';
+export { useBlockEvaluation } from './useBlockEvaluation';

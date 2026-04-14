@@ -10,7 +10,7 @@ import { CodeEditor } from '@/features/block/edit-code';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { VIZ_TYPES } from '@/features/block/visualize';
-import { useCustomViz } from '@/features/block/visualize/useCustomViz';
+import { useCustomViz } from '@/features/block/visualize';
 
 const props = defineProps({
     block: {

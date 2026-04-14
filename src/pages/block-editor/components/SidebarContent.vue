@@ -94,7 +94,7 @@ import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';
 import { keymap, EditorView } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import { useCustomViz } from '@/features/block/visualize/useCustomViz';
+import { useCustomViz } from '@/features/block/visualize';
 
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
 
