@@ -14,7 +14,7 @@ let initialised = false;
 export function useLocalStorage() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, activeVizName, loadVizes } = useCustomViz();
-    const { ensureActiveSheet } = useSheetStore();
+    const { activeSheetName, setActiveSheet, createSheetId, ensureActiveSheet } = useSheetStore();
 
     // Plain variable — not reactive, only read inside watcher callback
     let loading = false;
@@ -53,9 +53,19 @@ export function useLocalStorage() {
 
     function loadFromStorage() {
         loading = true;
-        const { id } = ensureActiveSheet();
+
+        // Bootstrap: ensure an active sheet exists in storage
         const sheetsRaw = localStorage.getItem('flowsheets.sheets');
         const sheets = sheetsRaw ? JSON.parse(sheetsRaw) : {};
+        let id = localStorage.getItem('flowsheets.activeSheet');
+        if (!id || !sheets[id]) {
+            id = createSheetId();
+            sheets[id] = { name: 'Untitled' };
+            localStorage.setItem('flowsheets.sheets', JSON.stringify(sheets));
+            localStorage.setItem('flowsheets.activeSheet', id);
+        }
+        setActiveSheet(id, sheets[id].name ?? 'Untitled');
+
         const sheetData = sheets[id];
 
         if (sheetData?.blocks) {
@@ -90,7 +100,7 @@ export function useLocalStorage() {
     if (!initialised) {
         initialised = true;
         watch(
-            [blocks, customVizes, activeVizName],
+            [blocks, customVizes, activeVizName, activeSheetName],
             () => {
                 if (loading) { return; }
                 _scheduleSave();
