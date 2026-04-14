@@ -7,14 +7,14 @@ import { Block, BlockGrid } from '@/widgets';
 import { useFileIO, useLocalStorage } from './composables';
 import { SidebarContent, TopBar } from './components';
 
-const context = useBlockEvaluation();
 const { blocks } = useBlockStore();
+const { identifiersByBlock, dependsOn } = useBlockDependencies({ debounceMs: 0 });
+const context = useBlockEvaluation(dependsOn);
 const { createBlock } = useBlockManager();
 const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { isOpen: sidebarOpen } = useSidebar();
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
-const { identifiersByBlock } = useBlockDependencies();
 setCellDimensions(150, 24);
 
 const { localStatus, loadFromStorage } = useLocalStorage();

@@ -1,14 +1,12 @@
-import { useBlockDependencies } from '@/entities/block';
 import { useBlockStore } from '@/entities/block';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
 // Module-level singleton — preserves current behavior (shared across all callers).
-// wires useBlockStore + useBlockDependencies into one shared registry
+// Caller is responsible for providing dependsOn (from useBlockDependencies).
 let registry = null;
 
-export function useBlockEvaluation() {
+export function useBlockEvaluation(dependsOn) {
     const { blocks } = useBlockStore();
-    const { dependsOn } = useBlockDependencies({ debounceMs: 0 });
 
     if (!registry) {
         registry = useEvaluatorRegistry(blocks, dependsOn);
