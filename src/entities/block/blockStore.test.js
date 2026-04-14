@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { computed } from 'vue';
+
 import { useBlockStore } from './blockStore';
 
 const { blocks, addBlock, removeBlock, updateBlock } = useBlockStore();
@@ -68,6 +69,33 @@ describe('updateBlock', () => {
         expect(code.value).toBe('1');
         updateBlock('1', { code: '99' });
         expect(code.value).toBe('99');
+    });
+});
+
+describe('replaceBlocks', () => {
+    test('replaces all blocks with the new set', () => {
+        const { blocks, addBlock, replaceBlocks } = useBlockStore();
+        addBlock({ id: '1', name: 'a', code: '1' });
+        addBlock({ id: '2', name: 'b', code: '2' });
+        replaceBlocks([{ id: '3', name: 'c', code: '3' }]);
+        expect(blocks).toHaveLength(1);
+        expect(blocks[0].id).toBe('3');
+    });
+
+    test('clears all blocks when called with an empty array', () => {
+        const { blocks, addBlock, replaceBlocks } = useBlockStore();
+        addBlock({ id: '1', name: 'a', code: '1' });
+        replaceBlocks([]);
+        expect(blocks).toHaveLength(0);
+    });
+
+    test('reactive — computed over blocks updates after replace', () => {
+        const { blocks, addBlock, replaceBlocks } = useBlockStore();
+        const count = computed(() => blocks.length);
+        addBlock({ id: '1', name: 'a', code: '1' });
+        expect(count.value).toBe(1);
+        replaceBlocks([{ id: '2', name: 'b', code: '2' }, { id: '3', name: 'c', code: '3' }]);
+        expect(count.value).toBe(2);
     });
 });
 
