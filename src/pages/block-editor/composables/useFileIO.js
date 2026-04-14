@@ -41,7 +41,7 @@ function _onSaveSuccess() {
 }
 
 export function useFileIO() {
-    const { blocks } = useBlockStore();
+    const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
     const { activeSheetName, renameActiveSheet } = useSheetStore();
 
@@ -193,8 +193,7 @@ export function useFileIO() {
         if (!pendingImport.value) { return; }
         const { blocks: importedBlocks, vizes, name } = pendingImport.value.data;
 
-        blocks.splice(0, blocks.length);
-        for (const block of importedBlocks) { blocks.push(block); }
+        replaceBlocks(importedBlocks);
 
         loadVizes(vizes);
         renameActiveSheet(name);

@@ -12,7 +12,7 @@ const localError = ref(null);
 let initialised = false;
 
 export function useLocalStorage() {
-    const { blocks } = useBlockStore();
+    const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, activeVizName, loadVizes } = useCustomViz();
     const { ensureActiveSheet } = useSheetStore();
 
@@ -69,9 +69,7 @@ export function useLocalStorage() {
                 customVizes: savedVizes
             });
 
-            // Clear and repopulate blocks — splice, never replace the reactive array
-            blocks.splice(0, blocks.length);
-            for (const block of loadedBlocks) { blocks.push(block); }
+            replaceBlocks(loadedBlocks);
 
             loadVizes(savedVizes);
             const savedActive = localStorage.getItem('flowsheets.activeVizName');

@@ -17,5 +17,10 @@ export function useBlockStore() {
         if (block) { Object.assign(block, patch); }
     }
 
-    return { blocks, addBlock, removeBlock, updateBlock };
+    function replaceBlocks(newBlocks) {
+        blocks.splice(0, blocks.length);
+        for (const block of newBlocks) { blocks.push(block); }
+    }
+
+    return { blocks, addBlock, removeBlock, replaceBlocks, updateBlock };
 }
