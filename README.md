@@ -18,9 +18,14 @@ Visit http://localhost:5173.
 # Start (after initial build)
 docker compose up
 
-# Run tests
+# Run unit/integration tests
 docker exec flowsheets npx vitest run
+
+# Run E2E tests (from the host, not Docker — needs a browser)
+npx playwright test
 
 # Install packages
 docker exec flowsheets npm install <package>
 ```
+
+> **Note:** Playwright runs on the host against the container's exposed port (5173). The container's Alpine image has no browser environment. Run `npx playwright install` on the host if browser binaries are missing.
