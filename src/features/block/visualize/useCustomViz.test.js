@@ -224,17 +224,7 @@ describe('renameViz', () => {
         expect(activeVizName.value).toBe('A');
     });
 
-    test('updates blocks whose customVizName matches the old name', () => {
-        addBlock({ id: '1', name: 'a', code: '1', visualizationType: 'custom', vizOptions: { customVizName: 'Old' } });
-        addBlock({ id: '2', name: 'b', code: '2', visualizationType: 'custom', vizOptions: { customVizName: 'Other' } });
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['Old'] = { ...stub };
-        renameViz('Old', 'New');
-        expect(blocks.find(b => b.id === '1').vizOptions.customVizName).toBe('New');
-        expect(blocks.find(b => b.id === '2').vizOptions.customVizName).toBe('Other');
-    });
-
-    test('returns false and does nothing if new name already exists', () => {
+test('returns false and does nothing if new name already exists', () => {
         const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
         customVizes['A'] = { ...stub };
         customVizes['B'] = { ...stub };

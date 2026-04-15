@@ -12,7 +12,7 @@
                            v-model="renameValue"
                            class="w-24 border border-blue-400 rounded px-1 text-xs outline-none"
                            @keydown.enter.prevent="confirmRename"
-                           @keydown.escape.prevent="cancelRename"
+                           @keydown.esc.prevent="cancelRename"
                            @blur="confirmRename"
                            @click.stop />
                 </template>
@@ -95,8 +95,10 @@ import { css } from '@codemirror/lang-css';
 import { keymap, EditorView } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
 import { useCustomViz } from '@/features/block/visualize';
+import { useBlockStore } from '@/entities/block';
 
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
+const { blocks, updateBlock } = useBlockStore();
 
 const htmlLang = html();
 const jsLang = javascript();
@@ -225,7 +227,13 @@ function confirmRename() {
     const oldName = editingTabName.value;
     const newName = renameValue.value.trim();
     editingTabName.value = null;
-    if (newName && newName !== oldName) { renameViz(oldName, newName); }
+    if (newName && newName !== oldName && renameViz(oldName, newName)) {
+        for (const block of blocks) {
+            if (block.vizOptions?.customVizName === oldName) {
+                updateBlock(block.id, { vizOptions: { ...block.vizOptions, customVizName: newName } });
+            }
+        }
+    }
 }
 
 function cancelRename() {

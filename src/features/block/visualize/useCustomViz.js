@@ -1,6 +1,6 @@
 import { reactive, ref, markRaw } from 'vue';
 import * as Vue from 'vue';
-import { useBlockStore } from '@/entities/block';
+import { injectStyle } from '@/shared/lib/css-scope';
 
 const DEFAULT_TEMPLATE = `<div class="root">\n  {{ display }}\n</div>`;
 const DEFAULT_SCRIPT = `const { computed } = Vue;\nconst display = computed(() => props.value);\nreturn { display };`;
@@ -32,88 +32,7 @@ function renameViz(oldName, newName) {
     for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
     for (const [k, v] of entries) { customVizes[k] = v; }
     if (activeVizName.value === oldName) { activeVizName.value = newName; }
-    const { blocks, updateBlock } = useBlockStore();
-    for (const block of blocks) {
-        if (block.vizOptions?.customVizName === oldName) {
-            updateBlock(block.id, { vizOptions: { ...block.vizOptions, customVizName: newName } });
-        }
-    }
     return true;
-}
-
-// Prefix each comma-separated selector with the scope attribute selector.
-// At-rules (lines starting with @) are passed through unchanged.
-// Rules inside at-rule blocks are not prefixed in v1 (known limitation).
-function scopeCSS(css, scopeId) {
-    const attr = `[${scopeId}]`;
-    // Split into rule tokens using a simple brace-depth approach
-    let result = '';
-    let i = 0;
-    let depth = 0;
-    let ruleStart = 0;
-
-    while (i < css.length) {
-        const ch = css[i];
-        if (ch === '{') {
-            if (depth === 0) {
-                // selector region: ruleStart..i
-                const selector = css.slice(ruleStart, i);
-                const trimmed = selector.trim();
-                // If this is an at-rule, pass the whole block through unchanged
-                if (trimmed.startsWith('@')) {
-                    // find matching closing brace, pass through unchanged
-                    depth++;
-                    i++;
-                    while (i < css.length && depth > 0) {
-                        if (css[i] === '{') { depth++; }
-                        else if (css[i] === '}') { depth--; }
-                        i++;
-                    }
-                    result += css.slice(ruleStart, i);
-                    ruleStart = i;
-                    continue;
-                } else {
-                    // prefix each comma-separated selector
-                    const prefixed = trimmed
-                        .split(',')
-                        .map(s => `${s.trim()}${attr}`)
-                        .join(', ');
-                    result += prefixed + ' {';
-                    depth++;
-                }
-            } else {
-                depth++;
-                result += ch;
-            }
-        } else if (ch === '}') {
-            depth--;
-            result += ch;
-            if (depth === 0) {
-                ruleStart = i + 1;
-            }
-        } else if (depth === 0) {
-            // whitespace between rules — skip (will be added implicitly via ruleStart tracking)
-        } else {
-            result += ch;
-        }
-        i++;
-    }
-    return result;
-}
-
-function escapeAttr(str) {
-    return str.replace(/"/g, '&quot;');
-}
-
-function injectStyle(name, css, scopeId) {
-    const scoped = scopeCSS(css, scopeId);
-    let el = document.head.querySelector(`style[data-viz-name="${escapeAttr(name)}"]`);
-    if (!el) {
-        el = document.createElement('style');
-        el.setAttribute('data-viz-name', name);
-        document.head.appendChild(el);
-    }
-    el.textContent = scoped;
 }
 
 function runViz(name, draft) {
