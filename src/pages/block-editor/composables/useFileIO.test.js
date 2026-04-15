@@ -1,6 +1,8 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ref, reactive } from 'vue';
 
+const mockBlocks = reactive([]);
+
 // --- Mocks ---
 
 const mockCustomVizes = reactive({});
@@ -9,7 +11,7 @@ const mockReplaceBlocks = vi.fn();
 const mockRenameActiveSheet = vi.fn();
 
 vi.mock('@/entities/block', () => ({
-    useBlockStore: () => ({ blocks: [], replaceBlocks: mockReplaceBlocks })
+    useBlockStore: () => ({ blocks: mockBlocks, replaceBlocks: mockReplaceBlocks })
 }));
 
 vi.mock('@/features/block/visualize', () => ({
