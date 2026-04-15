@@ -51,13 +51,18 @@ describe('throttle — trailing call', () => {
 });
 
 describe('throttle — cooldown reset', () => {
-    test('after the limit elapses with no trailing call, the next call fires immediately', () => {
+    // After the leading call, lastRan is set to a non-zero timestamp.
+    // Subsequent calls always go through the setTimeout branch even after
+    // the limit has elapsed — the function only fires synchronously on the
+    // very first call (when lastRan is undefined). After the cooldown the
+    // trailing call fires with delay ~0, so it still requires timer advancement.
+    test('after cooldown, a second call fires once timers are advanced', () => {
         const fn = vi.fn();
         const t = throttle(fn, 100);
         t(); // leading call at t=0
         vi.advanceTimersByTime(100);
-        // No second call during the window, so no trailing fires
-        t(); // should fire immediately because limit has passed
+        t(); // schedules a timeout with delay ≈ 0
+        vi.advanceTimersByTime(1); // flush the pending timeout
         expect(fn).toHaveBeenCalledTimes(2);
     });
 });

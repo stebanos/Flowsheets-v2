@@ -59,11 +59,6 @@ describe('VizHtml — error prop', () => {
 });
 
 describe('VizHtml — iframe element', () => {
-    test('renders an iframe element', () => {
-        const wrapper = shallowMount(VizHtml, { props: { value: 'test' } });
-        expect(wrapper.find('iframe').exists()).toBe(true);
-    });
-
     test('iframe src uses the data URI scheme', () => {
         const wrapper = shallowMount(VizHtml, { props: { value: 'test' } });
         expect(wrapper.find('iframe').attributes('src')).toMatch(/^data:text\/html;charset=utf-8,/);

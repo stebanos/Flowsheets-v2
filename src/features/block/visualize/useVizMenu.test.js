@@ -44,7 +44,8 @@ describe('vizMenuItems — built-in types', () => {
     test('built-in types (excluding custom) appear as menu items', () => {
         const block = makeBlock();
         const { vizMenuItems } = useVizMenu(block, vi.fn());
-        const labels = vizMenuItems.value.map(i => i.label).filter(Boolean);
+        // Strip any leading checkmark so the test is independent of active type
+        const labels = vizMenuItems.value.map(i => i.label?.replace(/^✔ /, '')).filter(Boolean);
         expect(labels).toContain('Default');
         expect(labels).toContain('HTML');
         expect(labels).toContain('JSON');
