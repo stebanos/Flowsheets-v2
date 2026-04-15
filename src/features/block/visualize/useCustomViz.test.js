@@ -224,7 +224,7 @@ describe('renameViz', () => {
         expect(activeVizName.value).toBe('A');
     });
 
-test('returns false and does nothing if new name already exists', () => {
+    test('returns false and does nothing if new name already exists', () => {
         const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
         customVizes['A'] = { ...stub };
         customVizes['B'] = { ...stub };

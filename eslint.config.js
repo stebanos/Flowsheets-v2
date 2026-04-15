@@ -16,6 +16,18 @@ export default [
         }
     },
     {
+        files: ['**/*.test.js', '**/*.spec.js'],
+        languageOptions: {
+            globals: globals.vitest
+        }
+    },
+    {
+        files: ['**/*.cjs'],
+        languageOptions: {
+            globals: globals.node
+        }
+    },
+    {
         name: 'app/files-to-lint',
         files: ['**/*.{js,mjs,cjs,vue}']
     },
@@ -59,7 +71,7 @@ export default [
             'boundaries/ignore': ['src/main.js']
         },
         rules: {
-            'boundaries/element-types': ['error', {
+            'boundaries/dependencies': ['error', {
                 default: 'disallow',
                 rules: [
                     { from: 'app',      allow: ['pages', 'widgets', 'features', 'entities', 'shared'] },
@@ -68,7 +80,7 @@ export default [
                     {
                         from: [['features', { featureName: '*' }]],
                         allow: [
-                            ['features', { featureName: '${from.captured.featureName}' }],
+                            ['features', { featureName: '{{from.captured.featureName}}' }],
                             'entities', 'shared'
                         ]
                     },
