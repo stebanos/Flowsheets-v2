@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount, toRaw } from 'vue';
-import { useCellDimensions } from '@/shared/composables';
+import { useCellDimensions } from '@/features/block/grid';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';

@@ -1,5 +1,6 @@
 <script setup>
-import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
+import { useHoveredState, useSidebar } from '@/shared/composables';
+import { useCellDimensions } from '@/features/block/grid';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
