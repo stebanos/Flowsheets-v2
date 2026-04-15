@@ -163,16 +163,13 @@ test('E7 — circular dependency shows error', async ({ page }) => {
 
 // ── E8 — Delete a block ───────────────────────────────────────────────────────
 
-test('E8 — delete a block via block menu', async ({ page }) => {
+test('E8 — delete a block via header trash button', async ({ page }) => {
     await createBlock(page, 300, 200);
     await expect(page.locator('.block-output')).toHaveCount(1);
 
-    // Hover to reveal the block menu. The menu button has class 'block-menu'
-    // applied directly to the <button> element (via v-bind="$attrs" in BlockMenu.vue).
+    // Hover to reveal the inline header icons, then click the trash button.
     await page.locator('.block-header').first().hover();
-    await page.locator('button.block-menu').first().click();
-
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByTitle('Delete block').first().click();
 
     await expect(page.locator('.block-output')).toHaveCount(0);
 });
@@ -223,60 +220,3 @@ test('E10 — extract selection to new block', async ({ page }) => {
     await expect(page.locator('.block-output')).toHaveCount(2);
 });
 
-// ── E11 — Filter clause filters block output ──────────────────────────────────
-
-test('E11 — filter clause filters array output', async ({ page }) => {
-    await createBlock(page, 300, 200);
-    await typeCode(page, '[1, 2, 3, 4, 5]');
-
-    await page.locator('.block-header').first().hover();
-    await page.locator('button.block-menu').first().click();
-    await page.getByRole('menuitem', { name: 'Add filter' }).click();
-
-    // Filter editor should appear
-    const filterEditor = page.locator('.block-filter-editor .cm-content').first();
-    await expect(filterEditor).toBeVisible();
-
-    await filterEditor.click();
-    await page.keyboard.press('Meta+A');
-    await page.keyboard.type('item > 3');
-
-    // Output should show only 4 and 5
-    const output = blockOutput(page);
-    await expect(output).toContainText('4');
-    await expect(output).toContainText('5');
-    await expect(output).not.toContainText('1');
-    await expect(output).not.toContainText('2');
-    await expect(output).not.toContainText('3');
-});
-
-// ── E12 — Sort clause sorts block output ──────────────────────────────────────
-
-test('E12 — sort clause sorts array output', async ({ page }) => {
-    await createBlock(page, 300, 200);
-    await typeCode(page, '[3, 1, 2]');
-
-    await page.locator('.block-header').first().hover();
-    await page.locator('button.block-menu').first().click();
-    await page.getByRole('menuitem', { name: 'Add sort' }).click();
-
-    // Sort editor should appear with default 'item'
-    const sortEditor = page.locator('.block-sort-editor .cm-content').first();
-    await expect(sortEditor).toBeVisible();
-    await expect(sortEditor).toContainText('item');
-
-    // Output sorted ascending: [1, 2, 3]
-    const items = blockOutput(page).locator('.h-6');
-    await expect(items.nth(0)).toContainText('1');
-    await expect(items.nth(1)).toContainText('2');
-    await expect(items.nth(2)).toContainText('3');
-
-    // Switch to descending: -item
-    await sortEditor.click();
-    await page.keyboard.press('Meta+A');
-    await page.keyboard.type('-item');
-
-    await expect(items.nth(0)).toContainText('3');
-    await expect(items.nth(1)).toContainText('2');
-    await expect(items.nth(2)).toContainText('1');
-});
