@@ -1,91 +1,3 @@
-<template>
-    <div class="flex flex-col h-full">
-        <!-- Outer tab strip -->
-        <div class="flex items-end border-b border-gray-200 bg-gray-50 flex-shrink-0 overflow-x-auto">
-            <div v-for="name in vizNames" :key="name"
-                 class="flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
-                 :class="name === activeVizName ? 'bg-white border-t-2 border-t-black -mt-px' : 'text-gray-500 hover:text-gray-800'"
-                 @click="switchTab(name)"
-                 @dblclick="startRename(name)">
-                <template v-if="editingTabName === name">
-                    <input ref="renameInput"
-                           v-model="renameValue"
-                           class="w-24 border border-blue-400 rounded px-1 text-xs outline-none"
-                           @keydown.enter.prevent="confirmRename"
-                           @keydown.esc.prevent="cancelRename"
-                           @blur="confirmRename"
-                           @click.stop />
-                </template>
-                <template v-else>
-                    <span>{{ name }}</span>
-                    <span v-if="isDirtyTab(name)"
-                          class="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block flex-shrink-0"
-                          title="Unsaved changes" />
-                </template>
-            </div>
-            <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none flex-shrink-0"
-                    title="New visualization"
-                    @click="handleCreate">+</button>
-        </div>
-
-        <!-- Empty state -->
-        <div v-if="vizNames.length === 0"
-             class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
-            <p class="text-sm">No custom visualizations yet.</p>
-            <button class="px-4 py-2 bg-black text-white text-sm rounded hover:bg-gray-800 cursor-pointer"
-                    @click="handleCreate">Create your first visualization</button>
-        </div>
-
-        <!-- Panel sub-tab strip + editors -->
-        <template v-else>
-            <!-- Inner sub-tab strip -->
-            <div class="flex items-center border-b border-gray-200 flex-shrink-0"
-                 style="background: #f3f4f6; height: 30px;">
-                <button v-for="panel in panels" :key="panel.id"
-                        class="relative px-3 h-full cursor-pointer select-none flex items-center gap-1"
-                        style="font-size: 12px;"
-                        :class="panel.id === activePanel ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
-                        @click="activePanel = panel.id">
-                    <span>{{ panel.label }}</span>
-                    <!-- Error dot -->
-                    <span v-if="activeEntry?.errorPanel === panel.id"
-                          class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block flex-shrink-0"
-                          title="Error in this panel" />
-                    <!-- Active underline -->
-                    <span v-if="panel.id === activePanel"
-                          class="absolute bottom-0 left-0 right-0"
-                          style="border-bottom: 2px solid #111827;" />
-                </button>
-            </div>
-
-            <!-- Editors (v-show keeps CM instances alive) -->
-            <div class="flex-1 min-h-0 overflow-hidden">
-                <code-mirror v-show="activePanel === 'template'" ref="cmTemplate" basic :lang="htmlLang" :extensions v-model="templateCode" class="h-full text-xs" />
-                <code-mirror v-show="activePanel === 'script'" ref="cmScript" basic :lang="jsLang" :extensions v-model="scriptCode" class="h-full text-xs" />
-                <code-mirror v-show="activePanel === 'style'" ref="cmStyle" basic :lang="cssLang" :extensions v-model="styleCode" class="h-full text-xs" />
-            </div>
-        </template>
-
-        <!-- Run bar -->
-        <div v-if="vizNames.length > 0"
-             class="flex items-center gap-3 px-3 py-2 bg-gray-50 border-t border-gray-200 flex-shrink-0">
-            <div class="flex-1 text-xs min-w-0">
-                <span v-if="runBarStatus === 'dirty'" class="text-gray-400 italic">Run to apply changes</span>
-                <span v-else-if="runBarStatus === 'success'" class="text-green-600">✓ Compiled</span>
-                <template v-else-if="runBarStatus === 'error'">
-                    <span class="text-red-600 break-all">{{ activeEntry?.error }}</span>
-                    <button v-if="activeEntry?.source"
-                            class="ml-2 text-red-500 underline cursor-pointer"
-                            @click="handleRevert">Revert</button>
-                </template>
-            </div>
-            <span class="text-xs text-gray-400 flex-shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
-            <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer flex-shrink-0"
-                    @click="handleRun">Run</button>
-        </div>
-    </div>
-</template>
-
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
 import CodeMirror from 'vue-codemirror6';
@@ -94,11 +6,11 @@ import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';
 import { keymap, EditorView } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import { useCustomViz } from '@/features/block/visualize';
 import { useBlockStore } from '@/entities/block';
+import { useCustomViz } from '@/features/block/visualize';
 
-const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
 const { blocks, updateBlock } = useBlockStore();
+const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
 
 const htmlLang = html();
 const jsLang = javascript();
@@ -267,3 +179,91 @@ const isMac = navigator.platform?.includes('Mac') || navigator.userAgent?.includ
 
 onBeforeUnmount(() => { clearTimeout(successTimeout); });
 </script>
+
+<template>
+    <div class="flex flex-col h-full">
+        <!-- Outer tab strip -->
+        <div class="flex items-end border-b border-gray-200 bg-gray-50 flex-shrink-0 overflow-x-auto">
+            <div v-for="name in vizNames" :key="name"
+                 class="flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
+                 :class="name === activeVizName ? 'bg-white border-t-2 border-t-black -mt-px' : 'text-gray-500 hover:text-gray-800'"
+                 @click="switchTab(name)"
+                 @dblclick="startRename(name)">
+                <template v-if="editingTabName === name">
+                    <input ref="renameInput"
+                           v-model="renameValue"
+                           class="w-24 border border-blue-400 rounded px-1 text-xs outline-none"
+                           @keydown.enter.prevent="confirmRename"
+                           @keydown.esc.prevent="cancelRename"
+                           @blur="confirmRename"
+                           @click.stop />
+                </template>
+                <template v-else>
+                    <span>{{ name }}</span>
+                    <span v-if="isDirtyTab(name)"
+                          class="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block flex-shrink-0"
+                          title="Unsaved changes" />
+                </template>
+            </div>
+            <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none flex-shrink-0"
+                    title="New visualization"
+                    @click="handleCreate">+</button>
+        </div>
+
+        <!-- Empty state -->
+        <div v-if="vizNames.length === 0"
+             class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
+            <p class="text-sm">No custom visualizations yet.</p>
+            <button class="px-4 py-2 bg-black text-white text-sm rounded hover:bg-gray-800 cursor-pointer"
+                    @click="handleCreate">Create your first visualization</button>
+        </div>
+
+        <!-- Panel sub-tab strip + editors -->
+        <template v-else>
+            <!-- Inner sub-tab strip -->
+            <div class="flex items-center border-b border-gray-200 flex-shrink-0"
+                 style="background: #f3f4f6; height: 30px;">
+                <button v-for="panel in panels" :key="panel.id"
+                        class="relative px-3 h-full cursor-pointer select-none flex items-center gap-1"
+                        style="font-size: 12px;"
+                        :class="panel.id === activePanel ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'"
+                        @click="activePanel = panel.id">
+                    <span>{{ panel.label }}</span>
+                    <!-- Error dot -->
+                    <span v-if="activeEntry?.errorPanel === panel.id"
+                          class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block flex-shrink-0"
+                          title="Error in this panel" />
+                    <!-- Active underline -->
+                    <span v-if="panel.id === activePanel"
+                          class="absolute bottom-0 left-0 right-0"
+                          style="border-bottom: 2px solid #111827;" />
+                </button>
+            </div>
+
+            <!-- Editors (v-show keeps CM instances alive) -->
+            <div class="flex-1 min-h-0 overflow-hidden">
+                <code-mirror v-show="activePanel === 'template'" ref="cmTemplate" basic :lang="htmlLang" :extensions v-model="templateCode" class="h-full text-xs" />
+                <code-mirror v-show="activePanel === 'script'" ref="cmScript" basic :lang="jsLang" :extensions v-model="scriptCode" class="h-full text-xs" />
+                <code-mirror v-show="activePanel === 'style'" ref="cmStyle" basic :lang="cssLang" :extensions v-model="styleCode" class="h-full text-xs" />
+            </div>
+        </template>
+
+        <!-- Run bar -->
+        <div v-if="vizNames.length > 0"
+             class="flex items-center gap-3 px-3 py-2 bg-gray-50 border-t border-gray-200 flex-shrink-0">
+            <div class="flex-1 text-xs min-w-0">
+                <span v-if="runBarStatus === 'dirty'" class="text-gray-400 italic">Run to apply changes</span>
+                <span v-else-if="runBarStatus === 'success'" class="text-green-600">✓ Compiled</span>
+                <template v-else-if="runBarStatus === 'error'">
+                    <span class="text-red-600 break-all">{{ activeEntry?.error }}</span>
+                    <button v-if="activeEntry?.source"
+                            class="ml-2 text-red-500 underline cursor-pointer"
+                            @click="handleRevert">Revert</button>
+                </template>
+            </div>
+            <span class="text-xs text-gray-400 flex-shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
+            <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer flex-shrink-0"
+                    @click="handleRun">Run</button>
+        </div>
+    </div>
+</template>
