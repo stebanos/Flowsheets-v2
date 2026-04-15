@@ -22,7 +22,7 @@ function onEditViz(vizName) {
     openSidebar();
     activeVizName.value = vizName;
 }
-const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
+const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 
 const { localStatus, loadFromStorage } = useLocalStorage();
@@ -31,8 +31,8 @@ const { prepareImport } = useFileIO();
 loadFromStorage();
 
 if (localStatus.value === null) {
-    createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"');
-    createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`');
+    createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
+    createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
 }
 
 const onCreate = (event) => {
@@ -41,7 +41,7 @@ const onCreate = (event) => {
     createBlock({
         x: clientX - left,
         y: clientY - top
-    });
+    }, null, '1 + 1', cellWidth, unitY);
 };
 
 async function onDrop(e) {

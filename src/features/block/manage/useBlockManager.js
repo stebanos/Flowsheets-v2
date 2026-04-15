@@ -1,12 +1,10 @@
 import { generateUniqueId } from '@/shared/utils';
 import { generateUniqueName, generateUniqueNameFromName, useBlockStore } from '@/entities/block';
-import { useCellDimensions } from '@/features/block/grid';
 
 export function useBlockManager() {
     const { blocks, addBlock } = useBlockStore();
-    const { cellWidth, unitY } = useCellDimensions();
 
-    function createBlock({x, y}, name = null, code = '1 + 1') {
+    function createBlock({x, y}, name = null, code = '1 + 1', cellWidth, unitY) {
         const blockIds = blocks.map(block => block.id);
         const existingNames = blocks.map(block => block.name);
         const resolvedName = name ? generateUniqueNameFromName(name, existingNames) : generateUniqueName(existingNames);

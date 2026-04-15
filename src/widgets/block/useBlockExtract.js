@@ -1,11 +1,13 @@
 import { nextTick, toRaw } from 'vue';
 import { useBlockStore } from '@/entities/block';
 import { useBlockManager } from '@/features/block/manage';
-import { usePendingNameFocus } from '@/features/block/name';
+import { useCellDimensions } from '@/features/block/grid';
+import { usePendingNameFocus } from '@/shared/composables';
 
 export function useBlockExtract(block, getEvaluation, snappedEditorWidth, cellWidth) {
     const { updateBlock } = useBlockStore();
     const { createBlock } = useBlockManager();
+    const { unitY } = useCellDimensions();
     const { requestFocus } = usePendingNameFocus();
 
     function outputsEqual(a, b) {
@@ -18,7 +20,7 @@ export function useBlockExtract(block, getEvaluation, snappedEditorWidth, cellWi
         const outputBefore = evalResult?.error ? null : toRaw(evalResult?.value);
         const x = block.x + snappedEditorWidth.value + cellWidth.value;
         const y = block.y;
-        const newName = createBlock({ x, y }, null, selectedText);
+        const newName = createBlock({ x, y }, null, selectedText, cellWidth, unitY);
         updateBlock(block.id, { inputModes: { ...block.inputModes, [newName]: 'each' } });
         requestFocus(newName);
 

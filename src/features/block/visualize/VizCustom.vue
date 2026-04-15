@@ -22,7 +22,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onErrorCaptured } from 'vue';
-import { useCustomViz } from '@/features/block/visualize/useCustomViz';
+import { useCustomViz } from './useCustomViz';
 
 const props = defineProps({
     value: {},

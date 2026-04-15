@@ -1,8 +1,7 @@
 <script setup>
 import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useLocalStorage } from '../composables/useLocalStorage';
-import { useFileIO } from '../composables/useFileIO';
+import { useLocalStorage, useFileIO } from '../composables';
 
 const { activeSheetName, renameActiveSheet } = useSheetStore();
 const { localStatus, localError } = useLocalStorage();

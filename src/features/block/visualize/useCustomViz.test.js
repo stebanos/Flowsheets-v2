@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { useCustomViz } from './useCustomViz';
-import { useBlockStore } from '@/entities/block/blockStore';
+import { useBlockStore } from '@/entities/block';
 
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel } = useCustomViz();
 const { blocks, addBlock } = useBlockStore();
