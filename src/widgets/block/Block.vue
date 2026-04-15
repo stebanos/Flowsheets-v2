@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount, toRaw } from 'vue';
 import { useCellDimensions } from '@/shared/composables';
-import { useSidebar } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
@@ -37,6 +36,8 @@ const props = defineProps({
         required: true
     }
 });
+
+const emit = defineEmits(['edit-viz']);
 
 const { blocks, updateBlock } = useBlockStore();
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
@@ -165,8 +166,7 @@ const activeVizComponent = computed(() =>
 
 // Viz selector bar
 const vizMenu = ref(null);
-const { customVizes, activeVizName: sidebarActiveVizName } = useCustomViz();
-const { open: openSidebar } = useSidebar();
+const { customVizes } = useCustomViz();
 
 const currentVizType = computed(() => props.block.visualizationType ?? 'default');
 const currentVizLabel = computed(() => {
@@ -203,10 +203,7 @@ const vizMenuItems = computed(() => {
         items.push({ separator: true });
         items.push({
             label: 'Edit viz code…',
-            command: () => {
-                openSidebar();
-                sidebarActiveVizName.value = props.block.vizOptions?.customVizName ?? null;
-            }
+            command: () => emit('edit-viz', props.block.vizOptions?.customVizName ?? null)
         });
     }
     return items;

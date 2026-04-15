@@ -3,12 +3,10 @@ import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
 import { useLocalStorage } from '../composables/useLocalStorage';
 import { useFileIO } from '../composables/useFileIO';
-import { useSidebar } from '@/shared/composables';
 
 const { activeSheetName, renameActiveSheet } = useSheetStore();
 const { localStatus, localError } = useLocalStorage();
 const { fileStatus, fileName, fileDirty, pendingImport, saveSheet, saveSheetAs, prepareImport, confirmImport, cancelImport } = useFileIO();
-const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
 
 // Inline rename
 const renaming = ref(false);
@@ -138,17 +136,7 @@ const showSaveFile = computed(() => fileName.value !== null);
                 class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
                 @click="saveSheetAs"
             >Save As</button>
-            <button
-                :class="sidebarOpen
-                    ? 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-white bg-white/15'
-                    : 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-gray-400'"
-                @click="toggleSidebar"
-            >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="2" y="2" width="12" height="12" rx="1"></rect>
-                    <line x1="11" y1="2" x2="11" y2="14"></line>
-                </svg>
-            </button>
+            <slot name="actions" />
         </div>
     </div>
 

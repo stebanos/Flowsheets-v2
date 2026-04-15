@@ -3,6 +3,7 @@ import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composa
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
+import { useCustomViz } from '@/features/block/visualize';
 import { Block, BlockGrid } from '@/widgets';
 import { useFileIO, useLocalStorage } from './composables';
 import { SidebarContent, TopBar } from './components';
@@ -13,7 +14,13 @@ const context = useBlockEvaluation(dependsOn);
 const { createBlock } = useBlockManager();
 const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
-const { isOpen: sidebarOpen } = useSidebar();
+const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
+const { activeVizName } = useCustomViz();
+
+function onEditViz(vizName) {
+    openSidebar();
+    activeVizName.value = vizName;
+}
 const { cellWidth, cellHeight, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 
@@ -44,10 +51,24 @@ async function onDrop(e) {
 
 <template>
     <div class="flex flex-col h-screen overflow-hidden">
-        <top-bar />
+        <top-bar>
+            <template #actions>
+                <button
+                    :class="sidebarOpen
+                        ? 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-white bg-white/15'
+                        : 'flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 hover:text-white text-gray-400'"
+                    @click="toggleSidebar"
+                >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="2" width="12" height="12" rx="1"></rect>
+                        <line x1="11" y1="2" x2="11" y2="14"></line>
+                    </svg>
+                </button>
+            </template>
+        </top-bar>
         <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
             <block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
-            <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered />
+            <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
         </div>
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem] top-9.75">
             <template #container>
