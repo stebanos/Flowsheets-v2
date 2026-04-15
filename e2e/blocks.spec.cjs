@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 
 /** Double-click the canvas to create a block at approximately (x, y). */
 async function createBlock(page, x = 300, y = 200) {
-    const canvas = page.locator('[data-cell-width]').first();
+    const canvas = page.locator('[data-block-grid]');
     await canvas.dblclick({ position: { x, y } });
 }
 
@@ -67,7 +67,7 @@ test('E3 — block referencing another block', async ({ page }) => {
 
     await typeCode(page, '10', 0);
 
-    const name = (await page.locator('.block-name span').nth(0).textContent()).trim();
+    const name = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
     await typeCode(page, `${name} * 2`, 1);
 
     await expect(blockOutput(page, 1)).toContainText('20');
@@ -83,7 +83,7 @@ test('E4 — rename a block, references update', async ({ page }) => {
     await createBlock(page, 450, 150);
 
     await typeCode(page, '10', 0);
-    const name = (await page.locator('.block-name span').nth(0).textContent()).trim();
+    const name = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
 
     await typeCode(page, `${name} + 1`, 1);
     await expect(blockOutput(page, 1)).toContainText('11');
@@ -93,7 +93,7 @@ test('E4 — rename a block, references update', async ({ page }) => {
     await page.waitForTimeout(1000);
 
     // Rename first block to 'x'
-    await page.locator('.block-name span').nth(0).dblclick();
+    await page.locator('[data-block-name]').nth(0).dblclick();
     const nameInput = page.locator('.block-name-edit').first();
     await nameInput.fill('x');
     await nameInput.press('Enter');
@@ -108,9 +108,7 @@ test('E4 — rename a block, references update', async ({ page }) => {
 test('E5 — drag a block to a new position', async ({ page }) => {
     await createBlock(page, 300, 200);
 
-    // The block's outer div has class "group absolute" and the :style sets top/left.
-    // Get its bounding box before and after drag.
-    const blockEl = page.locator('.block-header').locator('..').first();
+    const blockEl = page.locator('[data-block]').first();
     const before = await blockEl.boundingBox();
 
     const header = page.locator('.block-header').first();
@@ -129,7 +127,7 @@ test('E5 — drag a block to a new position', async ({ page }) => {
 test('E6 — resize a block', async ({ page }) => {
     await createBlock(page, 300, 200);
 
-    const blockEl = page.locator('.block-header').locator('..').first();
+    const blockEl = page.locator('[data-block]').first();
     const before = await blockEl.boundingBox();
 
     const handle = page.locator('.block-handle').first();
@@ -150,8 +148,8 @@ test('E7 — circular dependency shows error', async ({ page }) => {
     await createBlock(page, 150, 150);
     await createBlock(page, 450, 150);
 
-    const nameA = (await page.locator('.block-name span').nth(0).textContent()).trim();
-    const nameB = (await page.locator('.block-name span').nth(1).textContent()).trim();
+    const nameA = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
+    const nameB = (await page.locator('[data-block-name]').nth(1).textContent()).trim();
 
     await typeCode(page, nameB, 0);
     await typeCode(page, nameA, 1);
@@ -183,16 +181,16 @@ test('E9 — page reload persists blocks', async ({ page }) => {
     await typeCode(page, '42', 0);
     await typeCode(page, '99', 1);
 
-    const nameA = (await page.locator('.block-name span').nth(0).textContent()).trim();
-    const nameB = (await page.locator('.block-name span').nth(1).textContent()).trim();
+    const nameA = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
+    const nameB = (await page.locator('[data-block-name]').nth(1).textContent()).trim();
 
     // Wait for the 500ms debounced auto-save to flush
     await page.waitForTimeout(700);
     await page.reload();
 
-    await expect(page.locator('.block-name span')).toHaveCount(2);
+    await expect(page.locator('[data-block-name]')).toHaveCount(2);
 
-    const namesAfter = await page.locator('.block-name span').allTextContents();
+    const namesAfter = await page.locator('[data-block-name]').allTextContents();
     expect(namesAfter.map(n => n.trim())).toContain(nameA);
     expect(namesAfter.map(n => n.trim())).toContain(nameB);
 });
@@ -220,3 +218,35 @@ test('E10 — extract selection to new block', async ({ page }) => {
     await expect(page.locator('.block-output')).toHaveCount(2);
 });
 
+// ── E11 — Undo delete restores the block ─────────────────────────────────────
+
+test('E11 — undo delete restores the block', async ({ page }) => {
+    await createBlock(page, 300, 200);
+    const name = (await page.locator('[data-block-name]').first().textContent()).trim();
+
+    await page.locator('.block-header').first().hover();
+    await page.getByTitle('Delete block').first().click();
+
+    // Block gone, undo toast visible
+    await expect(page.locator('.block-output')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Undo' }).click();
+
+    // Block is back
+    await expect(page.locator('.block-output')).toHaveCount(1);
+    await expect(page.locator('[data-block-name]').first()).toContainText(name);
+});
+
+// ── E12 — Rename sheet via top bar ────────────────────────────────────────────
+
+test('E12 — rename sheet via top bar double-click', async ({ page }) => {
+    // Double-click the sheet name to open the inline rename input
+    await page.locator('[data-sheet-name]').dblclick();
+
+    const input = page.locator('[data-sheet-name-input]');
+    await input.fill('My Sheet');
+    await input.press('Enter');
+
+    await expect(page.locator('[data-sheet-name]')).toContainText('My Sheet');
+});

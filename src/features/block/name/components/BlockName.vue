@@ -49,7 +49,7 @@ onMounted(() => {
             @keydown.enter.prevent="saveName"
             @keydown.esc.prevent="cancelEdit"
             @mousedown.stop />
-        <span v-else class="pl-2 pr-1 cursor-default font-mono text-xs" @dblclick.stop="startEdit">
+        <span v-else data-block-name class="pl-2 pr-1 cursor-default font-mono text-xs" @dblclick.stop="startEdit">
             {{ name }}
         </span>
     </div>

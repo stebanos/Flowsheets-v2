@@ -97,12 +97,14 @@ const showSaveFile = computed(() => fileName.value !== null);
             <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
             <span
                 v-if="!renaming"
+                data-sheet-name
                 class="text-white text-sm font-medium cursor-default select-none truncate"
                 @dblclick="startRename"
             >{{ activeSheetName }}</span>
             <input
                 v-else
                 ref="renameEl"
+                data-sheet-name-input
                 v-model="renameInput"
                 class="bg-transparent text-white text-sm font-medium border-b border-white/40 outline-none px-0 w-32"
                 @keydown.enter.stop="commitRename"

@@ -233,7 +233,7 @@ watch(
 </script>
 
 <template>
-    <div class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
+    <div data-block class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
          :style="blockPositionStyle"
          :class="[isHighlighted ? 'outline-black z-10' : 'outline-gray-300 hover:outline-black hover:z-10', {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
