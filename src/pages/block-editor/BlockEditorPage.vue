@@ -54,7 +54,7 @@ async function onDrop(e) {
 
 <template>
     <div class="flex flex-col h-screen overflow-hidden">
-        <top-bar :toggle-sheet-sidebar="toggleSheetSidebar">
+        <top-bar :toggle-sheet-sidebar="toggleSheetSidebar" :sheet-sidebar-open="sheetSidebarOpen">
             <template #actions>
                 <button
                     :class="sidebarOpen
