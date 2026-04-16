@@ -5,8 +5,9 @@ import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
-import { Block, BlockGrid } from '@/widgets';
-import { useFileIO, useLocalStorage } from './composables';
+import { Block, BlockGrid, SheetTabs, SheetSidebar } from '@/widgets';
+import { useFileIO } from './composables';
+import { useSheetStorage } from '@/features/sheet/storage';
 import { SidebarContent, TopBar } from './components';
 
 const { blocks } = useBlockStore();
@@ -16,6 +17,7 @@ const { createBlock } = useBlockManager();
 const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
+const { isOpen: sheetSidebarOpen, toggle: toggleSheetSidebar } = useSidebar();
 const { activeVizName } = useCustomViz();
 
 function onEditViz(vizName) {
@@ -25,7 +27,7 @@ function onEditViz(vizName) {
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 
-const { localStatus, loadFromStorage } = useLocalStorage();
+const { localStatus, loadFromStorage } = useSheetStorage();
 const { prepareImport } = useFileIO();
 
 loadFromStorage();
@@ -52,7 +54,7 @@ async function onDrop(e) {
 
 <template>
     <div class="flex flex-col h-screen overflow-hidden">
-        <top-bar>
+        <top-bar :toggle-sheet-sidebar="toggleSheetSidebar">
             <template #actions>
                 <button
                     :class="sidebarOpen
@@ -67,10 +69,12 @@ async function onDrop(e) {
                 </button>
             </template>
         </top-bar>
+        <sheet-sidebar v-model:visible="sheetSidebarOpen" />
         <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
             <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
             <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
         </div>
+        <sheet-tabs />
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem] top-9.75">
             <template #container>
                 <sidebar-content class="h-full -ml-0.25" />

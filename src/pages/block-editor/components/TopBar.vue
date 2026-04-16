@@ -1,11 +1,20 @@
 <script setup>
 import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useLocalStorage, useFileIO } from '../composables';
+import { useFileIO } from '../composables';
+import { useSheetStorage } from '@/features/sheet/storage';
+
+const props = defineProps({
+    toggleSheetSidebar: {
+        type: Function,
+        required: false,
+        default: null,
+    },
+});
 
 const { activeSheetName, renameActiveSheet } = useSheetStore();
-const { localStatus, localError } = useLocalStorage();
-const { fileStatus, fileName, fileDirty, pendingImport, saveSheet, saveSheetAs, prepareImport, confirmImport, cancelImport } = useFileIO();
+const { localStatus, localError } = useSheetStorage();
+const { fileStatus, fileName, fileDirty, pendingImport, saveSheet, saveSheetAs, prepareImport, confirmImport, cancelImport, prepareBundleImport, bundleImportState } = useFileIO();
 
 // Inline rename
 const renaming = ref(false);
@@ -42,6 +51,11 @@ async function onFileInputChange(e) {
     if (!file) { return; }
     e.target.value = '';
     importError.value = null;
+    if (file.name.endsWith('.flowbundle.json')) {
+        const result = await prepareBundleImport(file);
+        if (result.error) { importError.value = result.error; }
+        return;
+    }
     const result = await prepareImport(file);
     if (result.error) { importError.value = result.error; }
 }
@@ -92,8 +106,19 @@ const showSaveFile = computed(() => fileName.value !== null);
 
 <template>
     <div class="relative z-[1200] flex items-center h-10 px-3 bg-gray-900 text-white flex-shrink-0">
-        <!-- Left: sheet name -->
+        <!-- Left: sheet sidebar toggle + sheet name -->
         <div class="flex items-center gap-1.5 min-w-0">
+            <button
+                v-if="props.toggleSheetSidebar"
+                class="flex items-center justify-center w-7 h-7 rounded transition-colors text-gray-400 hover:text-white hover:bg-white/10 flex-shrink-0"
+                aria-label="Toggle sheets sidebar"
+                @click="props.toggleSheetSidebar"
+            >
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <rect x="1" y="2" width="14" height="12" rx="1.5" />
+                    <line x1="5" y1="2" x2="5" y2="14" />
+                </svg>
+            </button>
             <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
             <span
                 v-if="!renaming"

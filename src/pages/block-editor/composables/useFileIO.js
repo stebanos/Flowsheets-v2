@@ -5,7 +5,8 @@ import { useBlockStore } from '@/entities/block';
 if (import.meta.hot) { import.meta.hot.decline(); }
 import { useCustomViz } from '@/features/block/visualize';
 import { useSheetStore } from '@/entities/sheet';
-import { serializeSheet, deserializeSheet, migrate } from '@/shared/lib/persistence';
+import { useSheetStorage } from '@/features/sheet/storage';
+import { serializeSheet, deserializeSheet, migrate, serializeBundle, deserializeBundle } from '@/shared/lib/persistence';
 
 // Module-level singletons — shared across all callers (BlockEditorPage + TopBar)
 const fileHandle = ref(null);
@@ -15,6 +16,8 @@ const fileStatus = ref(null);
 const fileDirty = ref(false);
 // { summary, data } | null
 const pendingImport = ref(null);
+// { pending: false, entries: [] } | { pending: true, entries: [...], rootSheetId: string }
+const bundleImportState = ref({ pending: false, entries: [] });
 
 let initialised = false;
 let trackDirty = false;
@@ -40,10 +43,26 @@ function _onSaveSuccess() {
     }, 3500);
 }
 
+const KEY_SHEET = (id) => `flowsheets.v2.sheet.${id}`;
+const KEY_CATALOGUE = 'flowsheets.v2.catalogue';
+
+function _readJson(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function _writeJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, renameActiveSheet } = useSheetStore();
+    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet } = useSheetStore();
 
     if (!initialised) {
         initialised = true;
@@ -211,6 +230,110 @@ export function useFileIO() {
         pendingImport.value = null;
     }
 
+    // ── bundle export ─────────────────────────────────────────────────────────
+
+    async function exportBundle() {
+        const sheetEntries = sheets.map((sheet) => {
+            const stored = _readJson(KEY_SHEET(sheet.id), null);
+            return {
+                id: sheet.id,
+                name: sheet.name,
+                blocks: stored?.blocks ?? [],
+                vizes: stored?.customVizes ?? {}
+            };
+        });
+
+        const bundle = serializeBundle(sheetEntries, activeSheetId.value);
+        const raw = activeSheetName.value ?? 'untitled';
+        const sanitized = raw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const filename = `${sanitized || 'untitled'}.flowbundle.json`;
+        _triggerDownload(filename, JSON.stringify(bundle, null, 2));
+    }
+
+    // ── bundle import ─────────────────────────────────────────────────────────
+
+    async function prepareBundleImport(file) {
+        let text;
+        try {
+            text = await file.text();
+        } catch (_err) {
+            return { error: 'This file could not be read. It may be corrupted or not a valid Flowsheets bundle.' };
+        }
+
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            return { error: 'This file could not be read. It may be corrupted or not a valid Flowsheets bundle.' };
+        }
+
+        let parsed;
+        try {
+            parsed = deserializeBundle(json);
+        } catch (err) {
+            return { error: err.message };
+        }
+
+        const localIds = new Set(sheets.map(s => s.id));
+
+        const entries = parsed.sheets.map((sheet) => ({
+            id: sheet.id,
+            name: sheet.name,
+            blocks: sheet.blocks,
+            vizes: sheet.vizes,
+            action: localIds.has(sheet.id) ? 'skip' : 'import'
+        }));
+
+        bundleImportState.value = { pending: true, entries, rootSheetId: parsed.rootSheetId };
+        return { pending: true };
+    }
+
+    function confirmBundleImport() {
+        if (!bundleImportState.value.pending) { return; }
+        const { entries, rootSheetId } = bundleImportState.value;
+        const { switchSheet } = useSheetStorage();
+
+        let resolvedRootId = rootSheetId;
+
+        for (const entry of entries) {
+            if (entry.action === 'skip') { continue; }
+
+            let targetId = entry.id;
+            let targetName = entry.name;
+
+            if (entry.action === 'copy') {
+                targetId = `sheet:local/${crypto.randomUUID()}`;
+                targetName = `${entry.name} (copy)`;
+                if (entry.id === rootSheetId) { resolvedRootId = targetId; }
+            }
+
+            const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName);
+            _writeJson(KEY_SHEET(targetId), { blocks: serialized.blocks, customVizes: serialized.customVizes });
+
+            // upsert into sheet store reactive catalogue
+            setActiveSheet(targetId, targetName);
+
+            // upsert into localStorage catalogue
+            const catalogue = _readJson(KEY_CATALOGUE, []);
+            const existingIdx = catalogue.findIndex(s => s.id === targetId);
+            const now = new Date().toISOString();
+            if (existingIdx !== -1) {
+                catalogue[existingIdx].name = targetName;
+                catalogue[existingIdx].updatedAt = now;
+            } else {
+                catalogue.push({ id: targetId, name: targetName, createdAt: now, updatedAt: now });
+            }
+            _writeJson(KEY_CATALOGUE, catalogue);
+        }
+
+        bundleImportState.value = { pending: false, entries: [] };
+        switchSheet(resolvedRootId);
+    }
+
+    function cancelBundleImport() {
+        bundleImportState.value = { pending: false, entries: [] };
+    }
+
     return {
         fileStatus,
         fileName,
@@ -220,6 +343,11 @@ export function useFileIO() {
         confirmImport,
         prepareImport,
         saveSheet,
-        saveSheetAs
+        saveSheetAs,
+        bundleImportState,
+        confirmBundleImport,
+        cancelBundleImport,
+        exportBundle,
+        prepareBundleImport
     };
 }

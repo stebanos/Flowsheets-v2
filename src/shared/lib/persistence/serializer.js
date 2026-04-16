@@ -97,3 +97,53 @@ export function serializeVizes(vizes) {
 export function deserializeVizes(json) {
     return json.customVizes ?? {};
 }
+
+const BUNDLE_FORMAT_VERSION = '1.0.0';
+const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0']);
+
+/**
+ * Serialize multiple sheets into a bundle.
+ * @param {Array<{ id: string, name: string, blocks: Array, vizes: Object }>} sheetEntries
+ * @param {string} rootSheetId
+ * @returns {Object} - { formatVersion, exportedAt, rootSheetId, sheets: [...] }
+ */
+export function serializeBundle(sheetEntries, rootSheetId) {
+    const sheets = sheetEntries.map(({ id, name, blocks, vizes }) => {
+        const serialized = serializeSheet(blocks ?? [], vizes ?? {}, name ?? 'Untitled');
+        return { id, name: serialized.name, blocks: serialized.blocks, customVizes: serialized.customVizes };
+    });
+
+    return {
+        formatVersion: BUNDLE_FORMAT_VERSION,
+        exportedAt: new Date().toISOString(),
+        rootSheetId,
+        sheets
+    };
+}
+
+/**
+ * Deserialize and validate a bundle JSON object.
+ * @param {Object} json
+ * @returns {{ rootSheetId: string, sheets: Array<{ id, name, blocks, vizes }> }}
+ * @throws {Error} if formatVersion is missing or unrecognised
+ */
+export function deserializeBundle(json) {
+    if (!json.formatVersion) {
+        throw new Error('Invalid bundle: formatVersion is missing.');
+    }
+    if (!RECOGNISED_FORMAT_VERSIONS.has(json.formatVersion)) {
+        throw new Error(`Unsupported bundle version: ${json.formatVersion}`);
+    }
+
+    const sheets = (json.sheets ?? []).map((sheet) => {
+        const { blocks, vizes, name } = deserializeSheet({
+            version: 1,
+            blocks: sheet.blocks ?? [],
+            customVizes: sheet.customVizes ?? {},
+            name: sheet.name
+        });
+        return { id: sheet.id, name, blocks, vizes };
+    });
+
+    return { rootSheetId: json.rootSheetId, sheets };
+}
