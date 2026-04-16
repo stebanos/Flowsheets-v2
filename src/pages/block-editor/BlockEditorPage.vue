@@ -69,12 +69,16 @@ async function onDrop(e) {
                 </button>
             </template>
         </top-bar>
-        <sheet-sidebar v-model:visible="sheetSidebarOpen" />
-        <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
-            <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
-            <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+        <div class="flex flex-1 overflow-hidden">
+            <sheet-sidebar :open="sheetSidebarOpen" />
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <sheet-tabs />
+                <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
+                    <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
+                    <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+                </div>
+            </div>
         </div>
-        <sheet-tabs />
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem] top-9.75">
             <template #container>
                 <sidebar-content class="h-full -ml-0.25" />
