@@ -3,6 +3,7 @@ import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
 import { useFileIO } from '../composables';
 import { useSheetStorage } from '@/features/sheet/storage';
+import { useSheetManager } from '@/features/sheet/manage/useSheetManager';
 
 const props = defineProps({
     toggleSheetSidebar: {
@@ -20,6 +21,7 @@ const props = defineProps({
 const { activeSheetName } = useSheetStore();
 const { localStatus, localError } = useSheetStorage();
 const { fileStatus, fileName, fileDirty, saveSheet } = useFileIO();
+const { deletedNotice } = useSheetManager();
 
 // Cmd+S
 function handleKeydown(e) {
@@ -34,6 +36,7 @@ onBeforeUnmount(() => { document.removeEventListener('keydown', handleKeydown); 
 
 // Status zone
 const statusText = computed(() => {
+    if (deletedNotice.value) { return `"${deletedNotice.value}" deleted`; }
     if (fileStatus.value === 'saving' || localStatus.value === 'saving') { return 'Saving...'; }
     if (fileStatus.value === 'dirty' || fileDirty.value) { return 'File not up to date · ⌘S'; }
     if (fileStatus.value === 'saved') { return `✓ Saved to ${fileName.value}`; }

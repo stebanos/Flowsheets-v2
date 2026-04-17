@@ -17,7 +17,10 @@ const localStatus  = ref('idle');  // 'idle' | 'saving' | 'error'
 const localError   = ref(null);    // string | null
 const openSheetIds = reactive([]);
 
-let initialised = false;
+let initialised  = false;
+let bootPromise  = null;
+
+const useOPFS = _opfsAvailable();
 
 // ── OPFS availability check ──────────────────────────────────────────────────
 
@@ -158,8 +161,6 @@ export function useSheetStorage() {
 
     let loading   = false;
     let saveTimer = null;
-
-    const useOPFS = _opfsAvailable();
 
     // ── save ──────────────────────────────────────────────────────────────────
 
@@ -352,12 +353,15 @@ export function useSheetStorage() {
     }
 
     function loadFromStorage() {
-        if (useOPFS) {
-            // Returns a Promise; callers that need to await can do so, but existing
-            // callers that don't await also work (load completes asynchronously).
-            return _loadFromStorageOPFS();
+        if (!bootPromise) {
+            if (useOPFS) {
+                bootPromise = _loadFromStorageOPFS();
+            } else {
+                _loadFromStorageLS();
+                bootPromise = Promise.resolve();
+            }
         }
-        _loadFromStorageLS();
+        return bootPromise;
     }
 
     // ── switchSheet ───────────────────────────────────────────────────────────
@@ -401,6 +405,51 @@ export function useSheetStorage() {
         _switchSheetLS(id);
     }
 
+    // ── initNewSheet ──────────────────────────────────────────────────────────
+
+    function initNewSheet(id, name) {
+        replaceBlocks([]);
+        loadVizes({});
+        localStorage.setItem(KEY_ACTIVE_ID, id);
+        _addToOpenIds(id);
+
+        if (useOPFS) {
+            _initNewSheetOPFS(id, name);
+        } else {
+            const now = new Date().toISOString();
+            _writeJson(KEY_SHEET(id), { blocks: [], customVizes: [] });
+            const catalogue = _readJson(KEY_CATALOGUE, []);
+            if (!catalogue.find(s => s.id === id)) {
+                catalogue.push({ id, name, createdAt: now, updatedAt: now });
+                _writeJson(KEY_CATALOGUE, catalogue);
+            }
+        }
+    }
+
+    async function _initNewSheetOPFS(id, name) {
+        try {
+            const now = new Date().toISOString();
+            await _writeSheetFile(id, { blocks: [], customVizes: [] });
+            await _putSheet({ id, name, createdAt: now, updatedAt: now });
+        } catch (err) {
+            localStatus.value = 'error';
+            localError.value  = err.message;
+        }
+    }
+
+    // ── persistDeleteSheet ────────────────────────────────────────────────────
+
+    async function persistDeleteSheet(id) {
+        if (useOPFS) {
+            await _deleteSheet(id);
+            await _deleteSheetFile(id);
+        } else {
+            localStorage.removeItem(KEY_SHEET(id));
+            const catalogue = _readJson(KEY_CATALOGUE, []);
+            _writeJson(KEY_CATALOGUE, catalogue.filter(s => s.id !== id));
+        }
+    }
+
     // ── closeSheet ────────────────────────────────────────────────────────────
 
     function closeSheet(id) {
@@ -439,5 +488,7 @@ export function useSheetStorage() {
         loadFromStorage,
         switchSheet,
         closeSheet,
+        initNewSheet,
+        persistDeleteSheet
     };
 }

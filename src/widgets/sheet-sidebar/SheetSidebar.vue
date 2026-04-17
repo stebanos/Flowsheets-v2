@@ -1,5 +1,6 @@
 <script setup>
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
+import { useConfirm } from 'primevue/useconfirm';
 import { useSheetStore } from '@/entities/sheet';
 import { useSheetStorage } from '@/features/sheet/storage';
 import { useSheetManager } from '@/features/sheet/manage/useSheetManager';
@@ -14,69 +15,86 @@ const props = defineProps({
 
 const { sheets, activeSheetId } = useSheetStore();
 const { switchSheet } = useSheetStorage();
-const { createSheet, deleteSheet, renameSheet, renamingSheetId, clearRenamingId } = useSheetManager();
+const { createSheet, deleteSheet, renameSheet, deletingIds } = useSheetManager();
 const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, saveSheetAs, exportBundle } = useFileIO();
+const confirm = useConfirm();
+const confirmPopupRef = ref(null);
 
 const panelPt = computed(() => ({
     root: {
         class: [
             'flex flex-col shrink-0 overflow-hidden transition-[width] duration-200',
             'border-r border-gray-200 bg-gray-50 text-slate-800',
-            props.open ? 'w-52' : 'w-0',
-        ],
+            props.open ? 'w-52' : 'w-0'
+        ]
     },
     header: { class: 'flex items-center h-8 shrink-0 px-2.5 border-b border-gray-200 bg-gray-100' },
     content: { class: 'flex-1 overflow-y-auto p-0' },
-    footer: { class: 'shrink-0' },
+    footer: { class: 'shrink-0' }
 }));
 
-// Local editing state (double-click / pencil rename)
-const editingId    = ref(null);
-const editingValue = ref('');
-const editInputEl  = ref(null);
+// Unified inline-edit state
+const inlineEditId    = ref(null);
+const inlineEditValue = ref('');
+const inputEls        = {};
+
+function setInputRef(el, id) {
+    if (el) { inputEls[id] = el; }
+    else { delete inputEls[id]; }
+}
+
+watch(inlineEditId, id => {
+    if (id) { nextTick(() => inputEls[id]?.select()); }
+});
 
 function startEditing(id, currentName) {
-    editingId.value    = id;
-    editingValue.value = currentName;
-    nextTick(() => editInputEl.value?.select());
+    inlineEditId.value    = id;
+    inlineEditValue.value = currentName;
 }
 
 function commitEditing(id) {
-    if (editingId.value !== id) { return; }
-    const val = editingValue.value;
-    editingId.value = null;
+    if (inlineEditId.value !== id) { return; }
+    const val = inlineEditValue.value;
+    inlineEditId.value = null;
     if (val.trim()) { renameSheet(id, val.trim()); }
 }
 
-function cancelEditing() {
-    editingId.value = null;
-}
+function cancelEditing() { inlineEditId.value = null; }
 
-// renamingSheetId path (triggered by createSheet)
-const renamingValue = ref('');
-
-function commitRenaming(id) {
-    const val = renamingValue.value;
-    clearRenamingId();
-    if (val.trim()) { renameSheet(id, val.trim()); }
-}
-
-function cancelRenaming() {
-    clearRenamingId();
-}
+// Pending new-sheet flow — sheet is NOT created until confirmed.
+const pendingNewSheet = ref(false);
+const pendingNewName  = ref('Untitled');
+const pendingInputEl  = ref(null);
 
 function handleCreateSheet() {
-    createSheet();
-    renamingValue.value = '';
+    pendingNewSheet.value = true;
+    pendingNewName.value  = 'Untitled';
+    nextTick(() => pendingInputEl.value?.select());
 }
 
-function handleDeleteSheet(id) {
-    if (!window.confirm('Delete this sheet? This cannot be undone.')) { return; }
-    deleteSheet(id);
+function confirmNewSheet() {
+    if (!pendingNewSheet.value) { return; }
+    pendingNewSheet.value = false;
+    createSheet(pendingNewName.value || 'Untitled');
 }
 
-function isEditing(id) { return editingId.value === id; }
-function isRenaming(id) { return renamingSheetId.value === id; }
+function cancelNewSheet() {
+    pendingNewSheet.value = false;
+}
+
+function handleDeleteSheet(event, id) {
+    confirm.require({
+        group: 'sheet-delete',
+        target: event.currentTarget,
+        message: 'Delete this sheet? This cannot be undone.',
+        acceptLabel: 'Delete',
+        rejectLabel: 'Cancel',
+        acceptProps: { severity: 'danger' },
+        rejectProps: { severity: 'secondary', outlined: true },
+        accept: () => deleteSheet(id)
+    });
+    nextTick(() => confirmPopupRef.value?.alignOverlay());
+}
 
 // File import/export
 const fileInputEl = ref(null);
@@ -134,24 +152,11 @@ function handleCancelBundleImport() {
                 @click="switchSheet(sheet.id)"
                 @dblclick.stop="startEditing(sheet.id, sheet.name)"
             >
-                <!-- Inline rename for newly created sheet -->
+                <!-- Inline rename -->
                 <input
-                    v-if="isRenaming(sheet.id)"
-                    :data-renaming-input="sheet.id"
-                    v-model="renamingValue"
-                    class="flex-1 min-w-0 text-[13px] text-slate-800 bg-white border-none rounded-sm px-1 py-px ring-2 ring-blue-500 outline-none"
-                    @keydown.enter.stop="commitRenaming(sheet.id)"
-                    @keydown.esc.stop="cancelRenaming"
-                    @blur="commitRenaming(sheet.id)"
-                    @click.stop
-                    @vue:mounted="el => el?.select()"
-                />
-
-                <!-- Inline rename for double-click -->
-                <input
-                    v-else-if="isEditing(sheet.id)"
-                    ref="editInputEl"
-                    v-model="editingValue"
+                    :ref="el => setInputRef(el, sheet.id)"
+                    v-show="inlineEditId === sheet.id"
+                    v-model="inlineEditValue"
                     class="flex-1 min-w-0 text-[13px] text-slate-800 bg-white border-none rounded-sm px-1 py-px ring-2 ring-blue-500 outline-none"
                     @keydown.enter.stop="commitEditing(sheet.id)"
                     @keydown.esc.stop="cancelEditing"
@@ -161,14 +166,25 @@ function handleCancelBundleImport() {
 
                 <!-- Name -->
                 <span
-                    v-else
+                    v-show="inlineEditId !== sheet.id"
                     class="flex-1 min-w-0 truncate text-[13px] text-slate-800"
                     :class="sheet.id === activeSheetId ? 'font-semibold' : ''"
                 >{{ sheet.name }}</span>
 
-                <!-- Action buttons (hidden until hover or active) -->
+                <!-- Spinner while deleting -->
                 <div
-                    v-if="!isRenaming(sheet.id) && !isEditing(sheet.id)"
+                    v-if="deletingIds.has(sheet.id)"
+                    class="flex items-center shrink-0 ml-auto pr-0.5"
+                >
+                    <svg class="animate-spin w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                </div>
+
+                <!-- Action buttons (hidden until hover or active, suppressed while deleting) -->
+                <div
+                    v-else-if="inlineEditId !== sheet.id"
                     class="flex items-center shrink-0 opacity-0 group-hover:opacity-100"
                     :class="sheet.id === activeSheetId ? 'opacity-100' : ''"
                 >
@@ -187,11 +203,27 @@ function handleCancelBundleImport() {
                         class="flex items-center justify-center w-[22px] h-[22px] rounded text-gray-400 hover:bg-red-100 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
                         :disabled="sheets.length <= 1"
                         aria-label="Delete sheet"
-                        @click.stop="handleDeleteSheet(sheet.id)"
+                        @click.stop="handleDeleteSheet($event, sheet.id)"
                     >×</button>
                 </div>
             </li>
         </ul>
+
+        <!-- Pending new-sheet name input -->
+        <div
+            v-if="pendingNewSheet"
+            class="flex items-center h-8 pl-[7px] pr-1.5"
+        >
+            <input
+                ref="pendingInputEl"
+                v-model="pendingNewName"
+                class="flex-1 min-w-0 text-[13px] text-slate-800 bg-white border-none rounded-sm px-1 py-px ring-2 ring-blue-500 outline-none"
+                @keydown.enter.stop="confirmNewSheet"
+                @keydown.esc.stop="cancelNewSheet"
+                @blur="confirmNewSheet"
+                @click.stop
+            />
+        </div>
 
         <template #footer>
             <button
@@ -216,6 +248,8 @@ function handleCancelBundleImport() {
             </div>
         </template>
     </p-panel>
+
+    <p-confirm-popup ref="confirmPopupRef" group="sheet-delete" />
 
     <!-- Hidden file input -->
     <input
