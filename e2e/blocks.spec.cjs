@@ -238,15 +238,29 @@ test('E11 — undo delete restores the block', async ({ page }) => {
     await expect(page.locator('[data-block-name]').first()).toContainText(name);
 });
 
-// ── E12 — Rename sheet via top bar ────────────────────────────────────────────
+// ── E12 — Rename sheet via tab double-click ───────────────────────────────────
 
-test('E12 — rename sheet via top bar double-click', async ({ page }) => {
-    // Double-click the sheet name to open the inline rename input
-    await page.locator('[data-sheet-name]').dblclick();
+test('E12 — rename sheet via tab double-click', async ({ page }) => {
+    await page.locator('[data-sheet-tab]').first().dblclick();
 
-    const input = page.locator('[data-sheet-name-input]');
+    const input = page.locator('[data-sheet-tab] input').first();
     await input.fill('My Sheet');
     await input.press('Enter');
 
+    await expect(page.locator('[data-sheet-tab]').first()).toContainText('My Sheet');
     await expect(page.locator('[data-sheet-name]')).toContainText('My Sheet');
+});
+
+// ── E13 — Rename sheet via sidebar double-click ───────────────────────────────
+
+test('E13 — rename sheet via sidebar double-click', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle sheets sidebar' }).click();
+    await page.locator('[data-sidebar-sheet]').first().dblclick();
+
+    const input = page.locator('[data-sidebar-sheet] input').first();
+    await input.fill('Sidebar Rename');
+    await input.press('Enter');
+
+    await expect(page.locator('[data-sidebar-sheet]').first()).toContainText('Sidebar Rename');
+    await expect(page.locator('[data-sheet-name]')).toContainText('Sidebar Rename');
 });

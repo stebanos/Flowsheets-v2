@@ -40,6 +40,7 @@ function cancelEditing() {
         <div
             v-for="id in openSheetIds"
             :key="id"
+            data-sheet-tab
             class="group flex items-center gap-1.5 h-7 px-3 text-xs cursor-pointer select-none shrink-0 rounded-t-sm border border-b-0 -mb-px"
             :class="id === activeSheetId
                 ? 'bg-white border-gray-300 text-slate-800 font-semibold'
