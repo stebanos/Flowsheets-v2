@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
 import { useFileIO } from '../composables';
 import { useSheetStorage } from '@/features/sheet/storage';
@@ -17,37 +17,14 @@ const props = defineProps({
     },
 });
 
-const { activeSheetName, renameActiveSheet } = useSheetStore();
+const { activeSheetName } = useSheetStore();
 const { localStatus, localError } = useSheetStorage();
 const { fileStatus, fileName, fileDirty, saveSheet } = useFileIO();
-
-// Inline rename
-const renaming = ref(false);
-const renameInput = ref('');
-const renameEl = ref(null);
-
-function startRename() {
-    renameInput.value = activeSheetName.value;
-    renaming.value = true;
-    nextTick(() => renameEl.value?.select());
-}
-
-function commitRename() {
-    if (!renaming.value) { return; }
-    renaming.value = false;
-    const trimmed = renameInput.value.trim();
-    if (trimmed) { renameActiveSheet(trimmed); }
-}
-
-function cancelRename() {
-    renaming.value = false;
-}
 
 // Cmd+S
 function handleKeydown(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        if (renaming.value) { return; }
         saveSheet();
     }
 }
@@ -97,21 +74,9 @@ const showSaveFile = computed(() => fileName.value !== null);
             </button>
             <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
             <span
-                v-if="!renaming"
                 data-sheet-name
                 class="text-white text-sm font-medium cursor-default select-none truncate"
-                @dblclick="startRename"
             >{{ activeSheetName }}</span>
-            <input
-                v-else
-                ref="renameEl"
-                data-sheet-name-input
-                v-model="renameInput"
-                class="bg-transparent text-white text-sm font-medium border-b border-white/40 outline-none px-0 w-32"
-                @keydown.enter.stop="commitRename"
-                @keydown.esc="cancelRename"
-                @blur="commitRename"
-            />
         </div>
 
         <!-- Center: status zone (absolutely centered so left/right sections don't affect it) -->
