@@ -19,7 +19,7 @@ const props = defineProps({
 
 const { activeSheetName, renameActiveSheet } = useSheetStore();
 const { localStatus, localError } = useSheetStorage();
-const { fileStatus, fileName, fileDirty, pendingImport, saveSheet, saveSheetAs, prepareImport, confirmImport, cancelImport, prepareBundleImport, bundleImportState } = useFileIO();
+const { fileStatus, fileName, fileDirty, saveSheet } = useFileIO();
 
 // Inline rename
 const renaming = ref(false);
@@ -41,38 +41,6 @@ function commitRename() {
 
 function cancelRename() {
     renaming.value = false;
-}
-
-// File import
-const fileInputEl = ref(null);
-const importError = ref(null);
-
-function openFilePicker() {
-    fileInputEl.value?.click();
-}
-
-async function onFileInputChange(e) {
-    const file = e.target.files[0];
-    if (!file) { return; }
-    e.target.value = '';
-    importError.value = null;
-    if (file.name.endsWith('.flowbundle.json')) {
-        const result = await prepareBundleImport(file);
-        if (result.error) { importError.value = result.error; }
-        return;
-    }
-    const result = await prepareImport(file);
-    if (result.error) { importError.value = result.error; }
-}
-
-function handleConfirmImport() {
-    importError.value = null;
-    confirmImport();
-}
-
-function handleCancelImport() {
-    importError.value = null;
-    cancelImport();
 }
 
 // Cmd+S
@@ -157,80 +125,11 @@ const showSaveFile = computed(() => fileName.value !== null);
         <!-- Right: actions -->
         <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
             <button
-                class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
-                @click="openFilePicker"
-            >Open</button>
-            <button
                 v-if="showSaveFile"
                 class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
                 @click="saveSheet"
             >Save file</button>
-            <button
-                class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"
-                @click="saveSheetAs"
-            >Save As</button>
             <slot name="actions" />
         </div>
     </div>
-
-    <!-- Hidden file input for Open -->
-    <input
-        ref="fileInputEl"
-        type="file"
-        accept=".flowsheet.json"
-        class="hidden"
-        @change="onFileInputChange"
-    />
-
-    <!-- Import confirmation dialog -->
-    <p-dialog
-        v-if="pendingImport || importError"
-        :visible="true"
-        modal
-        :closable="false"
-        header="Import sheet"
-        class="w-[28rem]"
-    >
-        <div v-if="importError" class="text-sm text-red-400 mb-4">
-            {{ importError }}
-        </div>
-        <div v-else-if="pendingImport" class="text-sm text-[#d1d5db] space-y-3">
-            <p>
-                <span class="text-white font-medium">{{ pendingImport.summary.name }}</span>
-                — {{ pendingImport.summary.blockCount }} block<span v-if="pendingImport.summary.blockCount !== 1">s</span>,
-                {{ pendingImport.summary.vizCount }} viz<span v-if="pendingImport.summary.vizCount !== 1">es</span>
-            </p>
-            <div v-if="Object.keys(pendingImport.summary.renamedVizes).length > 0">
-                <p class="text-[#9ca3af] mb-1">Visualizations renamed to avoid conflicts:</p>
-                <ul class="space-y-0.5">
-                    <li
-                        v-for="(newName, oldName) in pendingImport.summary.renamedVizes"
-                        :key="oldName"
-                        class="font-mono text-xs"
-                    >
-                        {{ oldName }} → {{ newName }}
-                    </li>
-                </ul>
-            </div>
-            <p class="text-[#9ca3af] text-xs">This will replace the current sheet.</p>
-        </div>
-        <template #footer>
-            <p-button
-                label="Cancel"
-                severity="secondary"
-                text
-                @click="handleCancelImport"
-            />
-            <p-button
-                v-if="!importError"
-                label="Import"
-                @click="handleConfirmImport"
-            />
-            <p-button
-                v-else
-                label="Close"
-                @click="handleCancelImport"
-            />
-        </template>
-    </p-dialog>
 </template>
