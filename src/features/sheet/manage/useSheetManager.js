@@ -4,6 +4,7 @@ import { useSheetStorage } from '@/features/sheet/storage';
 
 const deletingIds   = reactive(new Set());
 const deletedNotice = ref(null);
+const deleteError   = ref(null);
 let _noticeTimer    = null;
 
 function _setDeletedNotice(name) {
@@ -24,16 +25,24 @@ export function useSheetManager() {
     }
 
     async function deleteSheet(id) {
+        if (deletingIds.has(id)) { return; }
         const { sheets } = sheetStore;
         if (sheets.length <= 1) { return; }
         const name = sheets.find(s => s.id === id)?.name ?? 'Sheet';
+        deleteError.value = null;
         deletingIds.add(id);
-        sheetStorage.closeSheet(id);
-        await new Promise(resolve => requestAnimationFrame(resolve));
-        await sheetStorage.persistDeleteSheet(id);
-        sheetStore.deleteSheet(id);
-        deletingIds.delete(id);
-        _setDeletedNotice(name);
+        try {
+            sheetStorage.closeSheet(id);
+            // one frame so Vue renders the sheet switch before the storage delete
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await sheetStorage.persistDeleteSheet(id);
+            sheetStore.deleteSheet(id);
+            _setDeletedNotice(name);
+        } catch (err) {
+            deleteError.value = err.message;
+        } finally {
+            deletingIds.delete(id);
+        }
     }
 
     function renameSheet(id, name) {
@@ -48,6 +57,7 @@ export function useSheetManager() {
         deleteSheet,
         renameSheet,
         deletingIds,
-        deletedNotice
+        deletedNotice,
+        deleteError
     };
 }

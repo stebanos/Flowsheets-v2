@@ -143,6 +143,37 @@ describe('useSheetManager', () => {
             expect(deletingIds.has(id1)).toBe(false);
         });
 
+        it('is a no-op when already deleting the same id', async () => {
+            const id1 = 'sheet:local/a';
+            const id2 = 'sheet:local/b';
+            addSheet(id1, 'Alpha');
+            addSheet(id2, 'Beta');
+
+            const { deleteSheet } = useSheetManager();
+            // Fire both without awaiting — second must be skipped by the guard.
+            // Await both so no dangling promise leaks into later tests.
+            await Promise.all([deleteSheet(id1), deleteSheet(id1)]);
+
+            expect(mockSheetStorage.closeSheet).toHaveBeenCalledTimes(1);
+            expect(mockSheetStorage.persistDeleteSheet).toHaveBeenCalledTimes(1);
+        });
+
+        it('clears deletingIds and sets deleteError when persistDeleteSheet throws', async () => {
+            const id1 = 'sheet:local/a';
+            const id2 = 'sheet:local/b';
+            addSheet(id1, 'Alpha');
+            addSheet(id2, 'Beta');
+
+            mockSheetStorage.persistDeleteSheet.mockRejectedValue(new Error('quota exceeded'));
+
+            const { deleteSheet, deletingIds, deleteError } = useSheetManager();
+            await deleteSheet(id1);
+
+            expect(deletingIds.has(id1)).toBe(false);
+            expect(deleteError.value).toBe('quota exceeded');
+            expect(mockSheetStore.deleteSheet).not.toHaveBeenCalled();
+        });
+
         it('sets deletedNotice to the sheet name after completion', async () => {
             const id1 = 'sheet:local/a';
             const id2 = 'sheet:local/b';

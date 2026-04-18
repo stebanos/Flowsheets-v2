@@ -15,7 +15,7 @@ const props = defineProps({
 
 const { sheets, activeSheetId } = useSheetStore();
 const { switchSheet } = useSheetStorage();
-const { createSheet, deleteSheet, renameSheet, deletingIds } = useSheetManager();
+const { createSheet, deleteSheet, renameSheet, deletingIds, deleteError } = useSheetManager();
 const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, saveSheetAs, exportBundle } = useFileIO();
 const confirm = useConfirm();
 const confirmPopupRef = ref(null);
@@ -91,7 +91,7 @@ function handleDeleteSheet(event, id) {
         rejectLabel: 'Cancel',
         acceptProps: { severity: 'danger' },
         rejectProps: { severity: 'secondary', outlined: true },
-        accept: () => deleteSheet(id)
+        accept: async () => { await deleteSheet(id); }
     });
     nextTick(() => confirmPopupRef.value?.alignOverlay());
 }
@@ -208,6 +208,9 @@ function handleCancelBundleImport() {
                 </div>
             </li>
         </ul>
+
+        <!-- Delete error -->
+        <p v-if="deleteError" class="px-2.5 py-1 text-[11px] text-red-400">{{ deleteError }}</p>
 
         <!-- Pending new-sheet name input -->
         <div
