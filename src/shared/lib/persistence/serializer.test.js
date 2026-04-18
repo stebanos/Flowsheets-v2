@@ -1,4 +1,4 @@
-import { serializeSheet, deserializeSheet, serializeVizes, deserializeVizes } from './serializer';
+import { serializeSheet, deserializeSheet, serializeVizes, deserializeVizes, serializeBundle, deserializeBundle } from './serializer';
 
 const makeBlock = (overrides = {}) => ({
     id: 'block-1',
@@ -219,5 +219,142 @@ describe('serializeVizes / deserializeVizes round-trip', () => {
 
     it('deserializeVizes returns empty object when customVizes is missing', () => {
         expect(deserializeVizes({})).toEqual({});
+    });
+});
+
+// ── serializeBundle ───────────────────────────────────────────────────────────
+
+describe('serializeBundle', () => {
+    it('produces formatVersion 1.0.0 and a rootSheetId', () => {
+        const result = serializeBundle([], 'root-1');
+        expect(result.formatVersion).toBe('1.0.0');
+        expect(result.rootSheetId).toBe('root-1');
+    });
+
+    it('includes an exportedAt ISO timestamp', () => {
+        const result = serializeBundle([], 'root-1');
+        expect(() => new Date(result.exportedAt)).not.toThrow();
+        expect(new Date(result.exportedAt).toISOString()).toBe(result.exportedAt);
+    });
+
+    it('serializes each sheet entry via serializeSheet', () => {
+        const entries = [
+            { id: 'a', name: 'Alpha', blocks: [makeBlock({ id: 'b1', name: 'x', code: '1' })], vizes: {} },
+            { id: 'b', name: 'Beta', blocks: [], vizes: {} }
+        ];
+        const result = serializeBundle(entries, 'a');
+
+        expect(result.sheets).toHaveLength(2);
+        expect(result.sheets[0].id).toBe('a');
+        expect(result.sheets[0].name).toBe('Alpha');
+        expect(result.sheets[0].blocks).toHaveLength(1);
+        expect(result.sheets[1].id).toBe('b');
+        expect(result.sheets[1].blocks).toHaveLength(0);
+    });
+
+    it('strips width/height from block entries (delegates to serializeSheet)', () => {
+        const entries = [{ id: 'a', name: 'A', blocks: [makeBlock()], vizes: {} }];
+        const { sheets } = serializeBundle(entries, 'a');
+        expect(sheets[0].blocks[0]).not.toHaveProperty('width');
+        expect(sheets[0].blocks[0]).not.toHaveProperty('height');
+    });
+
+    it('only includes vizes referenced by blocks in each sheet', () => {
+        const vizes = {
+            Table: { source: '<table/>', draft: '' },
+            Chart: { source: '<chart/>', draft: '' }
+        };
+        const entries = [
+            { id: 'a', name: 'A', blocks: [makeBlock({ vizOptions: { customVizName: 'Table' } })], vizes }
+        ];
+        const { sheets } = serializeBundle(entries, 'a');
+        expect(sheets[0].customVizes).toHaveProperty('Table');
+        expect(sheets[0].customVizes).not.toHaveProperty('Chart');
+    });
+
+    it('handles missing blocks/vizes on an entry gracefully', () => {
+        const entries = [{ id: 'a', name: 'A' }];
+        const result = serializeBundle(entries, 'a');
+        expect(result.sheets[0].blocks).toEqual([]);
+        expect(result.sheets[0].customVizes).toEqual({});
+    });
+});
+
+// ── deserializeBundle ─────────────────────────────────────────────────────────
+
+describe('deserializeBundle', () => {
+    it('throws when formatVersion is missing', () => {
+        expect(() => deserializeBundle({ sheets: [] })).toThrow('formatVersion is missing');
+    });
+
+    it('throws when formatVersion is unrecognised', () => {
+        expect(() => deserializeBundle({ formatVersion: '9.9.9', sheets: [] }))
+            .toThrow('Unsupported bundle version: 9.9.9');
+    });
+
+    it('returns rootSheetId and sheets for a valid bundle', () => {
+        const bundle = {
+            formatVersion: '1.0.0',
+            rootSheetId: 'sheet-1',
+            sheets: [
+                { id: 'sheet-1', name: 'Alpha', blocks: [], customVizes: {} }
+            ]
+        };
+        const result = deserializeBundle(bundle);
+        expect(result.rootSheetId).toBe('sheet-1');
+        expect(result.sheets).toHaveLength(1);
+        expect(result.sheets[0].id).toBe('sheet-1');
+        expect(result.sheets[0].name).toBe('Alpha');
+    });
+
+    it('applies block field defaults via deserializeSheet', () => {
+        const bundle = {
+            formatVersion: '1.0.0',
+            rootSheetId: 'a',
+            sheets: [
+                { id: 'a', name: 'A', blocks: [{ id: 'b1', name: 'x', x: 0, y: 0, code: '1' }], customVizes: {} }
+            ]
+        };
+        const { sheets } = deserializeBundle(bundle);
+        const block = sheets[0].blocks[0];
+        expect(block.inputModes).toEqual({});
+        expect(block.visualizationType).toBe('default');
+        expect(block.vizOptions).toEqual({});
+        expect(block.userMinWidth).toBeNull();
+    });
+
+    it('handles missing sheets array gracefully', () => {
+        const result = deserializeBundle({ formatVersion: '1.0.0', rootSheetId: 'x' });
+        expect(result.sheets).toEqual([]);
+    });
+});
+
+// ── serializeBundle / deserializeBundle round-trip ────────────────────────────
+
+describe('bundle round-trip', () => {
+    it('deserializeBundle(serializeBundle(...)) restores all sheets faithfully', () => {
+        const blocks = [makeBlock({ id: 'b1', name: 'foo', code: '42', vizOptions: { customVizName: 'Table' } })];
+        const vizes = { Table: { source: '<table/>', draft: '<d/>' } };
+        const entries = [
+            { id: 'sheet-a', name: 'Sheet A', blocks, vizes },
+            { id: 'sheet-b', name: 'Sheet B', blocks: [], vizes: {} }
+        ];
+
+        const bundle = serializeBundle(entries, 'sheet-a');
+        const { rootSheetId, sheets } = deserializeBundle(bundle);
+
+        expect(rootSheetId).toBe('sheet-a');
+        expect(sheets).toHaveLength(2);
+
+        const a = sheets[0];
+        expect(a.id).toBe('sheet-a');
+        expect(a.name).toBe('Sheet A');
+        expect(a.blocks[0].name).toBe('foo');
+        expect(a.blocks[0].code).toBe('42');
+        expect(a.vizes).toEqual({ Table: { source: '<table/>' } });
+
+        const b = sheets[1];
+        expect(b.id).toBe('sheet-b');
+        expect(b.blocks).toHaveLength(0);
     });
 });
