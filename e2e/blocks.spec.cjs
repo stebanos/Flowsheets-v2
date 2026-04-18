@@ -264,3 +264,110 @@ test('E13 — rename sheet via sidebar double-click', async ({ page }) => {
     await expect(page.locator('[data-sidebar-sheet]').first()).toContainText('Sidebar Rename');
     await expect(page.locator('[data-sheet-name]')).toContainText('Sidebar Rename');
 });
+
+// ── E14 — Runtime error shows in output ──────────────────────────────────────
+
+test('E14 — runtime error shows in output', async ({ page }) => {
+    await createBlock(page);
+    await typeCode(page, 'undeclaredVariable');
+
+    await expect(blockOutput(page)).toContainText('not defined');
+});
+
+// ── E15 — Array output renders as list ───────────────────────────────────────
+
+test('E15 — array output renders as list', async ({ page }) => {
+    await createBlock(page);
+    await typeCode(page, '[1, 2, 3]');
+
+    const output = blockOutput(page);
+    await expect(output).toContainText('1');
+    await expect(output).toContainText('2');
+    await expect(output).toContainText('3');
+    // Each item is a separate row
+    await expect(output.locator('div').filter({ hasText: /^1$/ })).toBeVisible();
+    await expect(output.locator('div').filter({ hasText: /^2$/ })).toBeVisible();
+    await expect(output.locator('div').filter({ hasText: /^3$/ })).toBeVisible();
+});
+
+// ── E16 — Create a new sheet via sidebar ─────────────────────────────────────
+
+test('E16 — create a new sheet via sidebar', async ({ page }) => {
+    await page.getByRole('button', { name: 'Toggle sheets sidebar' }).click();
+
+    await page.getByRole('button', { name: 'New sheet' }).click();
+
+    const input = page.locator('input[class*="ring-blue"]:visible').first();
+    await input.fill('Second Sheet');
+    await input.press('Enter');
+
+    await expect(page.locator('[data-sidebar-sheet]')).toHaveCount(2);
+    await expect(page.locator('[data-sidebar-sheet]').last()).toContainText('Second Sheet');
+});
+
+// ── E17 — Switch between sheets ───────────────────────────────────────────────
+
+test('E17 — switch between sheets isolates blocks', async ({ page }) => {
+    // Add a block to the first (seeded) sheet
+    await createBlock(page, 300, 200);
+    await typeCode(page, '42');
+    await expect(blockOutput(page)).toContainText('42');
+
+    // Wait for the debounced auto-save before switching sheets
+    await page.waitForTimeout(700);
+
+    // Create a second sheet
+    await page.getByRole('button', { name: 'Toggle sheets sidebar' }).click();
+    await page.getByRole('button', { name: 'New sheet' }).click();
+    const input = page.locator('input[class*="ring-blue"]:visible').first();
+    await input.press('Enter');
+
+    // Second sheet is now active — should have no blocks
+    await expect(page.locator('[data-block]')).toHaveCount(0);
+
+    // Switch back to the first sheet
+    await page.locator('[data-sidebar-sheet]').first().click();
+
+    await expect(page.locator('[data-block]')).toHaveCount(1);
+    await expect(blockOutput(page)).toContainText('42');
+});
+
+// ── E18 — Inputs panel shows referenced block names ──────────────────────────
+
+test('E18 — inputs panel shows referenced block names', async ({ page }) => {
+    await createBlock(page, 150, 150);
+    await createBlock(page, 450, 150);
+
+    await typeCode(page, '10', 0);
+    const nameA = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
+
+    await typeCode(page, `${nameA} * 2`, 1);
+    await expect(blockOutput(page, 1)).toContainText('20');
+
+    // Inputs button only appears on the block that has a dependency (block 1)
+    await page.locator('.block-header').nth(1).hover();
+    await page.getByTitle('Inputs').click();
+
+    // Panel shows the referenced block's name
+    await expect(page.locator('.inputs-panel')).toBeVisible();
+    await expect(page.locator('.inputs-panel')).toContainText(nameA);
+});
+
+// ── E19 — Viz selector switches visualization type ────────────────────────────
+
+test('E19 — viz selector switches to JSON', async ({ page }) => {
+    await createBlock(page);
+    await typeCode(page, '({ a: 1, b: 2 })');
+
+    // Toggle the viz bar, then open the viz popup and switch to JSON
+    await page.locator('.block-header').first().hover();
+    await page.getByTitle('Visualization').click();
+    // The viz bar shows a label button in the output area — click it to open the popup
+    await page.locator('.block-output button').first().click();
+    await page.getByRole('menuitem', { name: 'JSON' }).click();
+
+    // JSON viz renders a <pre> with formatted output
+    await expect(page.locator('.block-output pre')).toBeVisible();
+    await expect(page.locator('.block-output pre')).toContainText('"a": 1');
+    await expect(page.locator('.block-output pre')).toContainText('"b": 2');
+});
