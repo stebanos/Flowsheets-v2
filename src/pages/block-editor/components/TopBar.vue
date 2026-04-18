@@ -48,14 +48,22 @@ const statusClass = computed(() => ({
     'text-red-400': localStatus.value === 'error'
 }));
 
+const statusColor = computed(() => {
+    if (statusClass.value['text-green-400']) { return 'text-green-400'; }
+    if (statusClass.value['text-red-400']) { return 'text-red-400'; }
+    if (fileStatus.value === 'dirty' || fileDirty.value) { return 'text-amber-400'; }
+    return 'text-[#9ca3af]';
+});
+
 // Save button visibility
 const showSaveFile = computed(() => fileName.value !== null);
 </script>
 
 <template>
     <div class="relative z-1200 flex items-center h-10 px-3 bg-gray-900 text-white shrink-0">
-        <!-- Left: sheet sidebar toggle + sheet name -->
+        <!-- Left: sheet sidebar toggle -->
         <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-gray-500 font-bold text-sm select-none mr-0.5" aria-hidden="true">FL</span>
             <button
                 v-if="props.toggleSheetSidebar"
                 class="flex items-center justify-center w-7 h-7 rounded transition-colors shrink-0"
@@ -73,19 +81,14 @@ const showSaveFile = computed(() => fileName.value !== null);
                     <line x1="7.5" y1="10.5" x2="11" y2="10.5" />
                 </svg>
             </button>
-            <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 shrink-0" />
-            <span
-                data-sheet-name
-                class="text-white text-sm font-medium cursor-default select-none truncate"
-            >{{ activeSheetName }}</span>
         </div>
 
-        <!-- Center: status zone (absolutely centered so left/right sections don't affect it) -->
-        <div
-            class="absolute left-1/2 -translate-x-1/2 text-xs pointer-events-none max-w-[40%] overflow-hidden text-ellipsis whitespace-nowrap"
-            :class="[statusClass, 'text-[#9ca3af]']"
-        >
-            {{ statusText }}
+        <!-- Center: sheet name + status (absolutely centered) -->
+        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-xs pointer-events-none max-w-[50%] overflow-hidden">
+            <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 flex-none" />
+            <span class="text-white/80 font-medium truncate shrink-0 max-w-[12rem]">{{ activeSheetName }}</span>
+            <span class="text-[#9ca3af] shrink-0">·</span>
+            <span class="text-ellipsis overflow-hidden whitespace-nowrap" :class="statusColor">{{ statusText }}</span>
         </div>
 
         <!-- Right: actions -->

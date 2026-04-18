@@ -81,10 +81,13 @@ function cancelNewSheet() {
 }
 
 function handleDeleteSheet(event, id) {
+    const isLast = sheets.value.length <= 1;
     confirm.require({
         group: 'sheet-delete',
         target: event.currentTarget,
-        message: 'Delete this sheet? This cannot be undone.',
+        message: isLast
+            ? 'This is your only sheet. Deleting it will clear the canvas.'
+            : 'Delete this sheet? This cannot be undone.',
         acceptLabel: 'Delete',
         rejectLabel: 'Cancel',
         acceptProps: { severity: 'danger' },
@@ -183,8 +186,8 @@ function handleCancelBundleImport() {
                 <!-- Action buttons (hidden until hover or active, suppressed while deleting) -->
                 <div
                     v-else-if="inlineEditId !== sheet.id"
-                    class="flex items-center shrink-0 opacity-0 group-hover:opacity-100"
-                    :class="sheet.id === activeSheetId ? 'opacity-100' : ''"
+                    class="flex items-center shrink-0 transition-opacity"
+                    :class="sheet.id === activeSheetId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'"
                 >
                     <!-- Rename -->
                     <button
@@ -198,11 +201,14 @@ function handleCancelBundleImport() {
                     </button>
                     <!-- Delete -->
                     <button
-                        class="flex items-center justify-center w-[22px] h-[22px] rounded text-gray-400 hover:bg-red-100 hover:text-red-600 disabled:opacity-30 disabled:pointer-events-none"
-                        :disabled="sheets.length <= 1"
+                        class="flex items-center justify-center w-[22px] h-[22px] rounded text-gray-400 hover:bg-red-100 hover:text-red-600"
                         aria-label="Delete sheet"
                         @click.stop="handleDeleteSheet($event, sheet.id)"
-                    >×</button>
+                    >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 3h8M5 3V2h2v1M4 3v6h4V3H4z"/>
+                        </svg>
+                    </button>
                 </div>
             </li>
         </ul>
@@ -325,15 +331,18 @@ function handleCancelBundleImport() {
                         <button
                             class="text-[11px] px-2 py-0.5 rounded transition-colors"
                             :class="entry.action === 'import' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'"
-                            @click="entry.action = entry.action === 'import' ? 'skip' : 'import'"
+                            @click="entry.action = 'import'"
                         >Import</button>
                         <button
-                            v-if="entry.action !== 'import'"
-                            class="text-[11px] px-2 py-0.5 rounded transition-colors bg-gray-700 text-gray-400 hover:text-white"
+                            class="text-[11px] px-2 py-0.5 rounded transition-colors"
+                            :class="entry.action === 'copy' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400 hover:text-white'"
                             @click="entry.action = 'copy'"
                         >Copy</button>
-                        <span v-if="entry.action === 'skip'" class="text-[11px] text-gray-500">Skip</span>
-                        <span v-else-if="entry.action === 'copy'" class="text-[11px] text-gray-400">as copy</span>
+                        <button
+                            class="text-[11px] px-2 py-0.5 rounded transition-colors"
+                            :class="entry.action === 'skip' ? 'bg-gray-600 text-gray-300' : 'bg-gray-700 text-gray-400 hover:text-white'"
+                            @click="entry.action = 'skip'"
+                        >Skip</button>
                     </div>
                 </li>
             </ul>

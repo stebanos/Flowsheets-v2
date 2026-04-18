@@ -27,7 +27,6 @@ export function useSheetManager() {
     async function deleteSheet(id) {
         if (deletingIds.has(id)) { return; }
         const { sheets } = sheetStore;
-        if (sheets.length <= 1) { return; }
         const name = sheets.find(s => s.id === id)?.name ?? 'Sheet';
         deleteError.value = null;
         deletingIds.add(id);

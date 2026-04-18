@@ -3,6 +3,8 @@ import { ref, nextTick } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
 import { useSheetStorage, useSheetManager } from '@/features/sheet';
 
+const emit = defineEmits(['open-sidebar']);
+
 const { sheets, activeSheetId } = useSheetStore();
 const { openSheetIds, switchSheet, closeSheet } = useSheetStorage();
 const { renameSheet } = useSheetManager();
@@ -40,6 +42,7 @@ function cancelEditing() {
             v-for="id in openSheetIds"
             :key="id"
             data-sheet-tab
+            title="Double-click to rename"
             class="group flex items-center gap-1.5 h-7 px-3 text-xs cursor-pointer select-none shrink-0 rounded-t-sm border border-b-0 -mb-px"
             :class="id === activeSheetId
                 ? 'bg-white border-gray-300 text-slate-800 font-semibold'
@@ -65,5 +68,10 @@ function cancelEditing() {
                 @click.stop="closeSheet(id)"
             >×</button>
         </div>
+        <span
+            v-if="sheets.length > openSheetIds.length"
+            class="flex items-center h-6.5 text-[10px] text-gray-400 px-2 shrink-0 select-none"
+            @click="emit('open-sidebar')"
+        >+{{ sheets.length - openSheetIds.length }} more</span>
     </div>
 </template>

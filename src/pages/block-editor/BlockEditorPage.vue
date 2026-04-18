@@ -2,7 +2,8 @@
 import { onMounted, watch } from 'vue';
 import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
-import { useFileIO, useSheetStorage } from '@/features/sheet';
+import { useSheetStore } from '@/entities/sheet';
+import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
@@ -10,6 +11,7 @@ import { Block, BlockGrid, SheetTabs, SheetSidebar } from '@/widgets';
 import { SidebarContent, TopBar } from './components';
 
 const { blocks } = useBlockStore();
+const { sheets } = useSheetStore();
 const { identifiersByBlock, dependsOn } = useBlockDependencies({ debounceMs: 0 });
 const context = useBlockEvaluation(dependsOn);
 const { createBlock } = useBlockManager();
@@ -17,7 +19,11 @@ const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
 const { isOpen: sheetSidebarOpen, toggle: toggleSheetSidebar } = useSidebar();
+const SHEET_SIDEBAR_KEY = 'flowsheets.v2.sheetSidebarOpen';
+sheetSidebarOpen.value = JSON.parse(localStorage.getItem(SHEET_SIDEBAR_KEY) ?? 'true');
+watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stringify(val)));
 const { activeVizName, customVizes, loadVizes } = useCustomViz();
+const { createSheet } = useSheetManager();
 
 function onEditViz(vizName) {
     openSidebar();
@@ -54,6 +60,9 @@ async function onDrop(e) {
     const file = [...(e.dataTransfer?.files ?? [])].find(f => f.name.endsWith('.flowsheet.json'));
     if (file) { await prepareImport(file); }
 }
+
+function openSheetSidebar() { sheetSidebarOpen.value = true; }
+function createSheetFromEmpty() { createSheet('Untitled'); }
 </script>
 
 <template>
@@ -76,10 +85,19 @@ async function onDrop(e) {
         <div class="flex flex-1 overflow-hidden">
             <sheet-sidebar :open="sheetSidebarOpen" />
             <div class="flex flex-col flex-1 overflow-hidden">
-                <sheet-tabs />
+                <sheet-tabs @open-sidebar="openSheetSidebar" />
                 <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
                     <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
                     <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+                    <div v-if="sheets.length === 0"
+                         class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white">
+                        <h1 class="text-2xl font-semibold text-gray-700">Flowsheets</h1>
+                        <p class="text-sm text-gray-400">No sheets yet</p>
+                        <button
+                            class="px-4 py-2 text-sm bg-gray-900 text-white rounded hover:bg-gray-700 transition-colors"
+                            @click="createSheetFromEmpty"
+                        >Create a sheet</button>
+                    </div>
                 </div>
             </div>
         </div>
