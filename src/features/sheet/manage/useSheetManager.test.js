@@ -4,11 +4,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // ── mocks ────────────────────────────────────────────────────────────────────
 
 const mockSheets = reactive([]);
-const mockActiveSheetId = ref(null);
 
 const mockSheetStore = {
     sheets: mockSheets,
-    activeSheetId: mockActiveSheetId,
     createSheet: vi.fn(),
     deleteSheet: vi.fn(),
     renameSheet: vi.fn()
@@ -18,12 +16,12 @@ vi.mock('@/entities/sheet', () => ({
     useSheetStore: () => mockSheetStore
 }));
 
-const mockOpenSheetIds = reactive([]);
-
 const mockSheetStorage = {
-    openSheetIds: mockOpenSheetIds,
-    switchSheet: vi.fn(),
-    closeSheet: vi.fn()
+    openSheetIds: reactive([]),
+    initNewSheet: vi.fn(),
+    closeSheet: vi.fn(),
+    persistDeleteSheet: vi.fn(),
+    persistRenameSheet: vi.fn()
 };
 
 vi.mock('@/features/sheet/storage', () => ({
@@ -44,173 +42,151 @@ function addSheet(id, name = 'Sheet') {
 
 describe('useSheetManager', () => {
     beforeEach(() => {
-        // Reset reactive state
         mockSheets.splice(0);
-        mockOpenSheetIds.splice(0);
-        mockActiveSheetId.value = null;
-
-        // Reset localStorage
-        localStorage.clear();
-
-        // Reset mocks
         vi.clearAllMocks();
-
-        // Reset renamingSheetId by calling clearRenamingId between tests
-        const { clearRenamingId } = useSheetManager();
-        clearRenamingId();
+        mockSheetStorage.persistDeleteSheet.mockResolvedValue(undefined);
     });
 
     describe('createSheet()', () => {
-        it('calls sheetStore.createSheet() and writes empty storage entry', () => {
+        it('calls sheetStore.createSheet and sheetStorage.initNewSheet, returns id', () => {
             const newId = 'sheet:local/new-1';
             mockSheetStore.createSheet.mockReturnValue(newId);
 
             const { createSheet } = useSheetManager();
-            createSheet();
+            const result = createSheet('My Sheet');
 
-            expect(mockSheetStore.createSheet).toHaveBeenCalledTimes(1);
-
-            const stored = JSON.parse(localStorage.getItem(`flowsheets.v2.sheet.${newId}`));
-            expect(stored).toEqual({ blocks: [], customVizes: [] });
+            expect(mockSheetStore.createSheet).toHaveBeenCalledWith('My Sheet');
+            expect(mockSheetStorage.initNewSheet).toHaveBeenCalledWith(newId, 'My Sheet');
+            expect(result).toBe(newId);
         });
 
-        it('adds id to openSheetIds if not already present', () => {
+        it('defaults to Untitled when name is blank', () => {
             const newId = 'sheet:local/new-2';
             mockSheetStore.createSheet.mockReturnValue(newId);
 
             const { createSheet } = useSheetManager();
-            createSheet();
+            createSheet('   ');
 
-            expect(mockOpenSheetIds).toContain(newId);
+            expect(mockSheetStore.createSheet).toHaveBeenCalledWith('Untitled');
+            expect(mockSheetStorage.initNewSheet).toHaveBeenCalledWith(newId, 'Untitled');
         });
 
-        it('does not duplicate id in openSheetIds', () => {
+        it('defaults to Untitled when name is null', () => {
             const newId = 'sheet:local/new-3';
             mockSheetStore.createSheet.mockReturnValue(newId);
-            mockOpenSheetIds.push(newId);
 
             const { createSheet } = useSheetManager();
-            createSheet();
+            createSheet(null);
 
-            expect(mockOpenSheetIds.filter(id => id === newId)).toHaveLength(1);
+            expect(mockSheetStore.createSheet).toHaveBeenCalledWith('Untitled');
         });
 
-        it('calls switchSheet with the new id', () => {
+        it('defaults to Untitled when name is omitted', () => {
             const newId = 'sheet:local/new-4';
             mockSheetStore.createSheet.mockReturnValue(newId);
 
             const { createSheet } = useSheetManager();
             createSheet();
 
-            expect(mockSheetStorage.switchSheet).toHaveBeenCalledWith(newId);
-        });
-
-        it('sets renamingSheetId to the new id', () => {
-            const newId = 'sheet:local/new-5';
-            mockSheetStore.createSheet.mockReturnValue(newId);
-
-            const { createSheet, renamingSheetId } = useSheetManager();
-            createSheet();
-
-            expect(renamingSheetId.value).toBe(newId);
+            expect(mockSheetStore.createSheet).toHaveBeenCalledWith('Untitled');
         });
     });
 
     describe('deleteSheet()', () => {
-        it('does nothing when only one sheet exists (last-sheet guard)', () => {
+        it('is a no-op when only one sheet exists', async () => {
             addSheet('sheet:local/only');
 
             const { deleteSheet } = useSheetManager();
-            deleteSheet('sheet:local/only');
+            await deleteSheet('sheet:local/only');
 
             expect(mockSheetStorage.closeSheet).not.toHaveBeenCalled();
+            expect(mockSheetStorage.persistDeleteSheet).not.toHaveBeenCalled();
             expect(mockSheetStore.deleteSheet).not.toHaveBeenCalled();
         });
 
-        it('closes, deletes, removes storage key and rebuilds catalogue when multiple sheets exist', () => {
+        it('calls closeSheet, persistDeleteSheet, then sheetStore.deleteSheet in order', async () => {
             const id1 = 'sheet:local/a';
             const id2 = 'sheet:local/b';
             addSheet(id1, 'Alpha');
             addSheet(id2, 'Beta');
 
-            // Pre-populate sheet storage key
-            localStorage.setItem(`flowsheets.v2.sheet.${id1}`, JSON.stringify({ blocks: [], customVizes: [] }));
+            const callOrder = [];
+            mockSheetStorage.closeSheet.mockImplementation(() => { callOrder.push('closeSheet'); });
+            mockSheetStorage.persistDeleteSheet.mockImplementation(() => {
+                callOrder.push('persistDeleteSheet');
+                return Promise.resolve();
+            });
+            mockSheetStore.deleteSheet.mockImplementation(() => { callOrder.push('deleteSheet'); });
 
             const { deleteSheet } = useSheetManager();
-            deleteSheet(id1);
+            await deleteSheet(id1);
 
-            expect(mockSheetStorage.closeSheet).toHaveBeenCalledWith(id1);
-            expect(mockSheetStore.deleteSheet).toHaveBeenCalledWith(id1);
-            expect(localStorage.getItem(`flowsheets.v2.sheet.${id1}`)).toBeNull();
+            expect(callOrder).toEqual(['closeSheet', 'persistDeleteSheet', 'deleteSheet']);
         });
 
-        it('persists updated catalogue after deletion', () => {
-            const id1 = 'sheet:local/c';
-            const id2 = 'sheet:local/d';
-            addSheet(id1, 'One');
-            addSheet(id2, 'Two');
+        it('adds id to deletingIds during execution and removes it after', async () => {
+            const id1 = 'sheet:local/a';
+            const id2 = 'sheet:local/b';
+            addSheet(id1);
+            addSheet(id2);
 
-            // Simulate store.deleteSheet removing id1 from mockSheets
-            mockSheetStore.deleteSheet.mockImplementation((id) => {
-                const idx = mockSheets.findIndex(s => s.id === id);
-                if (idx !== -1) { mockSheets.splice(idx, 1); }
+            let wasInDeletingIds = false;
+            mockSheetStorage.persistDeleteSheet.mockImplementation(() => {
+                wasInDeletingIds = deletingIds.has(id1);
+                return Promise.resolve();
             });
 
-            const { deleteSheet } = useSheetManager();
-            deleteSheet(id1);
+            const { deleteSheet, deletingIds } = useSheetManager();
+            await deleteSheet(id1);
 
-            const catalogue = JSON.parse(localStorage.getItem('flowsheets.v2.catalogue'));
-            expect(catalogue).toHaveLength(1);
-            expect(catalogue[0].id).toBe(id2);
+            expect(wasInDeletingIds).toBe(true);
+            expect(deletingIds.has(id1)).toBe(false);
+        });
+
+        it('sets deletedNotice to the sheet name after completion', async () => {
+            const id1 = 'sheet:local/a';
+            const id2 = 'sheet:local/b';
+            addSheet(id1, 'Alpha');
+            addSheet(id2, 'Beta');
+
+            const { deleteSheet, deletedNotice } = useSheetManager();
+            await deleteSheet(id1);
+
+            expect(deletedNotice.value).toBe('Alpha');
         });
     });
 
     describe('renameSheet()', () => {
-        it('calls sheetStore.renameSheet with trimmed name', () => {
+        it('calls sheetStore.renameSheet and sheetStorage.persistRenameSheet with trimmed name', () => {
             const { renameSheet } = useSheetManager();
             renameSheet('sheet:local/x', '  My Sheet  ');
 
             expect(mockSheetStore.renameSheet).toHaveBeenCalledWith('sheet:local/x', 'My Sheet');
+            expect(mockSheetStorage.persistRenameSheet).toHaveBeenCalledWith('sheet:local/x', 'My Sheet');
         });
 
-        it('returns early without calling renameSheet when name is blank', () => {
+        it('is a no-op on blank name', () => {
             const { renameSheet } = useSheetManager();
             renameSheet('sheet:local/x', '   ');
 
             expect(mockSheetStore.renameSheet).not.toHaveBeenCalled();
+            expect(mockSheetStorage.persistRenameSheet).not.toHaveBeenCalled();
         });
 
-        it('returns early without calling renameSheet when name is empty string', () => {
+        it('is a no-op on empty string', () => {
             const { renameSheet } = useSheetManager();
             renameSheet('sheet:local/x', '');
 
             expect(mockSheetStore.renameSheet).not.toHaveBeenCalled();
+            expect(mockSheetStorage.persistRenameSheet).not.toHaveBeenCalled();
         });
 
-        it('returns early without calling renameSheet when name is null', () => {
+        it('is a no-op on null name', () => {
             const { renameSheet } = useSheetManager();
             renameSheet('sheet:local/x', null);
 
             expect(mockSheetStore.renameSheet).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('renamingSheetId lifecycle', () => {
-        it('starts as null', () => {
-            const { renamingSheetId } = useSheetManager();
-            expect(renamingSheetId.value).toBeNull();
-        });
-
-        it('clearRenamingId() resets it to null', () => {
-            const newId = 'sheet:local/rename-test';
-            mockSheetStore.createSheet.mockReturnValue(newId);
-
-            const { createSheet, clearRenamingId, renamingSheetId } = useSheetManager();
-            createSheet();
-            expect(renamingSheetId.value).toBe(newId);
-
-            clearRenamingId();
-            expect(renamingSheetId.value).toBeNull();
+            expect(mockSheetStorage.persistRenameSheet).not.toHaveBeenCalled();
         });
     });
 });

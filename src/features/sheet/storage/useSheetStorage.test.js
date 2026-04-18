@@ -56,7 +56,7 @@ describe('loadFromStorage', () => {
         const { useSheetStorage, useSheetStore } = await freshImports();
 
         const { loadFromStorage, openSheetIds } = useSheetStorage();
-        loadFromStorage();
+        await loadFromStorage();
 
         const catalogue = JSON.parse(fakeStorage.getItem(KEY_CATALOGUE));
         expect(catalogue).toHaveLength(1);
@@ -83,7 +83,7 @@ describe('loadFromStorage', () => {
         }));
 
         const { loadFromStorage } = useSheetStorage();
-        loadFromStorage();
+        await loadFromStorage();
 
         const { blocks } = useBlockStore();
         expect(blocks).toHaveLength(1);
@@ -108,7 +108,7 @@ describe('loadFromStorage', () => {
         fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({ blocks: [], customVizes: {} }));
 
         const { loadFromStorage, openSheetIds } = useSheetStorage();
-        loadFromStorage();
+        await loadFromStorage();
 
         expect(openSheetIds).toEqual([id1, id2]);
     });
@@ -139,7 +139,7 @@ describe('switchSheet', () => {
         }));
 
         const storage = useSheetStorage();
-        storage.loadFromStorage();
+        await storage.loadFromStorage();
 
         return { storage, useSheetStore, useBlockStore, id1, id2 };
     }
@@ -148,7 +148,7 @@ describe('switchSheet', () => {
         const { storage, useBlockStore, id2 } = await setupTwoSheets();
         const { blocks } = useBlockStore();
 
-        storage.switchSheet(id2);
+        await storage.switchSheet(id2);
 
         expect(blocks).toHaveLength(1);
         expect(blocks[0].id).toBe('b2');
@@ -157,7 +157,7 @@ describe('switchSheet', () => {
     it('updates activeSheetId in the store and in localStorage', async () => {
         const { storage, useSheetStore, id2 } = await setupTwoSheets();
 
-        storage.switchSheet(id2);
+        await storage.switchSheet(id2);
 
         const { activeSheetId } = useSheetStore();
         expect(activeSheetId.value).toBe(id2);
@@ -167,7 +167,7 @@ describe('switchSheet', () => {
     it('adds the target id to openSheetIds', async () => {
         const { storage, id2 } = await setupTwoSheets();
 
-        storage.switchSheet(id2);
+        await storage.switchSheet(id2);
 
         expect(storage.openSheetIds).toContain(id2);
         const persisted = JSON.parse(fakeStorage.getItem(KEY_OPEN_IDS));
@@ -179,7 +179,7 @@ describe('switchSheet', () => {
         const { activeSheetId } = useSheetStore();
         const idBefore = activeSheetId.value;
 
-        storage.switchSheet(id1);
+        await storage.switchSheet(id1);
 
         expect(activeSheetId.value).toBe(idBefore);
     });
@@ -204,7 +204,7 @@ describe('closeSheet', () => {
         fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({ blocks: [], customVizes: {} }));
 
         const storage = useSheetStorage();
-        storage.loadFromStorage();
+        await storage.loadFromStorage();
 
         return { storage, useSheetStore, useBlockStore, id1, id2 };
     }
@@ -233,6 +233,7 @@ describe('closeSheet', () => {
         // id1 is currently active; close it → should switch to id2
 
         storage.closeSheet(id1);
+        await nextTick();
 
         const { activeSheetId } = useSheetStore();
         expect(activeSheetId.value).toBe(id2);
@@ -265,7 +266,7 @@ describe('auto-save debounce', () => {
         fakeStorage.setItem(KEY_SHEET(id), JSON.stringify({ blocks: [], customVizes: {} }));
 
         const { loadFromStorage, localStatus } = useSheetStorage();
-        loadFromStorage();
+        await loadFromStorage();
 
         const { addBlock } = useBlockStore();
         addBlock({ id: 'b99', name: 'z', code: '0', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null });
@@ -292,7 +293,7 @@ describe('auto-save debounce', () => {
         fakeStorage.setItem(KEY_SHEET(id), JSON.stringify({ blocks: [], customVizes: {} }));
 
         const { loadFromStorage } = useSheetStorage();
-        loadFromStorage();
+        await loadFromStorage();
 
         const { addBlock, updateBlock } = useBlockStore();
         addBlock({ id: 'b1', name: 'a', code: '1', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null });

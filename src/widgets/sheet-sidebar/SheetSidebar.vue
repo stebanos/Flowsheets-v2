@@ -339,7 +339,7 @@ function handleCancelBundleImport() {
         </div>
         <template #footer>
             <p-button label="Cancel" severity="secondary" text @click="handleCancelBundleImport" />
-            <p-button v-if="!importError" label="Import" @click="confirmBundleImport" />
+            <p-button v-if="!importError" label="Import" @click="async () => await confirmBundleImport()" />
             <p-button v-else label="Close" @click="handleCancelBundleImport" />
         </template>
     </p-dialog>

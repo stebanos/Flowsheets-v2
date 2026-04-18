@@ -24,7 +24,17 @@ vi.mock('@/features/block/visualize', () => ({
 vi.mock('@/entities/sheet', () => ({
     useSheetStore: () => ({
         activeSheetName: ref('Test'),
-        renameActiveSheet: mockRenameActiveSheet
+        renameActiveSheet: mockRenameActiveSheet,
+        sheets: [],
+        activeSheetId: ref(null)
+    })
+}));
+
+vi.mock('@/features/sheet/storage', () => ({
+    useSheetStorage: () => ({
+        readSheetData: vi.fn(),
+        writeSheetData: vi.fn(),
+        switchSheet: vi.fn()
     })
 }));
 

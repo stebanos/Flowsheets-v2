@@ -40,6 +40,7 @@ export function useSheetManager() {
         const trimmed = name?.trim();
         if (!trimmed) { return; }
         sheetStore.renameSheet(id, trimmed);
+        sheetStorage.persistRenameSheet(id, trimmed);
     }
 
     return {

@@ -43,26 +43,11 @@ function _onSaveSuccess() {
     }, 3500);
 }
 
-const KEY_SHEET = (id) => `flowsheets.v2.sheet.${id}`;
-const KEY_CATALOGUE = 'flowsheets.v2.catalogue';
-
-function _readJson(key, fallback) {
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
-}
-
-function _writeJson(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-}
-
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet } = useSheetStore();
+    const { activeSheetName, renameActiveSheet, sheets, activeSheetId } = useSheetStore();
+    const { readSheetData, writeSheetData, switchSheet } = useSheetStorage();
 
     if (!initialised) {
         initialised = true;
@@ -233,15 +218,15 @@ export function useFileIO() {
     // ── bundle export ─────────────────────────────────────────────────────────
 
     async function exportBundle() {
-        const sheetEntries = sheets.map((sheet) => {
-            const stored = _readJson(KEY_SHEET(sheet.id), null);
+        const sheetEntries = await Promise.all(sheets.map(async (sheet) => {
+            const stored = await readSheetData(sheet.id);
             return {
                 id: sheet.id,
                 name: sheet.name,
                 blocks: stored?.blocks ?? [],
                 vizes: stored?.customVizes ?? {}
             };
-        });
+        }));
 
         const bundle = serializeBundle(sheetEntries, activeSheetId.value);
         const raw = activeSheetName.value ?? 'untitled';
@@ -288,10 +273,9 @@ export function useFileIO() {
         return { pending: true };
     }
 
-    function confirmBundleImport() {
+    async function confirmBundleImport() {
         if (!bundleImportState.value.pending) { return; }
         const { entries, rootSheetId } = bundleImportState.value;
-        const { switchSheet } = useSheetStorage();
 
         let resolvedRootId = rootSheetId;
 
@@ -308,22 +292,7 @@ export function useFileIO() {
             }
 
             const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName);
-            _writeJson(KEY_SHEET(targetId), { blocks: serialized.blocks, customVizes: serialized.customVizes });
-
-            // upsert into sheet store reactive catalogue
-            setActiveSheet(targetId, targetName);
-
-            // upsert into localStorage catalogue
-            const catalogue = _readJson(KEY_CATALOGUE, []);
-            const existingIdx = catalogue.findIndex(s => s.id === targetId);
-            const now = new Date().toISOString();
-            if (existingIdx !== -1) {
-                catalogue[existingIdx].name = targetName;
-                catalogue[existingIdx].updatedAt = now;
-            } else {
-                catalogue.push({ id: targetId, name: targetName, createdAt: now, updatedAt: now });
-            }
-            _writeJson(KEY_CATALOGUE, catalogue);
+            await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes });
         }
 
         bundleImportState.value = { pending: false, entries: [] };
