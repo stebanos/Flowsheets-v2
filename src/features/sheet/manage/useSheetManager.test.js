@@ -21,7 +21,9 @@ const mockSheetStorage = {
     initNewSheet: vi.fn(),
     closeSheet: vi.fn(),
     persistDeleteSheet: vi.fn(),
-    persistRenameSheet: vi.fn()
+    persistRenameSheet: vi.fn(),
+    markPendingDelete: vi.fn(),
+    unmarkPendingDelete: vi.fn()
 };
 
 vi.mock('@/features/sheet/storage', () => ({

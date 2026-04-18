@@ -31,6 +31,7 @@ export function useSheetManager() {
         const name = sheets.find(s => s.id === id)?.name ?? 'Sheet';
         deleteError.value = null;
         deletingIds.add(id);
+        sheetStorage.markPendingDelete(id);
         try {
             sheetStorage.closeSheet(id);
             // one frame so Vue renders the sheet switch before the storage delete
@@ -42,6 +43,7 @@ export function useSheetManager() {
             deleteError.value = err.message;
         } finally {
             deletingIds.delete(id);
+            sheetStorage.unmarkPendingDelete(id);
         }
     }
 

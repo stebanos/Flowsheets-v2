@@ -11,9 +11,10 @@ const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';
 const KEY_OPEN_IDS  = 'flowsheets.v2.openSheetIds';
 
 // ── module-level singletons ──────────────────────────────────────────────────
-const localStatus  = ref('idle');  // 'idle' | 'saving' | 'error'
-const localError   = ref(null);    // string | null
-const openSheetIds = reactive([]);
+const localStatus    = ref('idle');  // 'idle' | 'saving' | 'error'
+const localError     = ref(null);    // string | null
+const openSheetIds   = reactive([]);
+const _pendingDelete = new Set();    // ids whose writes must be suppressed until deleted
 
 let initialised  = false;
 let bootPromise  = null;
@@ -71,9 +72,11 @@ export function useSheetStorage() {
     async function _saveCurrentSheet() {
         if (!activeSheetId.value) { return; }
         const id   = activeSheetId.value;
+        if (_pendingDelete.has(id)) { return; }
         const name = activeSheetName.value;
         try {
             const serialized = serializeSheet(blocks, customVizes, name);
+            if (_pendingDelete.has(id)) { return; }
             await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes });
             localStatus.value = 'idle';
         } catch (err) {
@@ -256,6 +259,9 @@ export function useSheetStorage() {
         );
     }
 
+    function markPendingDelete(id) { _pendingDelete.add(id); }
+    function unmarkPendingDelete(id) { _pendingDelete.delete(id); }
+
     return {
         localStatus,
         localError,
@@ -267,6 +273,8 @@ export function useSheetStorage() {
         persistDeleteSheet,
         persistRenameSheet,
         readSheetData,
-        writeSheetData
+        writeSheetData,
+        markPendingDelete,
+        unmarkPendingDelete
     };
 }
