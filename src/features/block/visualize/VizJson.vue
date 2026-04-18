@@ -26,7 +26,7 @@ const formatted = computed(() => {
 
 <template>
     <div class="flex flex-col h-full overflow-hidden">
-        <pre class="px-2 py-1 text-[12px] font-mono leading-[1.4] overflow-auto flex-1 whitespace-pre-wrap break-words"
+        <pre class="px-2 py-1 text-[12px] font-mono leading-[1.4] overflow-auto flex-1 whitespace-pre-wrap wrap-break-word"
              :class="effectiveError ? 'text-red-600' : ''">{{ formatted }}</pre>
     </div>
 </template>

@@ -101,9 +101,9 @@ function createSheetFromEmpty() { createSheet('Untitled'); }
                 </div>
             </div>
         </div>
-        <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-[31.25rem] top-9.75">
+        <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-125 top-9.75">
             <template #container>
-                <sidebar-content class="h-full -ml-0.25" />
+                <sidebar-content class="h-full -ml-px" />
             </template>
         </p-drawer>
         <!-- Undo delete toast -->

@@ -86,7 +86,7 @@ const showSaveFile = computed(() => fileName.value !== null);
         <!-- Center: sheet name + status (absolutely centered) -->
         <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-xs pointer-events-none max-w-[50%] overflow-hidden">
             <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 flex-none" />
-            <span class="text-white/80 font-medium truncate shrink-0 max-w-[12rem]">{{ activeSheetName }}</span>
+            <span class="text-white/80 font-medium truncate shrink-0 max-w-48">{{ activeSheetName }}</span>
             <span class="text-[#9ca3af] shrink-0">·</span>
             <span class="text-ellipsis overflow-hidden whitespace-nowrap" :class="statusColor">{{ statusText }}</span>
         </div>

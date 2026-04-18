@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onBeforeUnmount } from 'vue';
 
-const props = defineProps({
+defineProps({
     value: {},
     error: { type: String, default: null },
     block: { type: Object, default: null },

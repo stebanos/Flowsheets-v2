@@ -160,7 +160,7 @@ const formattedResult = computed(() => {
 
 // Viz selector bar
 const vizMenu = ref(null);
-const { vizMenuItems, currentVizType, currentVizLabel, activeVizComponent } =
+const { vizMenuItems, currentVizLabel, activeVizComponent } =
     useVizMenu(props.block, (vizName) => emit('edit-viz', vizName));
 
 function modeFor(ref) {
@@ -233,7 +233,7 @@ watch(
 </script>
 
 <template>
-    <div data-block class="group absolute select-none outline outline-1 bg-white shadow-md text-[.875rem] leading-[1rem] flex flex-col"
+    <div data-block class="group absolute select-none outline bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
          :style="blockPositionStyle"
          :class="[isHighlighted ? 'outline-black z-10' : 'outline-gray-300 hover:outline-black hover:z-10', {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
@@ -248,9 +248,9 @@ watch(
                     @editing-change="isNameEditing = $event" />
             </div>
             <!-- Right icons -->
-            <div class="flex items-center flex-shrink-0 h-full ml-auto relative z-10 group-[.resizing-local]:invisible">
+            <div class="flex items-center shrink-0 h-full ml-auto relative z-10 group-[.resizing-local]:invisible">
                 <button
-                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:!opacity-100 cursor-pointer transition-opacity"
+                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
                     title="Delete block"
                     @click.stop="deleteBlock(block)"
                     @mousedown.stop>
@@ -259,8 +259,8 @@ watch(
                     </svg>
                 </button>
                 <button v-if="hasInputs"
-                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:!opacity-100 cursor-pointer transition-opacity"
-                    :class="panelOpen ? '!opacity-100' : ''"
+                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                    :class="panelOpen ? 'opacity-100!' : ''"
                     title="Inputs"
                     @click.stop="toggleInputsPanel">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -272,8 +272,8 @@ watch(
                         <rect x="8" y="4" width="6" height="8" rx="1.5"/>
                     </svg>
                 </button>
-                <button class="h-full px-1.5 flex items-center opacity-50 group-hover:opacity-75 hover:!opacity-100 cursor-pointer transition-opacity"
-                        :class="showVizBar ? '!opacity-100' : ''"
+                <button class="h-full px-1.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                        :class="showVizBar ? 'opacity-100!' : ''"
                         title="Visualization"
                         @click.stop="toggleVizBar">
                     <svg viewBox="0 0 16 16" width="14" height="14">
@@ -292,7 +292,7 @@ watch(
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
         </div>
-        <div v-if="panelOpen && hasInputs" class="inputs-panel w-full border-t border-gray-300 bg-gray-50 flex-shrink-0">
+        <div v-if="panelOpen && hasInputs" class="inputs-panel w-full border-t border-gray-300 bg-gray-50 shrink-0">
             <div v-for="ref in blockDeps" :key="ref"
                 class="input-row flex items-center justify-between px-2 gap-2"
                 :style="{ height: cellHeight + 'px' }"

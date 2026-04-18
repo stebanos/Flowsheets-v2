@@ -183,7 +183,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
 <template>
     <div class="flex flex-col h-full">
         <!-- Outer tab strip -->
-        <div class="flex items-end border-b border-gray-200 bg-gray-50 flex-shrink-0 overflow-x-auto">
+        <div class="flex items-end border-b border-gray-200 bg-gray-50 shrink-0 overflow-x-auto">
             <div v-for="name in vizNames" :key="name"
                  class="flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
                  :class="name === activeVizName ? 'bg-white border-t-2 border-t-black -mt-px' : 'text-gray-500 hover:text-gray-800'"
@@ -201,11 +201,11 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
                 <template v-else>
                     <span>{{ name }}</span>
                     <span v-if="isDirtyTab(name)"
-                          class="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block flex-shrink-0"
+                          class="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0"
                           title="Unsaved changes" />
                 </template>
             </div>
-            <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none flex-shrink-0"
+            <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none shrink-0"
                     title="New visualization"
                     @click="handleCreate">+</button>
         </div>
@@ -221,7 +221,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
         <!-- Panel sub-tab strip + editors -->
         <template v-else>
             <!-- Inner sub-tab strip -->
-            <div class="flex items-center border-b border-gray-200 flex-shrink-0"
+            <div class="flex items-center border-b border-gray-200 shrink-0"
                  style="background: #f3f4f6; height: 30px;">
                 <button v-for="panel in panels" :key="panel.id"
                         class="relative px-3 h-full cursor-pointer select-none flex items-center gap-1"
@@ -231,7 +231,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
                     <span>{{ panel.label }}</span>
                     <!-- Error dot -->
                     <span v-if="activeEntry?.errorPanel === panel.id"
-                          class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block flex-shrink-0"
+                          class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block shrink-0"
                           title="Error in this panel" />
                     <!-- Active underline -->
                     <span v-if="panel.id === activePanel"
@@ -250,7 +250,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
 
         <!-- Run bar -->
         <div v-if="vizNames.length > 0"
-             class="flex items-center gap-3 px-3 py-2 bg-gray-50 border-t border-gray-200 flex-shrink-0">
+             class="flex items-center gap-3 px-3 py-2 bg-gray-50 border-t border-gray-200 shrink-0">
             <div class="flex-1 text-xs min-w-0">
                 <span v-if="runBarStatus === 'dirty'" class="text-gray-400 italic">Run to apply changes</span>
                 <span v-else-if="runBarStatus === 'success'" class="text-green-600">✓ Compiled</span>
@@ -261,8 +261,8 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
                             @click="handleRevert">Revert</button>
                 </template>
             </div>
-            <span class="text-xs text-gray-400 flex-shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
-            <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer flex-shrink-0"
+            <span class="text-xs text-gray-400 shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
+            <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer shrink-0"
                     @click="handleRun">Run</button>
         </div>
     </div>

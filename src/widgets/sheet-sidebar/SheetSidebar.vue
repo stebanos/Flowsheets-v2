@@ -146,7 +146,7 @@ function handleCancelBundleImport() {
                 v-for="sheet in sheets"
                 :key="sheet.id"
                 data-sidebar-sheet
-                class="group flex items-center h-8 pl-[7px] pr-1.5 gap-1.5 cursor-pointer select-none border-l-[3px]"
+                class="group flex items-center h-8 pl-1.75 pr-1.5 gap-1.5 cursor-pointer select-none border-l-[3px]"
                 :class="sheet.id === activeSheetId
                     ? 'bg-[#e8edf2] border-l-gray-700'
                     : 'bg-transparent border-l-transparent hover:bg-[#eef0f2]'"
@@ -191,7 +191,7 @@ function handleCancelBundleImport() {
                 >
                     <!-- Rename -->
                     <button
-                        class="flex items-center justify-center w-[22px] h-[22px] rounded text-gray-400 hover:bg-gray-300 hover:text-gray-700"
+                        class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-gray-300 hover:text-gray-700"
                         aria-label="Rename sheet"
                         @click.stop="startEditing(sheet.id, sheet.name)"
                     >
@@ -201,7 +201,7 @@ function handleCancelBundleImport() {
                     </button>
                     <!-- Delete -->
                     <button
-                        class="flex items-center justify-center w-[22px] h-[22px] rounded text-gray-400 hover:bg-red-100 hover:text-red-600"
+                        class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-red-100 hover:text-red-600"
                         aria-label="Delete sheet"
                         @click.stop="handleDeleteSheet($event, sheet.id)"
                     >
@@ -219,7 +219,7 @@ function handleCancelBundleImport() {
         <!-- Pending new-sheet name input -->
         <div
             v-if="pendingNewSheet"
-            class="flex items-center h-8 pl-[7px] pr-1.5"
+            class="flex items-center h-8 pl-1.75 pr-1.5"
         >
             <input
                 ref="pendingInputEl"
@@ -274,7 +274,7 @@ function handleCancelBundleImport() {
         modal
         :closable="false"
         header="Import sheet"
-        class="w-[28rem]"
+        class="w-md"
     >
         <div v-if="importError" class="text-sm text-red-400 mb-4">
             {{ importError }}
@@ -313,7 +313,7 @@ function handleCancelBundleImport() {
         modal
         :closable="false"
         header="Import bundle"
-        class="w-[32rem]"
+        class="w-lg"
     >
         <div v-if="importError" class="text-sm text-red-400 mb-4">
             {{ importError }}
