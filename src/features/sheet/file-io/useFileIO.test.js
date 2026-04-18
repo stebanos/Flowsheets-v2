@@ -26,7 +26,8 @@ vi.mock('@/entities/sheet', () => ({
         activeSheetName: ref('Test'),
         renameActiveSheet: mockRenameActiveSheet,
         sheets: [],
-        activeSheetId: ref(null)
+        activeSheetId: ref(null),
+        setActiveSheet: vi.fn()
     })
 }));
 

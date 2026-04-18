@@ -214,34 +214,7 @@ describe('renameActiveSheet', () => {
 });
 
 // ---------------------------------------------------------------------------
-// ensureActiveSheet — backward compat
-// ---------------------------------------------------------------------------
-describe('ensureActiveSheet', () => {
-    test('returns the active sheet id and name', () => {
-        const { createSheet, ensureActiveSheet } = useSheetStore();
-        const id = createSheet('My Project');
-        const { id: gotId, name } = ensureActiveSheet();
-        expect(gotId).toBe(id);
-        expect(name).toBe('My Project');
-    });
-
-    test('reflects a subsequent rename', () => {
-        const { createSheet, renameActiveSheet, ensureActiveSheet } = useSheetStore();
-        createSheet('Old Name');
-        renameActiveSheet('New Name');
-        expect(ensureActiveSheet().name).toBe('New Name');
-    });
-
-    test('returns null id and "Untitled" when no active sheet', () => {
-        const { ensureActiveSheet } = useSheetStore();
-        const { id, name } = ensureActiveSheet();
-        expect(id).toBeNull();
-        expect(name).toBe('Untitled');
-    });
-});
-
-// ---------------------------------------------------------------------------
-// setActiveSheet — backward compat upsert
+// setActiveSheet
 // ---------------------------------------------------------------------------
 describe('setActiveSheet', () => {
     test('registers a new sheet in the catalogue', () => {

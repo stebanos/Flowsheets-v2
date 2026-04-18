@@ -46,9 +46,9 @@ function renameSheet(id, name) {
 }
 
 /**
- * Upserts the active sheet into the catalogue. Kept for backward compat during
- * transition — callers that already have an id/name (e.g. from localStorage) can
- * register the sheet without going through createSheet().
+ * Upserts a sheet into the catalogue and sets it as active.
+ * Use when registering sheets from persisted storage or after writing a new
+ * sheet entry (e.g. bundle import) so the reactive catalogue stays in sync.
  */
 function setActiveSheet(id, name) {
     activeSheetId.value = id;
@@ -64,21 +64,12 @@ function setActiveSheet(id, name) {
 }
 
 /**
- * Update the name of the active sheet (reactive state only — persistence
- * is handled by the pages layer).
+ * Renames the currently active sheet. Convenience wrapper around renameSheet.
  * @param {string} name
  * @returns {boolean} false if name is empty after trim
  */
 function renameActiveSheet(name) {
     return renameSheet(activeSheetId.value, name);
-}
-
-/**
- * Returns the active sheet id and name.
- * @returns {{ id: string, name: string }}
- */
-function ensureActiveSheet() {
-    return { id: activeSheetId.value, name: activeSheetName.value };
 }
 
 export function useSheetStore() {
@@ -90,7 +81,6 @@ export function useSheetStore() {
         deleteSheet,
         renameSheet,
         setActiveSheet,
-        renameActiveSheet,
-        ensureActiveSheet
+        renameActiveSheet
     };
 }

@@ -1,8 +1,8 @@
 <script setup>
+import { onMounted, watch } from 'vue';
 import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
-import { useFileIO } from '@/features/sheet/file-io';
-import { useSheetStorage } from '@/features/sheet/storage';
+import { useFileIO, useSheetStorage } from '@/features/sheet';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
@@ -17,7 +17,7 @@ const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
 const { isOpen: sheetSidebarOpen, toggle: toggleSheetSidebar } = useSidebar();
-const { activeVizName } = useCustomViz();
+const { activeVizName, customVizes, loadVizes } = useCustomViz();
 
 function onEditViz(vizName) {
     openSidebar();
@@ -27,15 +27,19 @@ function onEditViz(vizName) {
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 
-const { localStatus, loadFromStorage } = useSheetStorage();
+const { loadFromStorage, scheduleSave, registerVizHandlers } = useSheetStorage();
 const { prepareImport } = useFileIO();
 
-loadFromStorage();
+registerVizHandlers(() => customVizes, loadVizes);
+watch([customVizes, activeVizName], scheduleSave, { deep: true });
 
-if (localStatus.value === null) {
-    createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
-    createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
-}
+onMounted(async () => {
+    await loadFromStorage();
+    if (blocks.length === 0) {
+        createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
+        createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
+    }
+});
 
 const onCreate = (event) => {
     const { clientX, clientY } = event;

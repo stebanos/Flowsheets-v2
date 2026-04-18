@@ -46,7 +46,7 @@ function _onSaveSuccess() {
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, renameActiveSheet, sheets, activeSheetId } = useSheetStore();
+    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet } = useSheetStore();
     const { readSheetData, writeSheetData, switchSheet } = useSheetStorage();
 
     if (!initialised) {
@@ -293,6 +293,7 @@ export function useFileIO() {
 
             const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName);
             await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes });
+            setActiveSheet(targetId, targetName);
         }
 
         bundleImportState.value = { pending: false, entries: [] };

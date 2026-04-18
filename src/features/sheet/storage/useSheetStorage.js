@@ -2,7 +2,6 @@ import { ref, reactive, watch } from 'vue';
 import { serializeSheet, deserializeSheet, migrate } from '@/shared/lib/persistence';
 import { useSheetStore } from '@/entities/sheet';
 import { useBlockStore } from '@/entities/block';
-import { useCustomViz } from '@/features/block/visualize';
 import { useOPFSStrategy } from './useOPFSStrategy';
 import { useLSStrategy } from './useLSStrategy';
 
@@ -19,6 +18,10 @@ const _pendingDelete = new Set();    // ids whose writes must be suppressed unti
 let initialised  = false;
 let bootPromise  = null;
 let pendingSwitchId = null;
+
+// ── viz handlers (registered by the page to avoid cross-domain coupling) ─────
+let _customVizGetter = () => ({});
+let _onVizesLoaded   = (_vizes) => {};
 
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
 
@@ -61,7 +64,6 @@ function _persistOpenIds() {
 
 export function useSheetStorage() {
     const { blocks, replaceBlocks } = useBlockStore();
-    const { customVizes, activeVizName, loadVizes } = useCustomViz();
     const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
 
     let loading = false;
@@ -75,7 +77,7 @@ export function useSheetStorage() {
         if (_pendingDelete.has(id)) { return; }
         const name = activeSheetName.value;
         try {
-            const serialized = serializeSheet(blocks, customVizes, name);
+            const serialized = serializeSheet(blocks, _customVizGetter(), name);
             if (_pendingDelete.has(id)) { return; }
             await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes });
             localStatus.value = 'idle';
@@ -88,6 +90,7 @@ export function useSheetStorage() {
     }
 
     function _scheduleSave() {
+        if (loading) { return; }
         if (saveTimer !== null) { clearTimeout(saveTimer); }
         localStatus.value = 'saving';
         saveTimer = setTimeout(() => {
@@ -108,7 +111,7 @@ export function useSheetStorage() {
         const data = migrate(envelope);
         const { blocks: loadedBlocks, vizes } = deserializeSheet(data);
         replaceBlocks(loadedBlocks);
-        loadVizes(vizes);
+        _onVizesLoaded(vizes);
     }
 
     // ── loadFromStorage ───────────────────────────────────────────────────────
@@ -189,7 +192,7 @@ export function useSheetStorage() {
         const migrated = migrate(envelope);
         const { blocks: loadedBlocks, vizes } = deserializeSheet(migrated);
         replaceBlocks(loadedBlocks);
-        loadVizes(vizes);
+        _onVizesLoaded(vizes);
         loading = false;
     }
 
@@ -197,7 +200,7 @@ export function useSheetStorage() {
 
     function initNewSheet(id, name) {
         replaceBlocks([]);
-        loadVizes({});
+        _onVizesLoaded({});
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
@@ -250,17 +253,19 @@ export function useSheetStorage() {
     if (!initialised) {
         initialised = true;
         watch(
-            [blocks, customVizes, activeVizName, activeSheetName],
-            () => {
-                if (loading) { return; }
-                _scheduleSave();
-            },
+            [blocks, activeSheetName],
+            () => { _scheduleSave(); },
             { deep: true }
         );
     }
 
     function markPendingDelete(id) { _pendingDelete.add(id); }
     function unmarkPendingDelete(id) { _pendingDelete.delete(id); }
+
+    function registerVizHandlers(getCustomVizes, onVizesLoaded) {
+        _customVizGetter = getCustomVizes;
+        _onVizesLoaded   = onVizesLoaded;
+    }
 
     return {
         localStatus,
@@ -275,6 +280,8 @@ export function useSheetStorage() {
         readSheetData,
         writeSheetData,
         markPendingDelete,
-        unmarkPendingDelete
+        unmarkPendingDelete,
+        scheduleSave: _scheduleSave,
+        registerVizHandlers
     };
 }

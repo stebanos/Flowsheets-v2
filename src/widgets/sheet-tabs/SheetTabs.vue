@@ -1,8 +1,7 @@
 <script setup>
 import { ref, nextTick } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useSheetStorage } from '@/features/sheet/storage';
-import { useSheetManager } from '@/features/sheet/manage';
+import { useSheetStorage, useSheetManager } from '@/features/sheet';
 
 const { sheets, activeSheetId } = useSheetStore();
 const { openSheetIds, switchSheet, closeSheet } = useSheetStorage();

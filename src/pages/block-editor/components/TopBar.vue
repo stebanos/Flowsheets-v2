@@ -1,9 +1,7 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useFileIO } from '@/features/sheet/file-io';
-import { useSheetStorage } from '@/features/sheet/storage';
-import { useSheetManager } from '@/features/sheet/manage';
+import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
 
 const props = defineProps({
     toggleSheetSidebar: {
