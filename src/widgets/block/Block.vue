@@ -1,15 +1,15 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { detectStringMode } from '@/shared/lib/evaluator';
 import { useCellDimensions } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
+import { useDeleteBlock } from '@/features/block/manage';
 import { useDrag } from '@/features/block/drag';
 import { useResize } from '@/features/block/resize';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
-import { useBlockExtract } from './useBlockExtract';
-import { useDeleteBlock } from '@/features/block/manage';
-import { detectStringMode } from '@/shared/lib/evaluator';
 import { useVizMenu } from '@/features/block/visualize';
+import { useBlockExtract } from './useBlockExtract';
 
 const props = defineProps({
     block: {

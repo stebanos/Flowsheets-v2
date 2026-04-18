@@ -1,9 +1,9 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { useCustomViz } from './useCustomViz';
 import { useBlockStore } from '@/entities/block';
+import { useCustomViz } from './useCustomViz';
 
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel } = useCustomViz();
-const { blocks, addBlock } = useBlockStore();
+const { blocks } = useBlockStore();
 
 // Minimal style element stub
 function makeStyleEl(name) {

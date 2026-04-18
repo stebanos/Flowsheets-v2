@@ -1,8 +1,6 @@
+import { createApp, nextTick } from 'vue';
 import { describe, test, expect, beforeEach } from 'vitest';
-import { nextTick } from 'vue';
-import { createApp } from 'vue';
-import { useBlockDependencies } from './useBlockDependencies';
-import { useBlockStore } from '@/entities/block';
+import { useBlockDependencies, useBlockStore } from '@/entities/block';
 
 function withSetup(composable) {
     let result;

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue';
-import { parseExpressionAt } from 'acorn';
 import { EditorView } from '@codemirror/view';
+import { parseExpressionAt } from 'acorn';
 
 function isValidExpression(text) {
     if (!text || !text.trim()) { return false; }

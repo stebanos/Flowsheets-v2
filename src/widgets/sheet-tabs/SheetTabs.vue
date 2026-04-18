@@ -2,7 +2,7 @@
 import { ref, nextTick } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
 import { useSheetStorage } from '@/features/sheet/storage';
-import { useSheetManager } from '@/features/sheet/manage/useSheetManager';
+import { useSheetManager } from '@/features/sheet/manage';
 
 const { sheets, activeSheetId } = useSheetStore();
 const { openSheetIds, switchSheet, closeSheet } = useSheetStorage();

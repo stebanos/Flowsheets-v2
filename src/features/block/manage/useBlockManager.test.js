@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach } from 'vitest';
 import { ref } from 'vue';
-import { useBlockManager } from './useBlockManager';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { useBlockStore } from '@/entities/block';
+import { useBlockManager } from './useBlockManager';
 
 const { blocks } = useBlockStore();
 const cellWidth = ref(30);

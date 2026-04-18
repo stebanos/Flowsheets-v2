@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { useBlockStore } from '@/entities/block';
 import { diffLines } from '@/shared/lib/diff';
+import { useBlockStore } from '@/entities/block';
 
 const props = defineProps({
     value: {},

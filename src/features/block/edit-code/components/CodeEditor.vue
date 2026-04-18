@@ -6,10 +6,10 @@ import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, keymap } from '@codemirror/view';
+import { detectStringMode } from '@/shared/lib/evaluator';
+import { templateLiteralHighlighting, findExpressionRanges } from '../cm-extensions/templateLiteralLanguage';
 import { useHoveredReference } from '../composables/useHoveredReference';
 import { useExtractSelection } from '../composables/useExtractSelection';
-import { templateLiteralHighlighting, findExpressionRanges } from '../cm-extensions/templateLiteralLanguage';
-import { detectStringMode } from '@/shared/lib/evaluator';
 
 const props = defineProps({
     code: {

@@ -1,5 +1,5 @@
-import { reactive, ref, markRaw } from 'vue';
 import * as Vue from 'vue';
+import { reactive, ref, markRaw } from 'vue';
 import { injectStyle } from '@/shared/lib/css-scope';
 
 const DEFAULT_TEMPLATE = `<div class="root">\n  {{ display }}\n</div>`;

@@ -1,13 +1,12 @@
 <script setup>
-import { useHoveredState, useSidebar } from '@/shared/composables';
-import { useCellDimensions } from '@/shared/composables';
+import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
+import { useFileIO } from '@/features/sheet/file-io';
+import { useSheetStorage } from '@/features/sheet/storage';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
 import { Block, BlockGrid, SheetTabs, SheetSidebar } from '@/widgets';
-import { useFileIO } from './composables';
-import { useSheetStorage } from '@/features/sheet/storage';
 import { SidebarContent, TopBar } from './components';
 
 const { blocks } = useBlockStore();
@@ -24,6 +23,7 @@ function onEditViz(vizName) {
     openSidebar();
     activeVizName.value = vizName;
 }
+
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 

@@ -1,4 +1,4 @@
 export { createBlock } from './block';
-export { isReservedOrGlobal, generateUniqueName, generateUniqueNameFromName } from './nameGenerators';
-export { useBlockStore } from './blockStore';
 export { useBlockDependencies } from './useBlockDependencies';
+export { useBlockStore } from './blockStore';
+export { isReservedOrGlobal, generateUniqueName, generateUniqueNameFromName } from './nameGenerators';

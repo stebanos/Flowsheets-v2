@@ -1,5 +1,5 @@
 <template>
-    <div class="relative h-screen w-screen overflow-hidden grid-pattern bg-repeat bg-[position:0_0]"></div>
+    <div class="relative h-screen w-screen overflow-hidden grid-pattern bg-repeat bg-position-[0_0]"></div>
 </template>
 
 <style scoped>

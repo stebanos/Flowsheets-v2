@@ -1,6 +1,6 @@
 import { reactive, computed, watch } from 'vue';
-import { useBlockStore } from '@/entities/block';
-import { extractFreeIdentifiers, extractTemplateIdentifiers, detectStringMode } from '@/shared/lib/evaluator';
+import { detectStringMode, extractFreeIdentifiers, extractTemplateIdentifiers } from '@/shared/lib/evaluator';
+import { useBlockStore } from './blockStore';
 
 export function useBlockDependencies({ debounceMs = 750 } = {}) {
     const { blocks } = useBlockStore();

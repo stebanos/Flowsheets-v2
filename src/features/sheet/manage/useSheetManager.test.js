@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { reactive, ref } from 'vue';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 
@@ -11,11 +11,11 @@ const mockSheetStore = {
     activeSheetId: mockActiveSheetId,
     createSheet: vi.fn(),
     deleteSheet: vi.fn(),
-    renameSheet: vi.fn(),
+    renameSheet: vi.fn()
 };
 
 vi.mock('@/entities/sheet', () => ({
-    useSheetStore: () => mockSheetStore,
+    useSheetStore: () => mockSheetStore
 }));
 
 const mockOpenSheetIds = reactive([]);
@@ -23,11 +23,11 @@ const mockOpenSheetIds = reactive([]);
 const mockSheetStorage = {
     openSheetIds: mockOpenSheetIds,
     switchSheet: vi.fn(),
-    closeSheet: vi.fn(),
+    closeSheet: vi.fn()
 };
 
 vi.mock('@/features/sheet/storage', () => ({
-    useSheetStorage: () => mockSheetStorage,
+    useSheetStorage: () => mockSheetStorage
 }));
 
 // ── import after mocks ────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ describe('useSheetManager', () => {
             const { createSheet } = useSheetManager();
             createSheet();
 
-            expect(mockSheetStore.createSheet).toHaveBeenCalledOnce();
+            expect(mockSheetStore.createSheet).toHaveBeenCalledTimes(1);
 
             const stored = JSON.parse(localStorage.getItem(`flowsheets.v2.sheet.${newId}`));
             expect(stored).toEqual({ blocks: [], customVizes: [] });

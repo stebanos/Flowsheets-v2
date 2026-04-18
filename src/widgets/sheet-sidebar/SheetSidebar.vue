@@ -2,15 +2,15 @@
 import { ref, nextTick, computed, watch } from 'vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useSheetStore } from '@/entities/sheet';
-import { useSheetStorage } from '@/features/sheet/storage';
-import { useSheetManager } from '@/features/sheet/manage/useSheetManager';
 import { useFileIO } from '@/features/sheet/file-io';
+import { useSheetStorage } from '@/features/sheet/storage';
+import { useSheetManager } from '@/features/sheet/manage';
 
 const props = defineProps({
     open: {
         type: Boolean,
-        required: true,
-    },
+        required: true
+    }
 });
 
 const { sheets, activeSheetId } = useSheetStore();

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { nextTick } from 'vue';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // ── localStorage mock ─────────────────────────────────────────────────────────
 // We build a fresh in-memory store before each test and restore afterwards.
@@ -11,7 +11,7 @@ function makeFakeStorage() {
         setItem:    (k, v) => { store[k] = String(v); },
         removeItem: (k)    => { delete store[k]; },
         clear:      ()     => { for (const k of Object.keys(store)) { delete store[k]; } },
-        _store:     store,
+        _store:     store
     };
 }
 
@@ -28,7 +28,7 @@ async function freshImports() {
             import('./useSheetStorage'),
             import('@/entities/sheet/useSheetStore'),
             import('@/entities/block'),
-            import('@/features/block/visualize'),
+            import('@/features/block/visualize')
         ]);
     return { useSheetStorage, useSheetStore, useBlockStore, useCustomViz };
 }
@@ -100,7 +100,7 @@ describe('loadFromStorage', () => {
         const id2 = 'sheet:local/s2';
         fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
             { id: id1, name: 'A', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
-            { id: id2, name: 'B', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'B', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
         ]));
         fakeStorage.setItem(KEY_ACTIVE_ID, id1);
         fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1, id2]));
@@ -125,7 +125,7 @@ describe('switchSheet', () => {
 
         fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
             { id: id1, name: 'Sheet 1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
-            { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
         ]));
         fakeStorage.setItem(KEY_ACTIVE_ID, id1);
         fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
@@ -196,7 +196,7 @@ describe('closeSheet', () => {
 
         fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
             { id: id1, name: 'Sheet 1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
-            { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
         ]));
         fakeStorage.setItem(KEY_ACTIVE_ID, id1);
         fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1, id2]));
@@ -276,7 +276,7 @@ describe('auto-save debounce', () => {
         vi.advanceTimersByTime(500);
         await nextTick();
 
-        // After the debounce the status should no longer be 'saving'
+        // After debounce the status should no longer be 'saving'
         expect(localStatus.value).not.toBe('saving');
     });
 

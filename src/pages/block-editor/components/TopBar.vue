@@ -1,21 +1,21 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useFileIO } from '../composables';
+import { useFileIO } from '@/features/sheet/file-io';
 import { useSheetStorage } from '@/features/sheet/storage';
-import { useSheetManager } from '@/features/sheet/manage/useSheetManager';
+import { useSheetManager } from '@/features/sheet/manage';
 
 const props = defineProps({
     toggleSheetSidebar: {
         type: Function,
         required: false,
-        default: null,
+        default: null
     },
     sheetSidebarOpen: {
         type: Boolean,
         required: false,
-        default: false,
-    },
+        default: false
+    }
 });
 
 const { activeSheetName } = useSheetStore();
@@ -55,12 +55,12 @@ const showSaveFile = computed(() => fileName.value !== null);
 </script>
 
 <template>
-    <div class="relative z-[1200] flex items-center h-10 px-3 bg-gray-900 text-white flex-shrink-0">
+    <div class="relative z-1200 flex items-center h-10 px-3 bg-gray-900 text-white shrink-0">
         <!-- Left: sheet sidebar toggle + sheet name -->
         <div class="flex items-center gap-1.5 min-w-0">
             <button
                 v-if="props.toggleSheetSidebar"
-                class="flex items-center justify-center w-7 h-7 rounded transition-colors flex-shrink-0"
+                class="flex items-center justify-center w-7 h-7 rounded transition-colors shrink-0"
                 :class="props.sheetSidebarOpen
                     ? 'text-white bg-white/15'
                     : 'text-gray-400 hover:text-white hover:bg-white/10'"
@@ -75,7 +75,7 @@ const showSaveFile = computed(() => fileName.value !== null);
                     <line x1="7.5" y1="10.5" x2="11" y2="10.5" />
                 </svg>
             </button>
-            <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 flex-shrink-0" />
+            <span v-if="fileDirty" class="w-1.5 h-1.5 rounded-full bg-gray-500 shrink-0" />
             <span
                 data-sheet-name
                 class="text-white text-sm font-medium cursor-default select-none truncate"
@@ -91,7 +91,7 @@ const showSaveFile = computed(() => fileName.value !== null);
         </div>
 
         <!-- Right: actions -->
-        <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
+        <div class="flex items-center gap-1 shrink-0 ml-auto">
             <button
                 v-if="showSaveFile"
                 class="text-gray-400 hover:text-white hover:bg-white/10 text-xs px-2 py-1 rounded transition-colors"

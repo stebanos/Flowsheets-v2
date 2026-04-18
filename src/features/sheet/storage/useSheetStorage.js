@@ -1,8 +1,8 @@
 import { ref, reactive, watch } from 'vue';
+import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
+import { useSheetStore } from '@/entities/sheet';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from '@/features/block/visualize';
-import { useSheetStore } from '@/entities/sheet';
-import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 
 // ── pointer keys (localStorage — small, fast) ────────────────────────────────
 const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';
@@ -155,18 +155,18 @@ function _persistOpenIds() {
 // ── composable ───────────────────────────────────────────────────────────────
 
 export function useSheetStorage() {
-    const { blocks, replaceBlocks }             = useBlockStore();
+    const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, activeVizName, loadVizes } = useCustomViz();
-    const { sheets, activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
+    const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
 
-    let loading   = false;
+    let loading = false;
     let saveTimer = null;
 
     // ── save ──────────────────────────────────────────────────────────────────
 
     async function _saveCurrentSheetOPFS() {
         if (!activeSheetId.value) { return; }
-        const id   = activeSheetId.value;
+        const id = activeSheetId.value;
         const name = activeSheetName.value;
         try {
             const serialized = serializeSheet(blocks, customVizes, name);
@@ -179,7 +179,7 @@ export function useSheetStorage() {
                 id,
                 name,
                 createdAt: existing?.createdAt ?? now,
-                updatedAt: now,
+                updatedAt: now
             });
 
             localStatus.value = 'idle';
@@ -239,7 +239,7 @@ export function useSheetStorage() {
         const { blocks: loadedBlocks, vizes } = deserializeSheet({
             version:     1,
             blocks:      data.blocks      ?? [],
-            customVizes: data.customVizes ?? {},
+            customVizes: data.customVizes ?? {}
         });
         replaceBlocks(loadedBlocks);
         loadVizes(vizes);
@@ -255,7 +255,7 @@ export function useSheetStorage() {
         const { blocks: loadedBlocks, vizes } = deserializeSheet({
             version:     1,
             blocks:      data.blocks      ?? [],
-            customVizes: data.customVizes ?? {},
+            customVizes: data.customVizes ?? {}
         });
         replaceBlocks(loadedBlocks);
         loadVizes(vizes);

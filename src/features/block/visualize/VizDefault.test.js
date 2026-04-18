@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeAll } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
+import { describe, test, expect, beforeAll } from 'vitest';
 import VizDefault from './VizDefault.vue';
 
 // ResizeObserver is a browser API unavailable in the node test environment.

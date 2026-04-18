@@ -1,6 +1,5 @@
-import { describe, test, expect, beforeEach } from 'vitest';
 import { computed } from 'vue';
-
+import { describe, test, expect, beforeEach } from 'vitest';
 import { useBlockStore } from './blockStore';
 
 const { blocks, addBlock, removeBlock, updateBlock } = useBlockStore();

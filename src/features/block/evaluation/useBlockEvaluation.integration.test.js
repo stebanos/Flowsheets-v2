@@ -1,10 +1,8 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createApp, nextTick } from 'vue';
-import { useBlockStore } from '@/entities/block';
-import { useBlockDependencies } from '@/entities/block';
-import { useEvaluatorRegistry } from './useEvaluatorRegistry';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { renameIdentifier } from '@/shared/lib/evaluator';
-import { generateUniqueName, generateUniqueNameFromName } from '@/entities/block';
+import { generateUniqueName, generateUniqueNameFromName, useBlockDependencies, useBlockStore } from '@/entities/block';
+import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +17,7 @@ function withSetup(fn) {
 
 // Evaluator computeds are lazy — results[name] is only populated once the evaluator
 // is accessed. In the real app Block.vue calls getEvaluation for every block on each
-// render, priming the chain. In tests we must do this explicitly for dependencies
+// render, priming the chain. In tests, we must do this explicitly for dependencies
 // before asserting a downstream block's value.
 async function prime(...names) {
     names.forEach(n => getEvaluation(n));

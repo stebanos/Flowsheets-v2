@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach } from 'vitest';
 import { reactive, computed, nextTick, createApp } from 'vue';
+import { describe, test, expect } from 'vitest';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
 function withSetup(fn) {

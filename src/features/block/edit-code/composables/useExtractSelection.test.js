@@ -1,5 +1,5 @@
-import { describe, test, expect, vi } from 'vitest';
 import { ref, nextTick } from 'vue';
+import { describe, test, expect, vi } from 'vitest';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { useExtractSelection } from './useExtractSelection';

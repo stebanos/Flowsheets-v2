@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
+import { describe, test, expect } from 'vitest';
 import VizHtml from './VizHtml.vue';
 
 function getDecodedSrc(wrapper) {

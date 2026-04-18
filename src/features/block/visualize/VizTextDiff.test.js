@@ -1,5 +1,5 @@
-import { describe, test, expect, vi } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
+import { describe, test, expect, vi } from 'vitest';
 import VizTextDiff from './VizTextDiff.vue';
 
 vi.mock('@/entities/block', () => ({

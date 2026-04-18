@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
+import { describe, test, expect } from 'vitest';
 import VizJson from './VizJson.vue';
 
 describe('VizJson — number', () => {
