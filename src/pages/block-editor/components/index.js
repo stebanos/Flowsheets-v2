@@ -5,3 +5,4 @@ export { default as SaveFileButton } from './SaveFileButton.vue';
 export { default as SheetTitle } from './SheetTitle.vue';
 export { default as UndoDeleteToast } from './UndoDeleteToast.vue';
 export { default as VizSidebarToggle } from './VizSidebarToggle.vue';
+export { default as ResetPanButton } from './ResetPanButton.vue';

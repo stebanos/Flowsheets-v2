@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, watch } from 'vue';
-import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
+import { useCellDimensions, useHoveredState, useSidebar, useCanvasPan } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
 import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
@@ -8,7 +8,7 @@ import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
 import { Block, BlockGrid, CustomVizEditor, SheetTabs, SheetSidebar } from '@/widgets';
-import { AppBar, AppNav, SheetTitle, SaveFileButton, VizSidebarToggle, UndoDeleteToast, EmptyCanvas } from './components';
+import { AppBar, AppNav, SheetTitle, SaveFileButton, VizSidebarToggle, UndoDeleteToast, EmptyCanvas, ResetPanButton } from './components';
 
 // stores
 const { blocks } = useBlockStore();
@@ -35,14 +35,22 @@ const SHEET_SIDEBAR_KEY = 'flowsheets.v2.sheetSidebarOpen';
 sheetSidebarOpen.value = JSON.parse(localStorage.getItem(SHEET_SIDEBAR_KEY) ?? 'true');
 watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stringify(val)));
 
+// canvas pan
+const { panX, panY, isPanning, startPan, resetPan, setPan } = useCanvasPan();
+
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
-const { localStatus, localError, loadFromStorage, scheduleSave, registerVizHandlers } = useSheetStorage();
+const { localStatus, localError, loadFromStorage, scheduleSave, registerVizHandlers, registerPanHandlers } = useSheetStorage();
 const { fileStatus, fileName, fileDirty, saveSheet, prepareImport } = useFileIO();
 
 // wiring
 registerVizHandlers(() => customVizes, loadVizes);
+registerPanHandlers(
+    () => ({ panX: panX.value, panY: panY.value }),
+    (view) => setPan(view.panX, view.panY)
+);
 watch([customVizes, activeVizName], scheduleSave, { deep: true });
+watch([panX, panY], scheduleSave);
 
 // lifecycle
 onMounted(async () => {
@@ -76,7 +84,13 @@ async function onDrop(e) {
 function onCreate(event) {
     const { clientX, clientY } = event;
     const { left, top } = event.target.getBoundingClientRect();
-    createBlock({ x: clientX - left, y: clientY - top }, null, '1 + 1', cellWidth, unitY);
+    createBlock({ x: clientX - left - panX.value, y: clientY - top - panY.value }, null, '1 + 1', cellWidth, unitY);
+}
+
+function onCanvasMousedown(event) {
+    if (event.button !== 0) { return; }
+    if (event.target.closest('[data-block]')) { return; }
+    startPan(event);
 }
 
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
@@ -128,6 +142,7 @@ const showSaveFile = computed(() => fileName.value !== null);
             </template>
             <template #controls>
                 <save-file-button v-if="showSaveFile" @save="saveSheet" />
+                <reset-pan-button @reset="resetPan" />
                 <viz-sidebar-toggle :open="sidebarOpen" @toggle="toggleSidebar" />
             </template>
         </app-bar>
@@ -135,9 +150,17 @@ const showSaveFile = computed(() => fileName.value !== null);
             <sheet-sidebar :open="sheetSidebarOpen" />
             <div class="flex flex-col flex-1 overflow-hidden">
                 <sheet-tabs @open-sidebar="openSheetSidebar" />
-                <div class="relative flex-1 overflow-hidden" @dragover.prevent @drop.prevent="onDrop">
-                    <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" @dblclick="onCreate" />
-                    <block v-for="block in blocks" :key="`block-${block.id}`" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+                <div
+                    class="relative flex-1 overflow-hidden"
+                    :class="{ 'cursor-grabbing select-none': isPanning }"
+                    @dragover.prevent
+                    @drop.prevent="onDrop"
+                    @mousedown="onCanvasMousedown"
+                >
+                    <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
+                    <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
+                        <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+                    </div>
                     <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
                 </div>
             </div>

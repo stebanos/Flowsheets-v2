@@ -19,7 +19,7 @@ const PERSISTED_BLOCK_FIELDS = [
  * @param {string} name - sheet name
  * @returns {Object} - { version: 1, name, blocks: [...], customVizes: {...} }
  */
-export function serializeSheet(blocks, vizes, name) {
+export function serializeSheet(blocks, vizes, name, view) {
     const serializedBlocks = blocks.map((block) => {
         const out = {};
         for (const field of PERSISTED_BLOCK_FIELDS) {
@@ -43,12 +43,18 @@ export function serializeSheet(blocks, vizes, name) {
         }
     }
 
-    return {
+    const result = {
         version: 1,
         name,
         blocks: serializedBlocks,
         customVizes
     };
+
+    if (view != null) {
+        result.view = { panX: view.panX ?? 0, panY: view.panY ?? 0 };
+    }
+
+    return result;
 }
 
 /**
@@ -71,8 +77,9 @@ export function deserializeSheet(json) {
     }));
 
     const vizes = json.customVizes ?? {};
+    const view = { panX: json.view?.panX ?? 0, panY: json.view?.panY ?? 0 };
 
-    return { blocks, vizes, name };
+    return { blocks, vizes, name, view };
 }
 
 /**

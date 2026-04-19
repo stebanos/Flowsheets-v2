@@ -23,6 +23,10 @@ let pendingSwitchId = null;
 let _customVizGetter = () => ({});
 let _onVizesLoaded   = (_vizes) => {};
 
+// ── pan handlers ──────────────────────────────────────────────────────────────
+let _panGetter    = () => ({ panX: 0, panY: 0 });
+let _onPanLoaded  = (_view) => {};
+
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
 
 // ── OPFS availability check ──────────────────────────────────────────────────
@@ -77,9 +81,10 @@ export function useSheetStorage() {
         if (_pendingDelete.has(id)) { return; }
         const name = activeSheetName.value;
         try {
-            const serialized = serializeSheet(blocks, _customVizGetter(), name);
+            const view = _panGetter();
+            const serialized = serializeSheet(blocks, _customVizGetter(), name, view);
             if (_pendingDelete.has(id)) { return; }
-            await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes });
+            await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view });
             localStatus.value = 'idle';
         } catch (err) {
             localStatus.value = 'error';
@@ -106,12 +111,14 @@ export function useSheetStorage() {
         const envelope = {
             version:     raw.version     ?? 1,
             blocks:      raw.blocks      ?? [],
-            customVizes: raw.customVizes ?? {}
+            customVizes: raw.customVizes ?? {},
+            view:        raw.view        ?? {}
         };
         const data = migrate(envelope);
-        const { blocks: loadedBlocks, vizes } = deserializeSheet(data);
+        const { blocks: loadedBlocks, vizes, view } = deserializeSheet(data);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
+        _onPanLoaded(view);
     }
 
     // ── loadFromStorage ───────────────────────────────────────────────────────
@@ -187,12 +194,14 @@ export function useSheetStorage() {
         const envelope = {
             version:     data.version     ?? 1,
             blocks:      data.blocks      ?? [],
-            customVizes: data.customVizes ?? {}
+            customVizes: data.customVizes ?? {},
+            view:        data.view        ?? {}
         };
         const migrated = migrate(envelope);
-        const { blocks: loadedBlocks, vizes } = deserializeSheet(migrated);
+        const { blocks: loadedBlocks, vizes, view } = deserializeSheet(migrated);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
+        _onPanLoaded(view);
         loading = false;
     }
 
@@ -201,6 +210,7 @@ export function useSheetStorage() {
     function initNewSheet(id, name) {
         replaceBlocks([]);
         _onVizesLoaded({});
+        _onPanLoaded({ panX: 0, panY: 0 });
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
@@ -267,6 +277,11 @@ export function useSheetStorage() {
         _onVizesLoaded   = onVizesLoaded;
     }
 
+    function registerPanHandlers(getPan, onPanLoaded) {
+        _panGetter   = getPan;
+        _onPanLoaded = onPanLoaded;
+    }
+
     return {
         localStatus,
         localError,
@@ -282,6 +297,7 @@ export function useSheetStorage() {
         markPendingDelete,
         unmarkPendingDelete,
         scheduleSave: _scheduleSave,
-        registerVizHandlers
+        registerVizHandlers,
+        registerPanHandlers
     };
 }

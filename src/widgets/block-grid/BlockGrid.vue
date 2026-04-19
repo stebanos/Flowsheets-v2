@@ -1,5 +1,23 @@
+<script setup>
+import { computed } from 'vue';
+import { useCellDimensions } from '@/shared/composables';
+
+const props = defineProps({
+    panX: { type: Number, default: 0 },
+    panY: { type: Number, default: 0 }
+});
+
+const { cellWidth, cellHeight } = useCellDimensions();
+
+const bgPosition = computed(() => {
+    const x = ((props.panX % cellWidth.value) + cellWidth.value) % cellWidth.value;
+    const y = ((props.panY % cellHeight.value) + cellHeight.value) % cellHeight.value;
+    return `${x}px ${y}px`;
+});
+</script>
+
 <template>
-    <div class="relative h-screen w-screen overflow-hidden grid-pattern bg-repeat bg-position-[0_0]"></div>
+    <div class="relative h-screen w-screen overflow-hidden grid-pattern bg-repeat" :style="{ backgroundPosition: bgPosition }"></div>
 </template>
 
 <style scoped>

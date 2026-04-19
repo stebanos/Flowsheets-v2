@@ -73,6 +73,16 @@ describe('serializeSheet', () => {
         expect(result.customVizes.Table).toEqual({ source: '<table/>' });
         expect(result.customVizes.Table).not.toHaveProperty('draft');
     });
+
+    it('includes view when provided', () => {
+        const result = serializeSheet([makeBlock()], {}, 'Sheet', { panX: 100, panY: -50 });
+        expect(result.view).toEqual({ panX: 100, panY: -50 });
+    });
+
+    it('omits view when not provided', () => {
+        const result = serializeSheet([makeBlock()], {}, 'Sheet');
+        expect(result).not.toHaveProperty('view');
+    });
 });
 
 describe('deserializeSheet', () => {
@@ -145,6 +155,18 @@ describe('deserializeSheet', () => {
         const { vizes } = deserializeSheet(json);
         expect(vizes).toEqual({ Table: { source: '<table/>' } });
     });
+
+    it('restores view from json', () => {
+        const json = { version: 1, name: 'Sheet', blocks: [], view: { panX: 200, panY: -100 } };
+        const { view } = deserializeSheet(json);
+        expect(view).toEqual({ panX: 200, panY: -100 });
+    });
+
+    it('defaults view to { panX: 0, panY: 0 } when missing', () => {
+        const json = { version: 1, name: 'Sheet', blocks: [] };
+        const { view } = deserializeSheet(json);
+        expect(view).toEqual({ panX: 0, panY: 0 });
+    });
 });
 
 describe('round-trip', () => {
@@ -168,8 +190,8 @@ describe('round-trip', () => {
             Chart: { source: '<chart/>', draft: '' }
         };
 
-        const serialized = serializeSheet(blocks, vizes, 'Round Trip');
-        const { blocks: restoredBlocks, vizes: restoredVizes, name } = deserializeSheet(serialized);
+        const serialized = serializeSheet(blocks, vizes, 'Round Trip', { panX: 300, panY: 150 });
+        const { blocks: restoredBlocks, vizes: restoredVizes, name, view } = deserializeSheet(serialized);
 
         expect(name).toBe('Round Trip');
         expect(restoredBlocks).toHaveLength(2);
@@ -188,6 +210,7 @@ describe('round-trip', () => {
 
         expect(restoredVizes).toEqual({ Table: { source: '<table/>' } });
         expect(restoredVizes).not.toHaveProperty('Chart');
+        expect(view).toEqual({ panX: 300, panY: 150 });
     });
 });
 
