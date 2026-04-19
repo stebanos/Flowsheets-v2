@@ -13,6 +13,7 @@ const KEY_OPEN_IDS  = 'flowsheets.v2.openSheetIds';
 const localStatus    = ref('idle');  // 'idle' | 'saving' | 'error'
 const localError     = ref(null);    // string | null
 const openSheetIds   = reactive([]);
+const isFirstBoot    = ref(false);   // true only when storage was completely empty on this load
 const _pendingDelete = new Set();    // ids whose writes must be suppressed until deleted
 
 let initialised  = false;
@@ -129,6 +130,7 @@ export function useSheetStorage() {
         let catalogue = await strategy.loadCatalogue();
 
         if (catalogue.length === 0) {
+            isFirstBoot.value = true;
             const now = new Date().toISOString();
             const id  = `sheet:local/${crypto.randomUUID()}`;
             const entry = { id, name: 'Untitled', createdAt: now, updatedAt: now };
@@ -286,6 +288,7 @@ export function useSheetStorage() {
         localStatus,
         localError,
         openSheetIds,
+        isFirstBoot,
         loadFromStorage,
         switchSheet,
         closeSheet,

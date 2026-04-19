@@ -44,7 +44,7 @@ let _lastScrollTime = 0;
 
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
-const { localStatus, localError, loadFromStorage, scheduleSave, registerVizHandlers, registerPanHandlers } = useSheetStorage();
+const { localStatus, localError, loadFromStorage, scheduleSave, registerVizHandlers, registerPanHandlers, isFirstBoot } = useSheetStorage();
 const { fileStatus, fileName, fileDirty, saveSheet, prepareImport } = useFileIO();
 
 // wiring
@@ -60,7 +60,7 @@ watch([panX, panY], scheduleSave);
 onMounted(async () => {
     document.addEventListener('keydown', handleKeydown);
     await loadFromStorage();
-    if (blocks.length === 0) {
+    if (isFirstBoot.value) {
         createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
         createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
     }

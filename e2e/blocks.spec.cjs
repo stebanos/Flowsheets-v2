@@ -1,17 +1,28 @@
 const { test, expect } = require('@playwright/test');
 
 test.beforeEach(async ({ page }) => {
-    // Seed an empty sheet before page JS runs — prevents the default greeting/message blocks.
-    // Only seeds if localStorage has NO sheet data (i.e. first navigation, not mid-test reloads
-    // like E9 where the auto-saved blocks must survive the reload).
+    // Seed storage before app JS runs so the app boots with an empty sheet and skips
+    // the first-launch greeting blocks. sessionStorage is fresh per page (new tab per test)
+    // but survives page.reload() — used as a guard so E9's mid-test reload preserves blocks.
     await page.addInitScript(() => {
-        if (!localStorage.getItem('flowsheets.sheets')) {
-            const id = 'e2e-test-sheet';
-            localStorage.setItem('flowsheets.activeSheet', id);
-            localStorage.setItem('flowsheets.sheets', JSON.stringify({
-                [id]: { name: 'Untitled', blocks: [] }
-            }));
-        }
+        // Always force localStorage strategy so storage is syncable across loads (including reload).
+        navigator.storage.getDirectory = undefined;
+
+        // Only seed on first load — sessionStorage survives reload but is fresh per new page.
+        if (sessionStorage.getItem('e2e-seeded')) { return; }
+        sessionStorage.setItem('e2e-seeded', '1');
+
+        Object.keys(localStorage)
+            .filter(k => k.startsWith('flowsheets.'))
+            .forEach(k => localStorage.removeItem(k));
+
+        const id  = 'e2e-test-sheet';
+        const now = new Date().toISOString();
+        localStorage.setItem('flowsheets.v2.activeSheetId', id);
+        localStorage.setItem('flowsheets.v2.openSheetIds', JSON.stringify([id]));
+        localStorage.setItem('flowsheets.v2.catalogue', JSON.stringify([{ id, name: 'Untitled', createdAt: now, updatedAt: now }]));
+        localStorage.setItem('flowsheets.v2.sheet.' + id, JSON.stringify({ blocks: [], customVizes: {} }));
+        localStorage.setItem('flowsheets.v2.sheetSidebarOpen', 'false');
     });
     await page.goto('');
 });
@@ -186,6 +197,8 @@ test('E9 — page reload persists blocks', async ({ page }) => {
 
     // Wait for the 500ms debounced auto-save to flush
     await page.waitForTimeout(700);
+    // Guard prevents the seed from running on reload so blocks survive
+    await page.evaluate(() => sessionStorage.setItem('e2e-seeded', '1'));
     await page.reload();
 
     await expect(page.locator('[data-block-name]')).toHaveCount(2);
@@ -302,7 +315,7 @@ test('E16 — create a new sheet via sidebar', async ({ page }) => {
     await input.press('Enter');
 
     await expect(page.locator('[data-sidebar-sheet]')).toHaveCount(2);
-    await expect(page.locator('[data-sidebar-sheet]').last()).toContainText('Second Sheet');
+    await expect(page.locator('[data-sidebar-sheet]').filter({ hasText: 'Second Sheet' })).toBeVisible();
 });
 
 // ── E17 — Switch between sheets ───────────────────────────────────────────────

@@ -17,7 +17,7 @@ const bgPosition = computed(() => {
 </script>
 
 <template>
-    <div class="relative h-screen w-screen overflow-hidden grid-pattern bg-repeat" :style="{ backgroundPosition: bgPosition }"></div>
+    <div class="relative h-full w-full grid-pattern bg-repeat" :style="{ backgroundPosition: bgPosition }"></div>
 </template>
 
 <style scoped>
