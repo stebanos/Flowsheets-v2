@@ -12,6 +12,9 @@ const props = defineProps({
 });
 
 const { sheets, activeSheetId } = useSheetStore();
+const sortedSheets = computed(() =>
+    [...sheets].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+);
 const { switchSheet } = useSheetStorage();
 const { createSheet, deleteSheet, renameSheet, deletingIds, deleteError } = useSheetManager();
 const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, saveSheetAs, exportBundle } = useFileIO();
@@ -139,7 +142,7 @@ function handleCancelBundleImport() {
 
         <ul class="py-1">
             <li
-                v-for="sheet in sheets"
+                v-for="sheet in sortedSheets"
                 :key="sheet.id"
                 data-sidebar-sheet
                 class="group flex items-center h-8 pl-1.75 pr-1.5 gap-1.5 cursor-pointer select-none border-l-[3px]"
