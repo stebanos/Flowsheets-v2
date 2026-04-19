@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onErrorCaptured } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, onErrorCaptured } from 'vue';
 import { useCustomViz } from './useCustomViz';
 
 const props = defineProps({
@@ -8,7 +8,21 @@ const props = defineProps({
     block: { type: Object, required: true }
 });
 
+const emit = defineEmits(['update:content-height']);
+
 const { getComponent, customVizes, setErrorPanel } = useCustomViz();
+
+const contentRef = ref(null);
+let ro = null;
+
+onMounted(() => {
+    ro = new ResizeObserver(() => {
+        if (contentRef.value) { emit('update:content-height', contentRef.value.scrollHeight); }
+    });
+    if (contentRef.value) { ro.observe(contentRef.value); }
+});
+
+onUnmounted(() => { ro?.disconnect(); });
 
 const name = computed(() => props.block.vizOptions?.customVizName ?? null);
 const component = computed(() => name.value ? getComponent(name.value) : null);
@@ -43,10 +57,11 @@ watch(component, (newComp, oldComp) => {
 <template>
     <div class="h-full w-full relative overflow-hidden">
         <div v-if="!renderError && component"
-             class="h-full w-full"
+             ref="contentRef"
+             class="w-full"
              :class="{ 'viz-flash': isFlashing }"
              @animationend="isFlashing = false">
-            <component :is="component" :value="props.value" :error="props.error" :block="props.block" class="h-full w-full" />
+            <component :is="component" :value="props.value" :error="props.error" :block="props.block" class="w-full" />
         </div>
         <div v-if="renderError" class="p-2 text-red-600 text-xs font-mono">{{ renderError }}</div>
         <div v-else-if="!component && name" class="p-2 text-gray-400 text-xs italic">
