@@ -6,8 +6,8 @@ import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';
 import { keymap, EditorView } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import { useBlockStore } from '@/entities/block';
-import { useCustomViz } from '@/features/block/visualize';
+import { useBlockStore } from '@/entities/block/index.js';
+import { useCustomViz } from '@/features/block/visualize/index.js';
 
 const { blocks, updateBlock } = useBlockStore();
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
