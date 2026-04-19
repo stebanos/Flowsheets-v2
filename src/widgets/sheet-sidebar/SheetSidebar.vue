@@ -81,7 +81,7 @@ function cancelNewSheet() {
 }
 
 function handleDeleteSheet(event, id) {
-    const isLast = sheets.value.length <= 1;
+    const isLast = sheets.length <= 1;
     confirm.require({
         group: 'sheet-delete',
         target: event.currentTarget,
