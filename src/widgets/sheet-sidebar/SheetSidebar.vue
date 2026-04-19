@@ -116,11 +116,7 @@ async function onFileInputChange(e) {
         return;
     }
     const result = await prepareImport(file);
-    if (result.error) { importError.value = result.error; }
-}
-
-function handleConfirmImport() {
-    importError.value = null;
+    if (result.error) { importError.value = result.error; return; }
     confirmImport();
 }
 
@@ -267,42 +263,18 @@ function handleCancelBundleImport() {
         @change="onFileInputChange"
     />
 
-    <!-- Import sheet confirmation dialog -->
+    <!-- Import error dialog -->
     <p-dialog
-        v-if="pendingImport || importError"
+        v-if="importError && !pendingImport"
         :visible="true"
         modal
         :closable="false"
-        header="Import sheet"
+        header="Import failed"
         class="w-md"
     >
-        <div v-if="importError" class="text-sm text-red-400 mb-4">
-            {{ importError }}
-        </div>
-        <div v-else-if="pendingImport" class="text-sm text-[#d1d5db] space-y-3">
-            <p>
-                <span class="text-white font-medium">{{ pendingImport.summary.name }}</span>
-                — {{ pendingImport.summary.blockCount }} block<span v-if="pendingImport.summary.blockCount !== 1">s</span>,
-                {{ pendingImport.summary.vizCount }} viz<span v-if="pendingImport.summary.vizCount !== 1">es</span>
-            </p>
-            <div v-if="Object.keys(pendingImport.summary.renamedVizes).length > 0">
-                <p class="text-[#9ca3af] mb-1">Visualizations renamed to avoid conflicts:</p>
-                <ul class="space-y-0.5">
-                    <li
-                        v-for="(newName, oldName) in pendingImport.summary.renamedVizes"
-                        :key="oldName"
-                        class="font-mono text-xs"
-                    >
-                        {{ oldName }} → {{ newName }}
-                    </li>
-                </ul>
-            </div>
-            <p class="text-[#9ca3af] text-xs">This will replace the current sheet.</p>
-        </div>
+        <p class="text-sm text-red-500">{{ importError }}</p>
         <template #footer>
-            <p-button label="Cancel" severity="secondary" text @click="handleCancelImport" />
-            <p-button v-if="!importError" label="Import" @click="handleConfirmImport" />
-            <p-button v-else label="Close" @click="handleCancelImport" />
+            <p-button label="Close" @click="handleCancelImport" />
         </template>
     </p-dialog>
 

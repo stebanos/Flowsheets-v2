@@ -46,8 +46,8 @@ function _onSaveSuccess() {
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet } = useSheetStore();
-    const { readSheetData, writeSheetData, switchSheet } = useSheetStorage();
+    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
+    const { readSheetData, writeSheetData, switchSheet, initNewSheet } = useSheetStorage();
 
     if (!initialised) {
         initialised = true;
@@ -197,10 +197,10 @@ export function useFileIO() {
         if (!pendingImport.value) { return; }
         const { blocks: importedBlocks, vizes, name } = pendingImport.value.data;
 
+        const newId = createSheetInStore(name);
+        initNewSheet(newId, name);
         replaceBlocks(importedBlocks);
-
         loadVizes(vizes);
-        renameActiveSheet(name);
 
         fileHandle.value = null;
         fileName.value = null;
