@@ -50,7 +50,8 @@ function _stopPan() {
 
 function resetPan() { panX.value = 0; panY.value = 0; }
 function setPan(x, y) { panX.value = x; panY.value = y; }
+function panByDelta(dx, dy) { panX.value += dx; panY.value += dy; }
 
 export function useCanvasPan() {
-    return { panX, panY, isPanning, startPan, resetPan, setPan };
+    return { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta };
 }

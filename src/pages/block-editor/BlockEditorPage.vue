@@ -36,7 +36,11 @@ sheetSidebarOpen.value = JSON.parse(localStorage.getItem(SHEET_SIDEBAR_KEY) ?? '
 watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stringify(val)));
 
 // canvas pan
-const { panX, panY, isPanning, startPan, resetPan, setPan } = useCanvasPan();
+const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
+
+const SCROLL_RESUME_MS = 500;
+const LINE_PX = 40;
+let _lastScrollTime = 0;
 
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
@@ -91,6 +95,30 @@ function onCanvasMousedown(event) {
     if (event.button !== 0) { return; }
     if (event.target.closest('[data-block]')) { return; }
     startPan(event);
+}
+
+function onCanvasWheel(event) {
+    const now = Date.now();
+    const isMidScroll = (now - _lastScrollTime) < SCROLL_RESUME_MS;
+
+    if (!isMidScroll) {
+        const active = document.activeElement;
+        const tag = active?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || active?.isContentEditable) { return; }
+    }
+
+    event.preventDefault();
+    _lastScrollTime = now;
+
+    const factor = event.deltaMode === 1 ? LINE_PX : event.deltaMode === 2 ? window.innerHeight : 1;
+    const dx = event.deltaX * factor;
+    const dy = event.deltaY * factor;
+
+    if (event.shiftKey) {
+        panByDelta(-(dx || dy), 0);
+    } else {
+        panByDelta(-dx, -dy);
+    }
 }
 
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
@@ -156,6 +184,7 @@ const showSaveFile = computed(() => fileName.value !== null);
                     @dragover.prevent
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
+                    @wheel="onCanvasWheel"
                 >
                     <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
