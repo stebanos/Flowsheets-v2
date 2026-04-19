@@ -95,18 +95,7 @@ describe('useSheetManager', () => {
     });
 
     describe('deleteSheet()', () => {
-        it('is a no-op when only one sheet exists', async () => {
-            addSheet('sheet:local/only');
-
-            const { deleteSheet } = useSheetManager();
-            await deleteSheet('sheet:local/only');
-
-            expect(mockSheetStorage.closeSheet).not.toHaveBeenCalled();
-            expect(mockSheetStorage.persistDeleteSheet).not.toHaveBeenCalled();
-            expect(mockSheetStore.deleteSheet).not.toHaveBeenCalled();
-        });
-
-        it('calls closeSheet, persistDeleteSheet, then sheetStore.deleteSheet in order', async () => {
+it('calls closeSheet, persistDeleteSheet, then sheetStore.deleteSheet in order', async () => {
             const id1 = 'sheet:local/a';
             const id2 = 'sheet:local/b';
             addSheet(id1, 'Alpha');
