@@ -40,12 +40,12 @@ const inlineEditValue = ref('');
 const inputEls        = {};
 
 function setInputRef(el, id) {
-    if (el) { inputEls[id] = el; }
+    if (el) { inputEls[id] = el.$el ?? el; }
     else { delete inputEls[id]; }
 }
 
 watch(inlineEditId, id => {
-    if (id) { nextTick(() => inputEls[id]?.select()); }
+    if (id) { nextTick(() => { inputEls[id]?.focus(); inputEls[id]?.select(); }); }
 });
 
 function startEditing(id, currentName) {
@@ -153,11 +153,12 @@ function handleCancelBundleImport() {
                 @dblclick.stop="startEditing(sheet.id, sheet.name)"
             >
                 <!-- Inline rename -->
-                <input
+                <p-input-text
                     :ref="el => setInputRef(el, sheet.id)"
                     v-show="inlineEditId === sheet.id"
                     v-model="inlineEditValue"
-                    class="flex-1 min-w-0 text-[13px] text-slate-800 bg-white border-none rounded-sm px-1 py-px ring-2 ring-blue-500 outline-none"
+                    size="small"
+                    class="flex-1 min-w-0 w-full text-[13px] text-slate-800 bg-white rounded px-1.5 py-0.5 outline-none border border-blue-400 ring-2 ring-blue-200 shadow-sm"
                     @keydown.enter.stop="commitEditing(sheet.id)"
                     @keydown.esc.stop="cancelEditing"
                     @blur="commitEditing(sheet.id)"
