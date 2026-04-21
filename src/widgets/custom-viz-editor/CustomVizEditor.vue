@@ -69,6 +69,7 @@ const runBarStatus = computed(() => {
 // --- CM6 extensions ---
 const extensions = computed(() => [
     fillTheme,
+    EditorView.lineWrapping,
     Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => { handleRun(); return true; } }]))
 ]);
 
