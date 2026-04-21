@@ -19,7 +19,7 @@ const htmlContent = computed(() => {
 
 <template>
     <iframe
-        :src="`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`"
+        :srcdoc="htmlContent"
         sandbox="allow-scripts"
         class="w-full h-full border-0"
     />
