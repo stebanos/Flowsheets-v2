@@ -45,13 +45,29 @@ const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
-const rawEditorHeight = ref(cellHeight.value);
-const rawEditorWidth = ref(props.block.width);
+const rawEditorHeight = ref(props.block.userMinEditorHeight ?? cellHeight.value);
+const rawEditorWidth = ref(props.block.width ?? props.block.userMinWidth ?? cellWidth.value);
 const rawOutputHeight = ref(cellHeight.value);
 
 // Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
 const manualMinEditorHeight = ref(props.block.userMinEditorHeight ?? 0);
 const manualMinWidth = ref(props.block.userMinWidth ?? 0);
+
+// On load, skip the first CodeMirror measurement for blocks the user manually resized.
+// The initial measurement re-measures unchanged code; letting it through would override
+// the user's chosen size (e.g. a block made narrower than its content for horizontal scrolling).
+let skipInitialWidthMeasurement = props.block.userMinWidth !== null;
+let skipInitialHeightMeasurement = props.block.userMinEditorHeight !== null;
+
+function handleContentWidth(w) {
+    if (skipInitialWidthMeasurement) { skipInitialWidthMeasurement = false; return; }
+    rawEditorWidth.value = w;
+}
+
+function handleContentHeight(h) {
+    if (skipInitialHeightMeasurement) { skipInitialHeightMeasurement = false; return; }
+    rawEditorHeight.value = h;
+}
 
 const MAX_OUTPUT_ROWS = 15;
 
@@ -290,7 +306,7 @@ watch(
                 :inputModes="block.inputModes || {}"
                 :onExtract
                 @update:code="updateBlock(block.id, { code: $event })"
-                @update:content-height="rawEditorHeight = $event" @update:content-width="rawEditorWidth = $event" />
+                @update:content-height="handleContentHeight($event)" @update:content-width="handleContentWidth($event)" />
         </div>
         <div v-if="panelOpen && hasInputs" class="inputs-panel w-full border-t border-gray-300 bg-gray-50 shrink-0">
             <div v-for="ref in blockDeps" :key="ref"
