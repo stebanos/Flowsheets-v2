@@ -196,7 +196,9 @@ const showSaveFile = computed(() => fileName.value !== null);
         </div>
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-125 top-9.75">
             <template #container>
-                <custom-viz-editor class="h-full -ml-px" />
+                <div style="height: calc(100vh - 2.4375rem); overflow: hidden;">
+                    <custom-viz-editor class="h-full -ml-px" />
+                </div>
             </template>
         </p-drawer>
         <undo-delete-toast :pending="undoPending" @undo="undoDelete" @dismiss="dismissUndo" />

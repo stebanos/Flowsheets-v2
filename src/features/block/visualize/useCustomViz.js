@@ -25,6 +25,17 @@ function createViz() {
     activeVizName.value = name;
 }
 
+function deleteViz(name) {
+    if (!customVizes[name]) { return; }
+    const names = Object.keys(customVizes);
+    const idx = names.indexOf(name);
+    delete customVizes[name];
+    if (activeVizName.value === name) {
+        const remaining = Object.keys(customVizes);
+        activeVizName.value = remaining[Math.min(idx, remaining.length - 1)] ?? null;
+    }
+}
+
 function renameViz(oldName, newName) {
     if (!customVizes[oldName] || customVizes[newName]) { return false; }
     // Rebuild in original key order so the renamed tab stays in place
@@ -106,5 +117,5 @@ function loadVizes(vizMap) {
 }
 
 export function useCustomViz() {
-    return { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel };
+    return { customVizes, activeVizName, createViz, deleteViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel };
 }

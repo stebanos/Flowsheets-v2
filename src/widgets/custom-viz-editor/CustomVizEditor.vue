@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { useConfirm } from 'primevue/useconfirm';
 import CodeMirror from 'vue-codemirror6';
 import { javascript } from '@codemirror/lang-javascript';
 import { html } from '@codemirror/lang-html';
@@ -10,7 +11,9 @@ import { useBlockStore } from '@/entities/block/index.js';
 import { useCustomViz } from '@/features/block/visualize/index.js';
 
 const { blocks, updateBlock } = useBlockStore();
-const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
+const { customVizes, activeVizName, createViz, deleteViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
+const confirm = useConfirm();
+const confirmPopupRef = ref(null);
 
 const htmlLang = html();
 const jsLang = javascript();
@@ -175,6 +178,31 @@ function handleRevert() {
     }
 }
 
+// --- Delete ---
+function handleDelete(event, name) {
+    const usingBlocks = blocks.filter(b => b.vizOptions?.customVizName === name);
+    if (usingBlocks.length === 0) {
+        deleteViz(name);
+        return;
+    }
+    confirm.require({
+        group: 'viz-delete',
+        target: event.currentTarget,
+        message: `Delete "${name}"? ${usingBlocks.length} block(s) will revert to the default visualization.`,
+        acceptLabel: 'Delete',
+        rejectLabel: 'Cancel',
+        acceptProps: { severity: 'danger' },
+        rejectProps: { severity: 'secondary', outlined: true },
+        accept: () => {
+            deleteViz(name);
+            for (const block of usingBlocks) {
+                updateBlock(block.id, { visualizationType: 'default', vizOptions: {} });
+            }
+        }
+    });
+    nextTick(() => confirmPopupRef.value?.alignOverlay());
+}
+
 // --- Platform ---
 const isMac = navigator.platform?.includes('Mac') || navigator.userAgent?.includes('Mac');
 
@@ -186,7 +214,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
         <!-- Outer tab strip -->
         <div class="flex items-end border-b border-gray-200 bg-gray-50 shrink-0 overflow-x-auto">
             <div v-for="name in vizNames" :key="name"
-                 class="flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
+                 class="group flex items-center px-3 h-9 border-r border-gray-200 cursor-pointer select-none text-[13px] whitespace-nowrap"
                  :class="name === activeVizName ? 'bg-white border-t-2 border-t-black -mt-px' : 'text-gray-500 hover:text-gray-800'"
                  @click="switchTab(name)"
                  @dblclick="startRename(name)">
@@ -204,6 +232,9 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
                     <span v-if="isDirtyTab(name)"
                           class="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0"
                           title="Unsaved changes" />
+                    <button class="ml-1.5 text-gray-400 hover:text-red-500 leading-none cursor-pointer opacity-0 group-hover:opacity-100"
+                            title="Delete visualization"
+                            @click.stop="handleDelete($event, name)">×</button>
                 </template>
             </div>
             <button class="px-3 h-9 text-gray-400 hover:text-gray-700 cursor-pointer text-xl leading-none shrink-0"
@@ -266,5 +297,6 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
             <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer shrink-0"
                     @click="handleRun">Run</button>
         </div>
+        <p-confirm-popup ref="confirmPopupRef" group="viz-delete" />
     </div>
 </template>
