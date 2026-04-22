@@ -4,7 +4,7 @@ defineEmits(['reset']);
 
 <template>
     <button
-        class="flex items-center justify-center w-8 h-7 rounded transition-colors ml-1 text-gray-400 hover:text-white"
+        class="flex items-center justify-center w-8 h-8 rounded transition-colors text-gray-400 hover:text-white"
         title="Reset canvas position"
         @click="$emit('reset')"
     >

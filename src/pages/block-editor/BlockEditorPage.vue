@@ -8,7 +8,8 @@ import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
 import { Block, BlockGrid, CustomVizEditor, SheetTabs, SheetSidebar } from '@/widgets';
-import { AppBar, AppNav, SheetTitle, SaveFileButton, VizSidebarToggle, UndoDeleteToast, EmptyCanvas, ResetPanButton } from './components';
+import { AppBar, AppBarToggleButton, SheetTitle, SaveFileButton, UndoDeleteToast, EmptyCanvas, ResetPanButton } from './components';
+import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
 const { blocks } = useBlockStore();
@@ -161,9 +162,12 @@ const showSaveFile = computed(() => fileName.value !== null);
 
 <template>
     <div class="flex flex-col h-screen overflow-hidden">
-        <app-bar>
+        <app-bar class="z-1200">
             <template #nav>
-                <app-nav :open="sheetSidebarOpen" @toggle="toggleSheetSidebar" />
+                <app-icon />
+                <app-bar-toggle-button :open="sheetSidebarOpen" aria-label="Toggle sheets sidebar" @toggle="toggleSheetSidebar">
+                    <sheet-sidebar-icon />
+                </app-bar-toggle-button>
             </template>
             <template #title>
                 <sheet-title :sheet-name="activeSheetName" :file-dirty="fileDirty" :status-text="statusText" :status-color="statusColor" />
@@ -171,7 +175,9 @@ const showSaveFile = computed(() => fileName.value !== null);
             <template #controls>
                 <save-file-button v-if="showSaveFile" @save="saveSheet" />
                 <reset-pan-button @reset="resetPan" />
-                <viz-sidebar-toggle :open="sidebarOpen" @toggle="toggleSidebar" />
+                <app-bar-toggle-button :open="sidebarOpen" aria-label="Toggle Viz Editor sidebar" @toggle="toggleSidebar">
+                    <viz-sidebar-icon />
+                </app-bar-toggle-button>
             </template>
         </app-bar>
         <div class="flex flex-1 overflow-hidden">
@@ -196,7 +202,7 @@ const showSaveFile = computed(() => fileName.value !== null);
         </div>
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-125 top-9.75">
             <template #container>
-                <div style="height: calc(100vh - 2.4375rem); overflow: hidden;">
+                <div class="overflow-hidden" style="height: calc(100vh - 2.4375rem)">
                     <custom-viz-editor class="h-full -ml-px" />
                 </div>
             </template>
