@@ -116,34 +116,34 @@ describe('loadFromStorage', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function setupTwoSheets() {
+    const { useSheetStorage, useSheetStore, useBlockStore } = await freshImports();
+
+    const id1 = 'sheet:local/s1';
+    const id2 = 'sheet:local/s2';
+
+    fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
+        { id: id1, name: 'Sheet 1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+    ]));
+    fakeStorage.setItem(KEY_ACTIVE_ID, id1);
+    fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
+    fakeStorage.setItem(KEY_SHEET(id1), JSON.stringify({
+        blocks: [{ id: 'b1', name: 'x', code: '1', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null }],
+        customVizes: {}
+    }));
+    fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({
+        blocks: [{ id: 'b2', name: 'y', code: '2', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null }],
+        customVizes: {}
+    }));
+
+    const storage = useSheetStorage();
+    await storage.loadFromStorage();
+
+    return { storage, useSheetStore, useBlockStore, id1, id2 };
+}
+
 describe('switchSheet', () => {
-    async function setupTwoSheets() {
-        const { useSheetStorage, useSheetStore, useBlockStore } = await freshImports();
-
-        const id1 = 'sheet:local/s1';
-        const id2 = 'sheet:local/s2';
-
-        fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
-            { id: id1, name: 'Sheet 1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
-            { id: id2, name: 'Sheet 2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
-        ]));
-        fakeStorage.setItem(KEY_ACTIVE_ID, id1);
-        fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
-        fakeStorage.setItem(KEY_SHEET(id1), JSON.stringify({
-            blocks: [{ id: 'b1', name: 'x', code: '1', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null }],
-            customVizes: {}
-        }));
-        fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({
-            blocks: [{ id: 'b2', name: 'y', code: '2', x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null }],
-            customVizes: {}
-        }));
-
-        const storage = useSheetStorage();
-        await storage.loadFromStorage();
-
-        return { storage, useSheetStore, useBlockStore, id1, id2 };
-    }
-
     it('loads the target sheet blocks into blockStore', async () => {
         const { storage, useBlockStore, id2 } = await setupTwoSheets();
         const { blocks } = useBlockStore();
@@ -182,6 +182,66 @@ describe('switchSheet', () => {
         await storage.switchSheet(id1);
 
         expect(activeSheetId.value).toBe(idBefore);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('switchSheet — pending save flush', () => {
+    it('writes the current sheet before switching away', async () => {
+        const { storage, useBlockStore, id1, id2 } = await setupTwoSheets();
+        const { addBlock } = useBlockStore();
+
+        addBlock({ id: 'extra', name: 'z', code: '99', x: 0, y: 0, inputModes: {},
+            visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null });
+        await nextTick(); // watcher fires → _scheduleSave → saveTimer set, save not flushed yet
+
+        const setItemSpy = vi.spyOn(fakeStorage, 'setItem');
+
+        await storage.switchSheet(id2);
+
+        const id1Writes = setItemSpy.mock.calls.filter(([k]) => k === KEY_SHEET(id1));
+        expect(id1Writes.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('does not write the old sheet a second time 500ms after switching', async () => {
+        const { storage, useBlockStore, id1, id2 } = await setupTwoSheets();
+        const { addBlock } = useBlockStore();
+
+        addBlock({ id: 'extra', name: 'z', code: '99', x: 0, y: 0, inputModes: {},
+            visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null });
+        await nextTick(); // saveTimer set
+
+        await storage.switchSheet(id2);
+        await nextTick(); // watcher may reset timer
+
+        const setItemSpy = vi.spyOn(fakeStorage, 'setItem');
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        const id1Writes = setItemSpy.mock.calls.filter(([k]) => k === KEY_SHEET(id1));
+        expect(id1Writes).toHaveLength(0);
+    });
+
+    it('does not corrupt new sheet data when the debounce timer fires mid-switch', async () => {
+        const { storage, useBlockStore, id1, id2 } = await setupTwoSheets();
+        const { addBlock } = useBlockStore();
+
+        // Edit sheet1 — timer set, not yet fired
+        addBlock({ id: 'extra', name: 'z', code: '99', x: 0, y: 0, inputModes: {},
+            visualizationType: 'default', vizOptions: {}, userMinWidth: null, userMinEditorHeight: null });
+        await nextTick();
+
+        // Start the switch but fire the original timer before the read-and-load microtask runs
+        const switchPromise = storage.switchSheet(id2);
+        vi.advanceTimersByTime(500); // timer fires here with stale sheet1 blocks still in memory
+        await switchPromise;
+
+        // Sheet2's stored data must contain only sheet2's own blocks
+        const storedId2 = JSON.parse(fakeStorage.getItem(KEY_SHEET(id2)));
+        const storedBlockIds = (storedId2.blocks ?? []).map(b => b.id);
+        expect(storedBlockIds).not.toContain('b1');    // sheet1's original block
+        expect(storedBlockIds).not.toContain('extra'); // the unsaved edit on sheet1
     });
 });
 
