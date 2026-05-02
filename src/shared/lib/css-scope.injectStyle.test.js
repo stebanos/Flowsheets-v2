@@ -52,15 +52,12 @@ describe('injectStyle — element reuse', () => {
 });
 
 describe('injectStyle — name escaping', () => {
-    // Known limitation: escapeAttr converts " to &quot; for HTML embedding, but CSS attribute
-    // selectors don't decode HTML entities. A viz name containing a double quote causes a new
-    // style element to be created on each call instead of reusing the existing one.
-    test('KNOWN BUG: double quote in viz name causes duplicate style element', () => {
+    test('double quote in viz name does not cause duplicate style element', () => {
         injectStyle('My"Viz', '.x { }', 'data-v-abc');
         injectStyle('My"Viz', '.y { }', 'data-v-abc');
 
         const els = document.head.querySelectorAll('style[data-viz-name]');
         const match = [...els].filter(el => el.getAttribute('data-viz-name') === 'My"Viz');
-        expect(match.length).toBe(2);
+        expect(match.length).toBe(1);
     });
 });
