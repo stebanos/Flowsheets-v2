@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
-import { scopeCSS, escapeAttr } from './css-scope';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { scopeCSS, escapeAttr, injectStyle } from './css-scope';
 
 describe('scopeCSS — single rule', () => {
     test('prefixes selector with scope attribute', () => {
@@ -98,5 +98,40 @@ describe('escapeAttr', () => {
 
     test('empty string returns empty string', () => {
         expect(escapeAttr('')).toBe('');
+    });
+});
+
+describe('injectStyle', () => {
+    afterEach(() => {
+        document.head.querySelectorAll('style[data-viz-scope], style[data-viz-name]').forEach(el => el.remove());
+    });
+
+    test('two calls with the same plain name produce only one style element', () => {
+        injectStyle('MyViz', '.a { color: red; }', 'scope-abc');
+        injectStyle('MyViz', '.a { color: blue; }', 'scope-abc');
+        const els = document.head.querySelectorAll('style[data-viz-name]');
+        expect(els.length).toBe(1);
+    });
+
+    test('two calls with a name containing a double-quote produce only one style element', () => {
+        injectStyle('My"Viz', '.a { color: red; }', 'scope-abc');
+        injectStyle('My"Viz', '.a { color: blue; }', 'scope-abc');
+        const els = document.head.querySelectorAll('style[data-viz-name]');
+        expect(els.length).toBe(1);
+    });
+
+    test('second call updates the textContent in place', () => {
+        injectStyle('MyViz', '.a { color: red; }', 'scope-abc');
+        injectStyle('MyViz', '.a { color: blue; }', 'scope-abc');
+        const el = document.head.querySelector('style[data-viz-name]');
+        expect(el.textContent).toContain('blue');
+        expect(el.textContent).not.toContain('red');
+    });
+
+    test('two different names produce two separate style elements', () => {
+        injectStyle('VizA', '.a {}', 'scope-aaa');
+        injectStyle('VizB', '.b {}', 'scope-bbb');
+        const els = document.head.querySelectorAll('style[data-viz-name]');
+        expect(els.length).toBe(2);
     });
 });
