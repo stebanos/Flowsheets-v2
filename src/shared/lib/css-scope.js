@@ -59,9 +59,10 @@ export function escapeAttr(str) {
 
 export function injectStyle(name, css, scopeId) {
     const scoped = scopeCSS(css, scopeId);
-    let el = document.head.querySelector(`style[data-viz-name="${escapeAttr(name)}"]`);
+    let el = document.head.querySelector(`style[data-viz-scope="${scopeId}"]`);
     if (!el) {
         el = document.createElement('style');
+        el.setAttribute('data-viz-scope', scopeId);
         el.setAttribute('data-viz-name', name);
         document.head.appendChild(el);
     }
