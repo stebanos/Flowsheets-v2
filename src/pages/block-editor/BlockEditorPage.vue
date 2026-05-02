@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, watch } from 'vue';
-import { useCellDimensions, useHoveredState, useSidebar, useCanvasPan } from '@/shared/composables';
+import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
-import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
+import { useCanvasPan } from '@/features/canvas';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
+import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
 import { Block, BlockGrid, CustomVizEditor, SheetTabs, SheetSidebar } from '@/widgets';
