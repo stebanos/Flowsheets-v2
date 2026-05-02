@@ -11,9 +11,9 @@ export function useDeleteBlock() {
 
     function deleteBlock(block) {
         const raw = toRaw(block);
-        const hasDownstream = blocks.some(b =>
-            b.id !== raw.id && (b.code || '').includes(raw.name)
-        );
+        const escaped = raw.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(`\\b${escaped}\\b`);
+        const hasDownstream = blocks.some(b => b.id !== raw.id && pattern.test(b.code || ''));
         removeBlock(raw.id);
         undoPending.value = { block: { ...raw }, hasDownstream };
         if (timer) { clearTimeout(timer); }
