@@ -15,11 +15,15 @@ const htmlContent = computed(() => {
     if (typeof v === 'string') { return v; }
     try { return JSON.stringify(v); } catch { return String(v); }
 });
+
+const iframeSrc = computed(() =>
+    `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.value)}`
+);
 </script>
 
 <template>
     <iframe
-        :srcdoc="htmlContent"
+        :src="iframeSrc"
         sandbox="allow-scripts"
         class="w-full h-full border-0"
     />
