@@ -47,7 +47,7 @@ export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
     const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
-    const { readSheetData, writeSheetData, switchSheet, initNewSheet } = useSheetStorage();
+    const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet } = useSheetStorage();
 
     if (!initialised) {
         initialised = true;
@@ -278,26 +278,36 @@ export function useFileIO() {
         const { entries, rootSheetId } = bundleImportState.value;
 
         let resolvedRootId = rootSheetId;
+        const stagedIds = [];
 
-        for (const entry of entries) {
-            if (entry.action === 'skip') { continue; }
+        try {
+            for (const entry of entries) {
+                if (entry.action === 'skip') { continue; }
 
-            let targetId = entry.id;
-            let targetName = entry.name;
+                let targetId = entry.id;
+                let targetName = entry.name;
 
-            if (entry.action === 'copy') {
-                targetId = `sheet:local/${crypto.randomUUID()}`;
-                targetName = `${entry.name} (copy)`;
-                if (entry.id === rootSheetId) { resolvedRootId = targetId; }
+                if (entry.action === 'copy') {
+                    targetId = `sheet:local/${crypto.randomUUID()}`;
+                    targetName = `${entry.name} (copy)`;
+                    if (entry.id === rootSheetId) { resolvedRootId = targetId; }
+                }
+
+                const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName);
+                await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes });
+                stagedIds.push(targetId);
+                setActiveSheet(targetId, targetName);
             }
 
-            const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName);
-            await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes });
-            setActiveSheet(targetId, targetName);
+            bundleImportState.value = { pending: false, entries: [] };
+            switchSheet(resolvedRootId);
+        } catch (err) {
+            for (const id of stagedIds) { await persistDeleteSheet(id).catch(() => {}); }
+            throw err;
+        } finally {
+            pendingImport.value = null;
+            bundleImportState.value = null;
         }
-
-        bundleImportState.value = { pending: false, entries: [] };
-        switchSheet(resolvedRootId);
     }
 
     function cancelBundleImport() {
