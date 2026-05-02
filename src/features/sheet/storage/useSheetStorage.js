@@ -20,13 +20,6 @@ let initialised  = false;
 let bootPromise  = null;
 let pendingSwitchId = null;
 
-// ── viz handlers (registered by the page to avoid cross-domain coupling) ─────
-let _customVizGetter = () => ({});
-let _onVizesLoaded   = (_vizes) => {};
-
-// ── pan handlers ──────────────────────────────────────────────────────────────
-let _panGetter    = () => ({ panX: 0, panY: 0 });
-let _onPanLoaded  = (_view) => {};
 
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
 
@@ -67,7 +60,12 @@ function _persistOpenIds() {
 
 // ── composable ───────────────────────────────────────────────────────────────
 
-export function useSheetStorage() {
+export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded } = {}) {
+    const _customVizGetter = getCustomVizes ?? (() => ({}));
+    const _onVizesLoaded   = onVizesLoaded   ?? (() => {});
+    const _panGetter       = getPan           ?? (() => ({ panX: 0, panY: 0 }));
+    const _onPanLoaded     = onPanLoaded      ?? (() => {});
+
     const { blocks, replaceBlocks } = useBlockStore();
     const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
 
@@ -278,16 +276,6 @@ export function useSheetStorage() {
     function markPendingDelete(id) { _pendingDelete.add(id); }
     function unmarkPendingDelete(id) { _pendingDelete.delete(id); }
 
-    function registerVizHandlers(getCustomVizes, onVizesLoaded) {
-        _customVizGetter = getCustomVizes;
-        _onVizesLoaded   = onVizesLoaded;
-    }
-
-    function registerPanHandlers(getPan, onPanLoaded) {
-        _panGetter   = getPan;
-        _onPanLoaded = onPanLoaded;
-    }
-
     return {
         localStatus,
         localError,
@@ -303,8 +291,6 @@ export function useSheetStorage() {
         writeSheetData,
         markPendingDelete,
         unmarkPendingDelete,
-        scheduleSave: _scheduleSave,
-        registerVizHandlers,
-        registerPanHandlers
+        scheduleSave: _scheduleSave
     };
 }

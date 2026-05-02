@@ -46,15 +46,13 @@ let _lastScrollTime = 0;
 
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
-const { localStatus, localError, loadFromStorage, scheduleSave, registerVizHandlers, registerPanHandlers, isFirstBoot } = useSheetStorage();
+const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
+    getCustomVizes: () => customVizes,
+    onVizesLoaded:  loadVizes,
+    getPan:         () => ({ panX: panX.value, panY: panY.value }),
+    onPanLoaded:    (view) => setPan(view.panX, view.panY)
+});
 const { fileStatus, fileName, fileDirty, saveSheet, prepareImport } = useFileIO();
-
-// wiring
-registerVizHandlers(() => customVizes, loadVizes);
-registerPanHandlers(
-    () => ({ panX: panX.value, panY: panY.value }),
-    (view) => setPan(view.panX, view.panY)
-);
 watch([customVizes, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY], scheduleSave);
 
