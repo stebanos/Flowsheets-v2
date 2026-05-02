@@ -10,6 +10,7 @@ const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';
 const KEY_OPEN_IDS  = 'flowsheets.v2.openSheetIds';
 
 // ── module-level singletons ──────────────────────────────────────────────────
+// Async I/O pattern: exposes reactive status ('idle'|'saving'|'error') and error (string|null)
 const localStatus    = ref('idle');  // 'idle' | 'saving' | 'error'
 const localError     = ref(null);    // string | null
 const openSheetIds   = reactive([]);

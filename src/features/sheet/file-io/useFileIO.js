@@ -11,7 +11,7 @@ import { serializeSheet, deserializeSheet, migrate, serializeBundle, deserialize
 // Module-level singletons — shared across all callers
 const fileHandle = ref(null);
 const fileName = ref(null);
-// null | 'saving' | 'saved' | 'ambient' | 'dirty'
+// Async I/O pattern: exposes reactive fileStatus (null|'saving'|'saved'|'ambient'|'dirty')
 const fileStatus = ref(null);
 const fileDirty = ref(false);
 // { summary, data } | null
