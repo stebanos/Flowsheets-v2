@@ -313,6 +313,92 @@ describe('closeSheet', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe('constructor args — viz and pan handlers', () => {
+    function setupSheet(id = 'sheet:local/abc') {
+        fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
+            { id, name: 'T', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+        ]));
+        fakeStorage.setItem(KEY_ACTIVE_ID, id);
+        fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id]));
+        fakeStorage.setItem(KEY_SHEET(id), JSON.stringify({ blocks: [], customVizes: {}, view: { panX: 5, panY: 10 } }));
+    }
+
+    it('calls onVizesLoaded constructor arg when loadFromStorage runs', async () => {
+        const { useSheetStorage } = await freshImports();
+        setupSheet();
+
+        const onVizesLoaded = vi.fn();
+        const { loadFromStorage } = useSheetStorage({ onVizesLoaded });
+        await loadFromStorage();
+
+        expect(onVizesLoaded).toHaveBeenCalledOnce();
+    });
+
+    it('calls onPanLoaded constructor arg when loadFromStorage runs', async () => {
+        const { useSheetStorage } = await freshImports();
+        setupSheet();
+
+        const onPanLoaded = vi.fn();
+        const { loadFromStorage } = useSheetStorage({ onPanLoaded });
+        await loadFromStorage();
+
+        expect(onPanLoaded).toHaveBeenCalledOnce();
+    });
+
+    it('calls onVizesLoaded constructor arg when switchSheet runs', async () => {
+        const { useSheetStorage } = await freshImports();
+
+        const id1 = 'sheet:local/s1';
+        const id2 = 'sheet:local/s2';
+        fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
+            { id: id1, name: 'S1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'S2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+        ]));
+        fakeStorage.setItem(KEY_ACTIVE_ID, id1);
+        fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
+        fakeStorage.setItem(KEY_SHEET(id1), JSON.stringify({ blocks: [], customVizes: {} }));
+        fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({ blocks: [], customVizes: {} }));
+
+        const onVizesLoaded = vi.fn();
+        const storage = useSheetStorage({ onVizesLoaded });
+        await storage.loadFromStorage();
+        onVizesLoaded.mockClear();
+
+        await storage.switchSheet(id2);
+
+        expect(onVizesLoaded).toHaveBeenCalledOnce();
+    });
+
+    it('calls getCustomVizes constructor arg when auto-save fires', async () => {
+        const { useSheetStorage } = await freshImports();
+        setupSheet();
+
+        const getCustomVizes = vi.fn().mockReturnValue({});
+        const { loadFromStorage, scheduleSave } = useSheetStorage({ getCustomVizes });
+        await loadFromStorage();
+        getCustomVizes.mockClear();
+
+        scheduleSave();
+        vi.advanceTimersByTime(500);
+
+        expect(getCustomVizes).toHaveBeenCalled();
+    });
+
+    it('does not expose registerVizHandlers on the returned object', async () => {
+        const { useSheetStorage } = await freshImports();
+        const storage = useSheetStorage({});
+        expect(storage.registerVizHandlers).toBeUndefined();
+    });
+
+    it('does not expose registerPanHandlers on the returned object', async () => {
+        const { useSheetStorage } = await freshImports();
+        const storage = useSheetStorage({});
+        expect(storage.registerPanHandlers).toBeUndefined();
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe('auto-save debounce', () => {
     it('schedules a save 500ms after a block change', async () => {
         const { useSheetStorage, useBlockStore } = await freshImports();
