@@ -43,7 +43,6 @@ export function useDrag(snapX, snapY) {
 
     return {
         startDrag,
-        onDrag,
         stopDrag
     };
 }
