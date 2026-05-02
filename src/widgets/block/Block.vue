@@ -10,6 +10,7 @@ import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
 import { useVizMenu } from '@/features/block/visualize';
 import { useBlockExtract } from './useBlockExtract';
+import { useBlockDimensions } from './useBlockDimensions';
 
 const props = defineProps({
     block: {
@@ -45,38 +46,10 @@ const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
-const rawEditorHeight = ref(props.block.userMinEditorHeight ?? cellHeight.value);
-const rawEditorWidth = ref(props.block.width ?? props.block.userMinWidth ?? cellWidth.value);
 const rawOutputHeight = ref(cellHeight.value);
-
-// Minimums set by manual resize — prevent auto-grow from shrinking below user-set size.
-const manualMinEditorHeight = ref(props.block.userMinEditorHeight ?? 0);
-const manualMinWidth = ref(props.block.userMinWidth ?? 0);
-
-// On load, skip the first CodeMirror measurement for blocks the user manually resized.
-// The initial measurement re-measures unchanged code; letting it through would override
-// the user's chosen size (e.g. a block made narrower than its content for horizontal scrolling).
-let skipInitialWidthMeasurement = props.block.userMinWidth !== null;
-let skipInitialHeightMeasurement = props.block.userMinEditorHeight !== null;
-
-function handleContentWidth(w) {
-    if (skipInitialWidthMeasurement) { skipInitialWidthMeasurement = false; return; }
-    rawEditorWidth.value = w;
-}
-
-function handleContentHeight(h) {
-    if (skipInitialHeightMeasurement) { skipInitialHeightMeasurement = false; return; }
-    rawEditorHeight.value = h;
-}
 
 const MAX_OUTPUT_ROWS = 15;
 
-const snappedEditorHeight = computed(() => {
-    const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
-    return Math.max(contentHeight, manualMinEditorHeight.value);
-});
-
-// Viz overlay and inputs panel — hoisted here so snappedBlockHeight can reference them
 const showVizBar = ref(false);
 const panelOpen = ref(false);
 
@@ -88,12 +61,6 @@ const blockDeps = computed(() => {
 const hasInputs = computed(() => blockDeps.value.length > 0);
 const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.value ? blockDeps.value.length * cellHeight.value : 0);
 
-const snappedEditorWidth = computed(() => {
-    const contentWidth = Math.max(cellWidth.value, Math.ceil(rawEditorWidth.value / unitX.value) * unitX.value);
-    return Math.max(contentWidth, manualMinWidth.value);
-});
-
-// Must be defined before snappedOutputHeight, which depends on them.
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 
 function formatValue(v) {
@@ -117,34 +84,15 @@ const snappedOutputHeight = computed(() => {
     return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
 });
 
-// Total block height: header + editor + inputs panel + output, always snapped to grid rows.
-// Drives the visual outline directly. block.height kept in sync for serialization/resize.
-const snappedBlockHeight = computed(() =>
-    cellHeight.value + snappedEditorHeight.value + snappedInputsPanelHeight.value + snappedOutputHeight.value
-);
-
-watch(snappedBlockHeight, h => {
-    updateBlock(props.block.id, { height: h });
-}, { immediate: true });
-
-watch(snappedEditorWidth, w => {
-    updateBlock(props.block.id, { width: w });
-}, { immediate: true });
-
-// Sync external width/height changes (e.g. resize handle) back into raw refs.
-// Guard against our own write-back watches above to avoid circular updates.
-watch(() => props.block.width, w => {
-    if (w !== snappedEditorWidth.value) {
-        rawEditorWidth.value = w;
-    }
-});
-
-watch(() => props.block.height, h => {
-    if (h !== snappedBlockHeight.value) {
-        // block.height = header + editor + inputs panel + output; isolate the editor portion
-        rawEditorHeight.value = h - cellHeight.value - snappedInputsPanelHeight.value - snappedOutputHeight.value;
-    }
-});
+const {
+    snappedEditorHeight,
+    snappedEditorWidth,
+    snappedBlockHeight,
+    manualMinEditorHeight,
+    manualMinWidth,
+    handleContentWidth,
+    handleContentHeight
+} = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight });
 
 onBeforeUnmount(() => {
     resizeCleanup?.();
