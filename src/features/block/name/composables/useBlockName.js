@@ -2,6 +2,18 @@ import { ref, nextTick } from 'vue';
 import { renameIdentifier } from '@/shared/lib/evaluator';
 import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
 
+const JS_RESERVED = new Set([
+    'break','case','catch','class','const','continue','debugger','default','delete','do',
+    'else','enum','export','extends','finally','for','function','if','implements','import',
+    'in','instanceof','interface','let','new','null','package','private','protected',
+    'public','return','static','super','switch','this','throw','true','false','try',
+    'typeof','undefined','var','void','while','with','yield'
+]);
+
+function isValidIdentifier(name) {
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name) && !JS_RESERVED.has(name);
+}
+
 /**
  * @param {import('vue').WritableComputedRef<string>} name
  * @param {import('vue').Ref} nameInput
@@ -35,6 +47,10 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
         const trimmed = (editName.value ?? '').trim();
 
         if (!trimmed || trimmed.length === 0 || trimmed === name.value) {
+            return finishEdit();
+        }
+
+        if (!isValidIdentifier(trimmed)) {
             return finishEdit();
         }
 
