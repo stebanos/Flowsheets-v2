@@ -178,6 +178,10 @@ export function useSheetStorage() {
         const target = allSheets.find(s => s.id === id);
         if (!target) { return; }
 
+        if (saveTimer !== null) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
         _saveCurrentSheet();
 
         loading = true;
