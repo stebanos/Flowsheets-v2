@@ -65,15 +65,25 @@ describe('deleteBlock', () => {
         expect(undoPending.value.hasDownstream).toBe(false);
     });
 
-    // Known limitation: substring match produces false positives.
-    // A block named 'a' is incorrectly flagged as having downstream dependents
-    // if another block's code contains the letter 'a' as part of a longer token.
-    test('KNOWN BUG: substring match causes false-positive hasDownstream for short names', () => {
-        mockBlocks.push({ id: '2', name: 'ab', code: 'ab * 2' }); // 'ab * 2' contains 'a'
+    test('hasDownstream is false when another block has a longer name that contains the deleted name as a substring', () => {
+        mockBlocks.push({ id: '2', name: 'ab', code: 'ab * 2' }); // 'ab' is not a reference to 'a'
         const { deleteBlock, undoPending } = useDeleteBlock();
         deleteBlock({ id: '1', name: 'a', code: '' });
-        // This is a false positive — 'ab' does not reference block 'a'
+        expect(undoPending.value.hasDownstream).toBe(false);
+    });
+
+    test('hasDownstream is true when another block code references the deleted name as a whole word', () => {
+        mockBlocks.push({ id: '2', name: 'ab', code: 'a + 1' }); // 'a' is a standalone identifier
+        const { deleteBlock, undoPending } = useDeleteBlock();
+        deleteBlock({ id: '1', name: 'a', code: '' });
         expect(undoPending.value.hasDownstream).toBe(true);
+    });
+
+    test('hasDownstream is false when the deleted name is a prefix of another block name in its code', () => {
+        mockBlocks.push({ id: '2', name: 'total', code: 'subtotal * 2' }); // 'total' inside 'subtotal' is not a reference
+        const { deleteBlock, undoPending } = useDeleteBlock();
+        deleteBlock({ id: '1', name: 'total', code: '' });
+        expect(undoPending.value.hasDownstream).toBe(false);
     });
 });
 
