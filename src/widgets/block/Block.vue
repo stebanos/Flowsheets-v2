@@ -11,6 +11,7 @@ import { CodeEditor } from '@/features/block/edit-code';
 import { useVizMenu } from '@/features/block/visualize';
 import { useBlockExtract } from './useBlockExtract';
 import { useBlockDimensions } from './useBlockDimensions';
+import { useBlockOutput } from './useBlockOutput';
 
 const props = defineProps({
     block: {
@@ -46,10 +47,6 @@ const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
 const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
-const rawOutputHeight = ref(cellHeight.value);
-
-const MAX_OUTPUT_ROWS = 15;
-
 const showVizBar = ref(false);
 const panelOpen = ref(false);
 
@@ -63,26 +60,8 @@ const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.val
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 
-function formatValue(v) {
-    if (v === undefined) { return 'undefined'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
-}
-
-const outputValue = computed(() => blockEval.value?.value);
-const isList = computed(() => Array.isArray(outputValue.value));
-const outputItems = computed(() => isList.value ? outputValue.value.map(formatValue) : []);
-
-const snappedOutputHeight = computed(() => {
-    const vizType = props.block.visualizationType ?? 'default';
-    if (vizType === 'default' && isList.value) {
-        return Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
-    }
-    const minRows = vizType !== 'default' ? 3 : 1;
-    const rows = Math.max(minRows, Math.ceil(rawOutputHeight.value / cellHeight.value));
-    return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
-});
+const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight } =
+    useBlockOutput(props.block, { cellHeight, blockEval });
 
 const {
     snappedEditorHeight,
@@ -104,13 +83,6 @@ const blockPositionStyle = computed(() => ({
     width: `${snappedEditorWidth.value - 1}px`,
     height: `${snappedBlockHeight.value - 1}px`
 }));
-
-const outputOverflowY = computed(() => {
-    const vizType = props.block.visualizationType ?? 'default';
-    if (vizType !== 'default') { return 'hidden'; }
-    if (isList.value) { return outputItems.value.length > MAX_OUTPUT_ROWS ? 'auto' : 'hidden'; }
-    return rawOutputHeight.value > MAX_OUTPUT_ROWS * cellHeight.value ? 'auto' : 'hidden';
-});
 
 const formattedResult = computed(() => {
     const evaluation = blockEval.value;
