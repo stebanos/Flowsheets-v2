@@ -11,6 +11,7 @@ function formatValue(v) {
 
 export function useBlockOutput(block, { cellHeight, blockEval }) {
     const rawOutputHeight = ref(cellHeight.value);
+    const manualMinOutputHeight = ref(block.userMinOutputHeight ?? 0);
 
     const outputValue = computed(() => blockEval.value?.value);
     const isList = computed(() => Array.isArray(outputValue.value));
@@ -18,12 +19,15 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
 
     const snappedOutputHeight = computed(() => {
         const vizType = block.visualizationType ?? 'default';
+        let autoHeight;
         if (vizType === 'default' && isList.value) {
-            return Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
+            autoHeight = Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
+        } else {
+            const minRows = vizType !== 'default' ? 3 : 1;
+            const rows = Math.max(minRows, Math.ceil(rawOutputHeight.value / cellHeight.value));
+            autoHeight = Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
         }
-        const minRows = vizType !== 'default' ? 3 : 1;
-        const rows = Math.max(minRows, Math.ceil(rawOutputHeight.value / cellHeight.value));
-        return Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
+        return Math.max(autoHeight, manualMinOutputHeight.value);
     });
 
     const outputOverflowY = computed(() => {
@@ -33,5 +37,5 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
         return rawOutputHeight.value > MAX_OUTPUT_ROWS * cellHeight.value ? 'auto' : 'hidden';
     });
 
-    return { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight };
+    return { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight, manualMinOutputHeight };
 }

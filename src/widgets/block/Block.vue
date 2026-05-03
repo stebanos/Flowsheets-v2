@@ -5,7 +5,6 @@ import { useCellDimensions } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useDeleteBlock } from '@/features/block/manage';
 import { useDrag } from '@/features/block/drag';
-import { useResize } from '@/features/block/resize';
 import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
 import { useVizMenu } from '@/features/block/visualize';
@@ -45,7 +44,6 @@ const { blocks, updateBlock } = useBlockStore();
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
-const { startResize } = useResize(snapX, snapY, cellWidth, cellHeight);
 
 const showVizBar = ref(false);
 const panelOpen = ref(false);
@@ -60,8 +58,10 @@ const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.val
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 
-const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight } =
+const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight, manualMinOutputHeight } =
     useBlockOutput(props.block, { cellHeight, blockEval });
+
+const editorCollapsed = ref(props.block.editorCollapsed ?? false);
 
 const {
     snappedEditorHeight,
@@ -71,7 +71,7 @@ const {
     manualMinWidth,
     handleContentWidth,
     handleContentHeight
-} = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight });
+} = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight, editorCollapsed });
 
 onBeforeUnmount(() => {
     resizeCleanup?.();
@@ -118,24 +118,16 @@ function toggleVizBar() {
 const isResizingLocal = ref(false);
 let resizeCleanup = null;
 
-function handleStartResize(block, event) {
+function handleStartResizeEditor(event) {
+    const startY = event.clientY;
+    const startH = snappedEditorHeight.value;
     isResizingLocal.value = true;
-    startResize(block, event);
-    // Add listeners AFTER startResize so useResize's mousemove fires first,
-    // ensuring block.width/height are already updated when we read them.
-    const onMove = () => {
-        manualMinWidth.value = block.width;
-        manualMinEditorHeight.value = Math.max(
-            cellHeight.value,
-            block.height - cellHeight.value - snappedOutputHeight.value
-        );
+    const onMove = (e) => {
+        manualMinEditorHeight.value = Math.max(cellHeight.value, snapY(startH + e.clientY - startY));
     };
     const onUp = () => {
         isResizingLocal.value = false;
-        updateBlock(props.block.id, {
-            userMinWidth: manualMinWidth.value,
-            userMinEditorHeight: manualMinEditorHeight.value
-        });
+        updateBlock(props.block.id, { userMinEditorHeight: manualMinEditorHeight.value });
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('mouseup', onUp);
         resizeCleanup = null;
@@ -146,6 +138,38 @@ function handleStartResize(block, event) {
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+}
+
+function handleStartResizeOutput(event) {
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startOutH = snappedOutputHeight.value;
+    const startW = snappedEditorWidth.value;
+    isResizingLocal.value = true;
+    const onMove = (e) => {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        manualMinOutputHeight.value = Math.max(cellHeight.value, snapY(startOutH + dy));
+        manualMinWidth.value = Math.max(cellWidth.value, snapX(startW + dx));
+    };
+    const onUp = () => {
+        isResizingLocal.value = false;
+        updateBlock(props.block.id, { userMinOutputHeight: manualMinOutputHeight.value, userMinWidth: manualMinWidth.value });
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        resizeCleanup = null;
+    };
+    resizeCleanup = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+}
+
+function toggleEditorCollapse() {
+    editorCollapsed.value = !editorCollapsed.value;
+    updateBlock(props.block.id, { editorCollapsed: editorCollapsed.value });
 }
 
 const { onExtract } = useBlockExtract(
@@ -221,12 +245,20 @@ watch(
                 </button>
             </div>
         </div>
-        <div class="block-code w-full" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
-            <code-editor class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
+        <div class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
+            <button class="absolute top-0.5 right-0.5 z-10 opacity-0 group-hover:opacity-50 hover:opacity-100! cursor-pointer text-[10px] leading-none px-0.5 bg-transparent border-none"
+                    title="Toggle editor"
+                    @click.stop="toggleEditorCollapse"
+                    @mousedown.stop>{{ editorCollapsed ? '▸' : '▾' }}</button>
+            <div v-if="editorCollapsed" class="block-code-preview w-full h-full font-mono text-[11px] px-1 py-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-gray-400">{{ block.code.slice(0, 60) }}</div>
+            <code-editor v-else class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"
                 :onExtract
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="handleContentHeight($event)" @update:content-width="handleContentWidth($event)" />
+            <div v-if="!editorCollapsed" class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"
+                 title="Resize editor"
+                 @mousedown.stop.prevent="handleStartResizeEditor($event)" />
         </div>
         <div v-if="panelOpen && hasInputs" class="inputs-panel w-full border-t border-gray-300 bg-gray-50 shrink-0">
             <div v-for="ref in blockDeps" :key="ref"
@@ -268,23 +300,14 @@ watch(
                 </button>
                 <p-menu ref="vizMenu" :model="vizMenuItems" popup />
             </div>
-        </div>
-        <div class="block-handle absolute box-border h-3 w-3 mb-0.5 mr-0.5 cursor-se-resize select-none border-r border-b border-gray-300 bg-transparent"
-            @mousedown.stop.prevent="handleStartResize(block, $event)">
+            <div class="block-output-handle absolute bottom-0 left-0 right-0 h-1 cursor-se-resize"
+                 title="Resize output"
+                 @mousedown.stop.prevent="handleStartResizeOutput($event)" />
         </div>
     </div>
 </template>
 
 <style scoped>
-.block-output {
-    anchor-name: --block-output;
-}
-.block-handle {
-    position-anchor: --block-output;
-    bottom: anchor(bottom);
-    right: anchor(right);
-}
-
 .output-flash-ok {
     animation: output-flash-ok 0.5s ease-out;
 }

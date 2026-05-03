@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
-export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight }) {
+export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight, editorCollapsed = ref(false) }) {
     const { updateBlock } = useBlockStore();
 
     const rawEditorHeight = ref(block.userMinEditorHeight ?? cellHeight.value);
@@ -24,6 +24,7 @@ export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappe
     }
 
     const snappedEditorHeight = computed(() => {
+        if (editorCollapsed.value) { return cellHeight.value; }
         const contentHeight = Math.max(1, Math.ceil(rawEditorHeight.value / cellHeight.value)) * cellHeight.value;
         return Math.max(contentHeight, manualMinEditorHeight.value);
     });
