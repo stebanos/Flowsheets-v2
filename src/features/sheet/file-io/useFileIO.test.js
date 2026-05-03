@@ -9,9 +9,6 @@ const mockCustomVizes = reactive({});
 const mockLoadVizes = vi.fn();
 const mockReplaceBlocks = vi.fn();
 const mockRenameActiveSheet = vi.fn();
-const mockWriteSheetData = vi.fn();
-const mockSwitchSheet = vi.fn();
-const mockPersistDeleteSheet = vi.fn();
 
 vi.mock('@/entities/block', () => ({
     useBlockStore: () => ({ blocks: mockBlocks, replaceBlocks: mockReplaceBlocks })
@@ -38,10 +35,19 @@ vi.mock('@/entities/sheet', () => ({
 vi.mock('@/features/sheet/storage', () => ({
     useSheetStorage: () => ({
         readSheetData: vi.fn(),
-        writeSheetData: mockWriteSheetData,
-        switchSheet: mockSwitchSheet,
+        writeSheetData: vi.fn(),
+        switchSheet: vi.fn(),
         initNewSheet: vi.fn(),
-        persistDeleteSheet: mockPersistDeleteSheet
+        persistDeleteSheet: vi.fn()
+    })
+}));
+
+vi.mock('./useBundleImport', () => ({
+    useBundleImport: () => ({
+        bundleImportState: ref({ pending: false, entries: [] }),
+        prepareBundleImport: vi.fn(),
+        confirmBundleImport: vi.fn(),
+        cancelBundleImport: vi.fn()
     })
 }));
 
@@ -68,13 +74,9 @@ beforeEach(() => {
     mockReplaceBlocks.mockClear();
     mockLoadVizes.mockClear();
     mockRenameActiveSheet.mockClear();
-    mockWriteSheetData.mockReset();
-    mockSwitchSheet.mockClear();
-    mockPersistDeleteSheet.mockClear();
-    // Reset pendingImport and bundleImportState between tests
+    // Reset pendingImport between tests
     const io = useFileIO();
     io.cancelImport();
-    io.cancelBundleImport();
 });
 
 // --- Tests ---
@@ -211,52 +213,5 @@ describe('cancelImport', () => {
         expect(pendingImport.value).not.toBeNull();
         cancelImport();
         expect(pendingImport.value).toBeNull();
-    });
-});
-
-// --- Bundle import failure handling (B2 + B3) ---
-
-const singleSheetBundleJson = JSON.stringify({
-    formatVersion: '1.0.0',
-    exportedAt: new Date().toISOString(),
-    rootSheetId: 'sheet:local/s1',
-    sheets: [{ id: 'sheet:local/s1', name: 'Sheet 1', blocks: [], customVizes: {} }]
-});
-
-const twoSheetBundleJson = JSON.stringify({
-    formatVersion: '1.0.0',
-    exportedAt: new Date().toISOString(),
-    rootSheetId: 'sheet:local/s1',
-    sheets: [
-        { id: 'sheet:local/s1', name: 'Sheet 1', blocks: [], customVizes: {} },
-        { id: 'sheet:local/s2', name: 'Sheet 2', blocks: [], customVizes: {} }
-    ]
-});
-
-describe('confirmBundleImport — failure handling', () => {
-    test('clears bundleImportState when writeSheetData rejects', async () => {
-        mockWriteSheetData.mockRejectedValueOnce(new Error('disk full'));
-
-        const { prepareBundleImport, confirmBundleImport, bundleImportState } = useFileIO();
-        await prepareBundleImport(mockFile(singleSheetBundleJson));
-        expect(bundleImportState.value.pending).toBe(true);
-
-        await expect(confirmBundleImport()).rejects.toThrow();
-
-        expect(bundleImportState.value).toBeNull();
-    });
-
-    test('calls persistDeleteSheet for each successfully written sheet when a later write fails', async () => {
-        mockWriteSheetData
-            .mockResolvedValueOnce(undefined)              // first sheet written
-            .mockRejectedValueOnce(new Error('disk full')); // second sheet fails
-
-        const { prepareBundleImport, confirmBundleImport, bundleImportState } = useFileIO();
-        await prepareBundleImport(mockFile(twoSheetBundleJson));
-
-        await expect(confirmBundleImport()).rejects.toThrow();
-
-        expect(mockPersistDeleteSheet).toHaveBeenCalledWith('sheet:local/s1');
-        expect(bundleImportState.value).toBeNull();
     });
 });
