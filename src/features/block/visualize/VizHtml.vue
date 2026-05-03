@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 
 const props = defineProps({
     value: {},
@@ -16,15 +16,35 @@ const htmlContent = computed(() => {
     try { return JSON.stringify(v); } catch { return String(v); }
 });
 
-const iframeSrc = computed(() =>
-    `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.value)}`
+const hasContent = computed(() => props.value != null || props.error != null);
+
+// Use a ref updated after nextTick so the iframe only ever mounts once with a
+// settled value. Without this, replaceBlocks() causes a second in-place src
+// assignment on the already-navigated data: iframe, which browsers ignore.
+const iframeSrc = ref(null);
+watch(
+    () => hasContent.value
+        ? `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.value)}`
+        : null,
+    async (src) => {
+        await nextTick();
+        iframeSrc.value = src;
+    },
+    { immediate: true }
 );
 </script>
 
 <template>
     <iframe
+        v-if="iframeSrc"
         :src="iframeSrc"
         sandbox="allow-scripts"
         class="w-full h-full border-0"
     />
+    <div v-else class="w-full h-full flex items-center justify-center">
+        <svg class="animate-spin w-5 h-5 text-gray-300" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+        </svg>
+    </div>
 </template>
