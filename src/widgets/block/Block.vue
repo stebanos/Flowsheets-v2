@@ -248,7 +248,7 @@ watch(
         </div>
         <div class="block-output w-full border-t border-gray-300 bg-white relative"
             :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"
-            :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error' }"
+            :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
             @animationend="flashType = null">
             <component
                 :is="activeVizComponent"
