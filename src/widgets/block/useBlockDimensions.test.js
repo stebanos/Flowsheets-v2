@@ -21,6 +21,7 @@ function makeDeps(overrides = {}) {
         unitX: ref(100),
         snappedInputsPanelHeight: ref(0),
         snappedOutputHeight: ref(40),
+        editorCollapsed: ref(false),
         ...overrides
     };
 }
@@ -83,5 +84,16 @@ describe('useBlockDimensions', () => {
         await nextTick();
 
         expect(snappedEditorWidth.value).toBe(400); // ceil(350/100)*100 = 400
+    });
+
+    test('snappedEditorHeight equals cellHeight when editorCollapsed is true, ignoring content and manual minimum', () => {
+        addBlock({ id: 'b1', name: 'a', width: 200, height: 480, userMinWidth: null, userMinEditorHeight: 200 });
+        const block = blocks[0];
+        const editorCollapsed = ref(true);
+        const { snappedEditorHeight } = withSetup(() => useBlockDimensions(block, makeDeps({ editorCollapsed })));
+
+        // userMinEditorHeight=200 and content height would both exceed cellHeight(40),
+        // but collapsed state must override both and return exactly one row
+        expect(snappedEditorHeight.value).toBe(40);
     });
 });
