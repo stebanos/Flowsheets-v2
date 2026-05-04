@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
+import { useFocusedBlock, useBlockNavigation } from '@/features/block/navigate';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { useCellDimensions } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
@@ -41,6 +42,71 @@ const props = defineProps({
 const emit = defineEmits(['edit-viz']);
 
 const { blocks, updateBlock } = useBlockStore();
+
+const { focusedBlockName, wrapIndicator, register, unregister, selectBlock, focusCanvas } = useFocusedBlock();
+const { focusNext, focusPrev } = useBlockNavigation(blocks);
+
+const wrapperEl = ref(null);
+const codeEditorRef = ref(null);
+const isEditing = ref(false);
+const wrapFlash = ref(false);
+
+const isFocused = computed(() => focusedBlockName.value === props.block.name);
+
+watch(isFocused, (val) => {
+    if (!val) { isEditing.value = false; }
+});
+
+watch(() => props.block.name, (newName, oldName) => {
+    if (oldName) { unregister(oldName); }
+    register(newName, () => wrapperEl.value?.focus(), () => codeEditorRef.value?.focus());
+}, { immediate: true });
+
+function onFocusIn() {
+    selectBlock(props.block.name);
+    isEditing.value = document.activeElement !== wrapperEl.value;
+    if (wrapIndicator.value) {
+        wrapIndicator.value = false;
+        wrapFlash.value = true;
+        setTimeout(() => { wrapFlash.value = false; }, 800);
+    }
+}
+
+function onFocusOut() {
+    setTimeout(() => {
+        if (
+            !wrapperEl.value?.contains(document.activeElement) &&
+            focusedBlockName.value === props.block.name
+        ) {
+            focusCanvas();
+            isEditing.value = false;
+        }
+    }, 0);
+}
+
+function onWrapperKeyDown(e) {
+    if (document.activeElement !== wrapperEl.value) { return; }
+    if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'ArrowDown')) {
+        e.preventDefault();
+        focusNext(props.block.name);
+    } else if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'ArrowUp')) {
+        e.preventDefault();
+        focusPrev(props.block.name);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        codeEditorRef.value?.focus();
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        focusCanvas();
+    }
+}
+
+function onNavigate(dir) {
+    if (dir === 'next') { focusNext(props.block.name); }
+    else if (dir === 'prev') { focusPrev(props.block.name); }
+    else { wrapperEl.value?.focus(); }
+}
+
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
@@ -75,6 +141,7 @@ const {
 
 onBeforeUnmount(() => {
     resizeCleanup?.();
+    unregister(props.block.name);
 });
 
 const blockPositionStyle = computed(() => ({
@@ -194,8 +261,22 @@ watch(
 
 <template>
     <div data-block class="group absolute select-none outline bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
+         ref="wrapperEl"
+         tabindex="0"
+         :aria-label="isEditing ? `Block: ${block.name}, editing` : `Block: ${block.name}`"
          :style="blockPositionStyle"
-         :class="[isHighlighted ? 'outline-black z-10' : 'outline-gray-300 hover:outline-black hover:z-10', {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}]">
+         :class="[
+             isEditing ? 'outline-amber-400 z-10'
+             : isFocused ? 'outline-blue-400 z-10'
+             : isHighlighted ? 'outline-black z-10'
+             : 'outline-gray-300 hover:outline-black hover:z-10',
+             wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
+             {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}
+         ]"
+         @focusin="onFocusIn"
+         @focusout="onFocusOut"
+         @keydown="onWrapperKeyDown">
+        <span v-if="isEditing" class="absolute top-1 right-1 z-20 text-xs text-amber-500 font-medium pointer-events-none select-none">EDITING</span>
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
              :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
@@ -251,9 +332,10 @@ watch(
                     @click.stop="toggleEditorCollapse"
                     @mousedown.stop>{{ editorCollapsed ? '▸' : '▾' }}</button>
             <div v-if="editorCollapsed" class="block-code-preview w-full h-full font-mono text-[11px] px-1 py-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-gray-400">{{ block.code.slice(0, 60) }}</div>
-            <code-editor v-else class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
+            <code-editor v-else ref="codeEditorRef" class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"
                 :onExtract
+                :onNavigate="onNavigate"
                 @update:code="updateBlock(block.id, { code: $event })"
                 @update:content-height="handleContentHeight($event)" @update:content-width="handleContentWidth($event)" />
             <div v-if="!editorCollapsed" class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"

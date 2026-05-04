@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
@@ -8,6 +8,7 @@ import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCustomViz } from '@/features/block/visualize';
+import { useFocusedBlock } from '@/features/block/navigate';
 import { Block, BlockGrid, CustomVizEditor, SheetTabs, SheetSidebar } from '@/widgets';
 import { AppBar, AppBarToggleButton, SheetTitle, SaveFileButton, UndoDeleteToast, EmptyCanvas, ResetPanButton } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
@@ -40,6 +41,11 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
 
+// keyboard nav
+const { registerCanvas } = useFocusedBlock();
+const canvasEl = ref(null);
+const wrapAnnouncerEl = ref(null);
+
 const SCROLL_RESUME_MS = 500;
 const LINE_PX = 40;
 let _lastScrollTime = 0;
@@ -59,6 +65,7 @@ watch([panX, panY], scheduleSave);
 // lifecycle
 onMounted(async () => {
     document.addEventListener('keydown', handleKeydown);
+    registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
     await loadFromStorage();
     if (isFirstBoot.value) {
         createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
@@ -184,6 +191,12 @@ const showSaveFile = computed(() => fileName.value !== null);
             <div class="flex flex-col flex-1 overflow-hidden">
                 <sheet-tabs @open-sidebar="openSheetSidebar" />
                 <div
+                    ref="canvasEl"
+                    data-canvas
+                    role="group"
+                    tabindex="-1"
+                    aria-label="Block canvas"
+                    title="Arrow keys to navigate · Enter to edit · Escape to exit"
                     class="relative flex-1 overflow-hidden"
                     :class="{ 'cursor-grabbing select-none': isPanning }"
                     @dragover.prevent
@@ -191,6 +204,7 @@ const showSaveFile = computed(() => fileName.value !== null);
                     @mousedown="onCanvasMousedown"
                     @wheel="onCanvasWheel"
                 >
+                    <span ref="wrapAnnouncerEl" aria-live="polite" class="sr-only" />
                     <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
                         <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />

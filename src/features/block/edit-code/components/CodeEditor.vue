@@ -35,6 +35,10 @@ const props = defineProps({
     onExtract: {
         type: Function,
         default: null
+    },
+    onNavigate: {
+        type: Function,
+        default: null
     }
 });
 
@@ -156,6 +160,38 @@ const extractKeymap = keymap.of([{
     }
 }]);
 
+const navigationKeymap = keymap.of([
+    {
+        key: 'Ctrl-ArrowDown',
+        run(view) {
+            const { state } = view;
+            const cursorPos = state.selection.main.head;
+            const lastLineFrom = state.doc.line(state.doc.lines).from;
+            if (cursorPos < lastLineFrom) { return false; }
+            props.onNavigate?.('next');
+            return true;
+        }
+    },
+    {
+        key: 'Ctrl-ArrowUp',
+        run(view) {
+            const { state } = view;
+            const cursorPos = state.selection.main.head;
+            const firstLineTo = state.doc.line(1).to;
+            if (cursorPos > firstLineTo) { return false; }
+            props.onNavigate?.('prev');
+            return true;
+        }
+    },
+    {
+        key: 'Escape',
+        run() {
+            props.onNavigate?.('escape');
+            return true;
+        }
+    }
+]);
+
 const extensions = computed(() => {
     const blockPlugin = blockNameHighlighter(blockNames.value, isStringConcat.value, props.inputModes);
     const ext = [
@@ -166,6 +202,7 @@ const extensions = computed(() => {
     ];
     if (isStringConcat.value) { ext.push(templateLiteralHighlighting()); }
     if (props.onExtract) { ext.push(extractKeymap); }
+    if (props.onNavigate) { ext.push(navigationKeymap); }
     return ext;
 });
 
@@ -226,6 +263,10 @@ watch(editorView, (view) => {
 
 onBeforeUnmount(() => {
     detachHoverHandlers(editorView);
+});
+
+defineExpose({
+    focus() { editorView.value?.focus(); }
 });
 </script>
 
