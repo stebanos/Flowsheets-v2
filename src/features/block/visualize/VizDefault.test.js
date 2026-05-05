@@ -22,7 +22,7 @@ describe('VizDefault — single root element', () => {
 
     test('root is a single div even in list mode', () => {
         const wrapper = shallowMount(VizDefault, {
-            props: { isList: true, outputItems: ['a', 'b', 'c'] }
+            props: { isList: true, outputItems: ['a', 'b', 'c'], value: ['a', 'b', 'c'] }
         });
         expect(wrapper.element.tagName).toBe('DIV');
     });
@@ -49,9 +49,9 @@ describe('VizDefault — scalar value rendering', () => {
         expect(wrapper.text()).toContain('hello world');
     });
 
-    test('renders object via JSON.stringify', () => {
+    test('renders object as highlighted JSON in a pre.viz-json element', () => {
         const wrapper = shallowMount(VizDefault, { props: { value: { x: 1 } } });
-        expect(wrapper.text()).toContain('{"x":1}');
+        expect(wrapper.find('pre.viz-json').exists()).toBe(true);
     });
 });
 
@@ -71,20 +71,25 @@ describe('VizDefault — error rendering', () => {
         expect(wrapper.text()).toContain('oops');
         expect(wrapper.text()).not.toContain('99');
     });
+
+    test('pre.viz-json not rendered when error is set', () => {
+        const wrapper = shallowMount(VizDefault, { props: { value: { x: 1 }, error: 'oops' } });
+        expect(wrapper.find('pre.viz-json').exists()).toBe(false);
+    });
 });
 
 describe('VizDefault — list mode', () => {
-    test('renders one div per output item', () => {
+    test('renders one div per output item for primitive arrays', () => {
         const wrapper = shallowMount(VizDefault, {
-            props: { isList: true, outputItems: ['a', 'b', 'c'] }
+            props: { isList: true, outputItems: ['a', 'b', 'c'], value: ['a', 'b', 'c'] }
         });
         const items = wrapper.findAll('.font-mono');
         expect(items).toHaveLength(3);
     });
 
-    test('renders the text of each item', () => {
+    test('renders the text of each item in primitive list', () => {
         const wrapper = shallowMount(VizDefault, {
-            props: { isList: true, outputItems: ['alpha', 'beta'] }
+            props: { isList: true, outputItems: ['alpha', 'beta'], value: ['alpha', 'beta'] }
         });
         expect(wrapper.text()).toContain('alpha');
         expect(wrapper.text()).toContain('beta');
@@ -92,9 +97,18 @@ describe('VizDefault — list mode', () => {
 
     test('renders an empty list without errors', () => {
         const wrapper = shallowMount(VizDefault, {
-            props: { isList: true, outputItems: [] }
+            props: { isList: true, outputItems: [], value: [] }
         });
         expect(wrapper.element.tagName).toBe('DIV');
         expect(wrapper.findAll('.font-mono')).toHaveLength(0);
+    });
+
+    test('object array renders pre.viz-json, not row divs', () => {
+        const wrapper = shallowMount(VizDefault, {
+            props: { isList: true, outputItems: [{ x: 1 }], value: [{ x: 1 }] }
+        });
+        expect(wrapper.find('pre.viz-json').exists()).toBe(true);
+        const rowDivs = wrapper.findAll('div.font-mono');
+        expect(rowDivs).toHaveLength(0);
     });
 });

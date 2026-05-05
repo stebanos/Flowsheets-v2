@@ -16,11 +16,15 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
     const outputValue = computed(() => blockEval.value?.value);
     const isList = computed(() => Array.isArray(outputValue.value));
     const outputItems = computed(() => isList.value ? outputValue.value.map(formatValue) : []);
+    const listIsPrimitive = computed(() =>
+        isList.value && outputItems.value.length > 0 &&
+        outputValue.value.every(item => item === null || typeof item !== 'object')
+    );
 
     const snappedOutputHeight = computed(() => {
         const vizType = block.visualizationType ?? 'default';
         let autoHeight;
-        if (vizType === 'default' && isList.value) {
+        if (vizType === 'default' && listIsPrimitive.value) {
             autoHeight = Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
         } else {
             const minRows = vizType !== 'default' ? 3 : 1;
@@ -33,7 +37,7 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
     const outputOverflowY = computed(() => {
         const vizType = block.visualizationType ?? 'default';
         if (vizType !== 'default') { return 'hidden'; }
-        if (isList.value) { return outputItems.value.length > MAX_OUTPUT_ROWS ? 'auto' : 'hidden'; }
+        if (listIsPrimitive.value) { return outputItems.value.length > MAX_OUTPUT_ROWS ? 'auto' : 'hidden'; }
         return rawOutputHeight.value > MAX_OUTPUT_ROWS * cellHeight.value ? 'auto' : 'hidden';
     });
 

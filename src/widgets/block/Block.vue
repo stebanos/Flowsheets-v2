@@ -312,7 +312,7 @@ watch(
                         <rect x="8" y="4" width="6" height="8" rx="1.5"/>
                     </svg>
                 </button>
-                <button class="h-full px-1.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                <button class="h-full px-1.5 flex items-center opacity-75 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
                         :class="showVizBar ? 'opacity-100!' : ''"
                         title="Visualization"
                         @click.stop="toggleVizBar">
@@ -362,7 +362,8 @@ watch(
         <div class="block-output w-full border-t border-gray-300 bg-white relative"
             :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
-            @animationend="flashType = null">
+            @animationend="flashType = null"
+            @wheel="outputOverflowY === 'auto' && $event.stopPropagation()">
             <component
                 :is="activeVizComponent"
                 :value="outputValue"
