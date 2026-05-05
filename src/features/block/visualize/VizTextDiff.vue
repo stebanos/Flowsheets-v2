@@ -87,7 +87,7 @@ const inputRef = ref(null);
             {{ compareError }}
         </div>
         <!-- Diff output -->
-        <div v-else class="overflow-auto flex-1 font-mono text-[12px] leading-[1.4]">
+        <div v-else class="overflow-auto flex-1 font-mono text-[12px] leading-[1.4]" @wheel.stop>
             <div v-if="diffRows.length === 0" class="px-2 py-1 text-gray-400 italic">
                 No differences.
             </div>

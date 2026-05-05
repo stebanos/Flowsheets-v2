@@ -21,10 +21,18 @@ const hasContent = computed(() => props.value != null || props.error != null);
 // Use a ref updated after nextTick so the iframe only ever mounts once with a
 // settled value. Without this, replaceBlocks() causes a second in-place src
 // assignment on the already-navigated data: iframe, which browsers ignore.
+const SCROLLBAR_CSS = `<style>
+*{scrollbar-width:thin;scrollbar-color:oklch(50% 0 0/25%) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:oklch(50% 0 0/25%);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:oklch(50% 0 0/45%)}
+</style>`;
+
 const iframeSrc = ref(null);
 watch(
     () => hasContent.value
-        ? `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.value)}`
+        ? `data:text/html;charset=utf-8,${encodeURIComponent(SCROLLBAR_CSS + htmlContent.value)}`
         : null,
     async (src) => {
         await nextTick();

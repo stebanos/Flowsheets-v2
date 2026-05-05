@@ -30,7 +30,9 @@ const panelPt = computed(() => ({
         ]
     },
     header: { class: 'flex items-center h-8 shrink-0 px-2.5 border-b border-gray-200 bg-gray-100' },
-    content: { class: 'flex-1 overflow-y-auto p-0' },
+    contentContainer: { class: 'flex-1 min-h-0 flex flex-col' },
+    contentWrapper: { class: 'flex-1 min-h-0 flex flex-col' },
+    content: { class: 'flex-1 min-h-0 overflow-y-auto p-0' },
     footer: { class: 'shrink-0' }
 }));
 
