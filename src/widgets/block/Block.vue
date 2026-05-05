@@ -276,7 +276,6 @@ watch(
          @focusin="onFocusIn"
          @focusout="onFocusOut"
          @keydown="onWrapperKeyDown">
-        <span v-if="isEditing" class="absolute top-1 right-1 z-20 text-xs text-amber-500 font-medium pointer-events-none select-none">EDITING</span>
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
              :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
