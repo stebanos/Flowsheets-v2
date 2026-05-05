@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
-import { useCellDimensions, useHoveredState, useSidebar } from '@/shared/composables';
+import { useHoveredState, useSidebar } from '@/shared/composables';
+import { useCellDimensions } from '@/features/block/grid';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
 import { useCanvasPan } from '@/features/canvas';

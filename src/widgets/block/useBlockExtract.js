@@ -1,5 +1,6 @@
 import { nextTick, toRaw } from 'vue';
-import { useCellDimensions, usePendingNameFocus } from '@/shared/composables';
+import { useCellDimensions } from '@/features/block/grid';
+import { usePendingNameFocus } from '@/features/block/navigate';
 import { useBlockStore } from '@/entities/block';
 import { useBlockManager } from '@/features/block/manage';
 

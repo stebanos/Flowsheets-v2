@@ -42,9 +42,12 @@ export function useFocusedBlock() {
         canvasEl.value?.focus();
     }
 
+    function setWrapIndicator(v) { wrapIndicator.value = v; }
+
     return {
         focusedBlockName: readonly(focusedBlockName),
-        wrapIndicator,
+        wrapIndicator: readonly(wrapIndicator),
+        setWrapIndicator,
         register,
         unregister,
         registerCanvas,

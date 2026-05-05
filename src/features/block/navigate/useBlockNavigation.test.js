@@ -4,12 +4,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // ── mocks ────────────────────────────────────────────────────────────────────
 
 const mockWrapIndicator = ref(false);
+const mockSetWrapIndicator = vi.fn((v) => { mockWrapIndicator.value = v; });
 const mockAnnounce = vi.fn();
 const mockFocusBlockWrapper = vi.fn();
 
 vi.mock('./useFocusedBlock', () => ({
     useFocusedBlock: () => ({
-        wrapIndicator: mockWrapIndicator,
+        setWrapIndicator: mockSetWrapIndicator,
         announce: mockAnnounce,
         focusBlockWrapper: mockFocusBlockWrapper
     })
@@ -27,6 +28,7 @@ function block(name, x, y) {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mockSetWrapIndicator.mockImplementation((v) => { mockWrapIndicator.value = v; });
     mockWrapIndicator.value = false;
 });
 

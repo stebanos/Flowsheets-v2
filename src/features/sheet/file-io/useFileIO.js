@@ -247,6 +247,7 @@ export function useFileIO() {
         saveSheet,
         saveSheetAs,
         exportBundle,
+        // bundle import state and actions from useBundleImport
         ...bundleImport
     };
 }

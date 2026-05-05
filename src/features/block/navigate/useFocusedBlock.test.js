@@ -97,9 +97,9 @@ describe('useFocusedBlock', () => {
             expect(wrapIndicator.value).toBe(false);
         });
 
-        it('is a writable ref so Block.vue can clear it after the flash', () => {
-            const { wrapIndicator } = useFocusedBlock();
-            wrapIndicator.value = true;
+        it('setWrapIndicator updates the value', () => {
+            const { wrapIndicator, setWrapIndicator } = useFocusedBlock();
+            setWrapIndicator(true);
             expect(wrapIndicator.value).toBe(true);
         });
     });

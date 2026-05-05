@@ -1,7 +1,7 @@
 import { useFocusedBlock } from './useFocusedBlock';
 
 export function useBlockNavigation(blocks) {
-    const { wrapIndicator, announce, focusBlockWrapper } = useFocusedBlock();
+    const { setWrapIndicator, announce, focusBlockWrapper } = useFocusedBlock();
 
     function getSorted() {
         return [...blocks].sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
@@ -13,7 +13,7 @@ export function useBlockNavigation(blocks) {
         const idx = sorted.findIndex(b => b.name === fromName);
         const nextIdx = idx === -1 ? 0 : (idx + 1) % sorted.length;
         if (idx === sorted.length - 1) {
-            wrapIndicator.value = true;
+            setWrapIndicator(true);
             announce('Wrapped to first block');
         }
         focusBlockWrapper(sorted[nextIdx].name);
@@ -25,7 +25,7 @@ export function useBlockNavigation(blocks) {
         const idx = sorted.findIndex(b => b.name === fromName);
         const prevIdx = idx === -1 ? sorted.length - 1 : (idx - 1 + sorted.length) % sorted.length;
         if (idx === 0) {
-            wrapIndicator.value = true;
+            setWrapIndicator(true);
             announce('Wrapped to last block');
         }
         focusBlockWrapper(sorted[prevIdx].name);

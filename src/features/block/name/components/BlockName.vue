@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { usePendingNameFocus } from '@/shared/composables';
+import { usePendingNameFocus } from '@/features/block/navigate';
 import { useBlockName } from '../composables/useBlockName';
 
 const props = defineProps({

@@ -21,7 +21,9 @@ export function useBlockManager() {
             visualizationType: 'default',
             vizOptions: {},
             userMinWidth: null,
-            userMinEditorHeight: null
+            userMinEditorHeight: null,
+            userMinOutputHeight: null,
+            editorCollapsed: false
         });
 
         return resolvedName;

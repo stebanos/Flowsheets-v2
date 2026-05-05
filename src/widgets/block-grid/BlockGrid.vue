@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { useCellDimensions } from '@/shared/composables';
+import { useCellDimensions } from '@/features/block/grid';
 
 const props = defineProps({
     panX: { type: Number, default: 0 },
