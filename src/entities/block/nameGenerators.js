@@ -5,11 +5,11 @@
 
 const RESERVED_KEYWORDS = new Set([
     // ECMAScript keywords + common literals
-    'break','case','catch','class','const','continue','debugger','default','delete',
-    'do','else','enum','export','extends','finally','for','function','if','import',
-    'in','instanceof','new','return','super','switch','this','throw','try','typeof',
-    'var','void','while','with','yield','let','static','implements','package',
-    'protected','interface','private','public','null','true','false','await'
+    'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete',
+    'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'function', 'if', 'import',
+    'in', 'instanceof', 'new', 'return', 'super', 'switch', 'this', 'throw', 'try', 'typeof',
+    'var', 'void', 'while', 'with', 'yield', 'let', 'static', 'implements', 'package',
+    'protected', 'interface', 'private', 'public', 'null', 'true', 'false', 'await'
 ]);
 
 const GLOBAL_NAMES = typeof globalThis !== 'undefined'

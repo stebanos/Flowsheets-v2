@@ -95,7 +95,7 @@ describe('useSheetManager', () => {
     });
 
     describe('deleteSheet()', () => {
-it('calls closeSheet, persistDeleteSheet, then sheetStore.deleteSheet in order', async () => {
+        it('calls closeSheet, persistDeleteSheet, then sheetStore.deleteSheet in order', async () => {
             const id1 = 'sheet:local/a';
             const id2 = 'sheet:local/b';
             addSheet(id1, 'Alpha');
