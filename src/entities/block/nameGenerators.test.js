@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
-import { isReservedOrGlobal, generateUniqueName, generateUniqueNameFromName } from './nameGenerators';
+import { describe, expect, test } from 'vitest';
+import { generateUniqueName, generateUniqueNameFromName, isReservedOrGlobal } from './nameGenerators';
 
 describe('isReservedOrGlobal', () => {
 

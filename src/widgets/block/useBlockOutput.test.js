@@ -1,5 +1,5 @@
 import { createApp, ref } from 'vue';
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { useBlockOutput } from './useBlockOutput';
 
 function withSetup(composable) {

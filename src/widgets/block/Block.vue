@@ -1,16 +1,16 @@
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
-import { useFocusedBlock, useBlockNavigation } from '@/features/block/navigate';
-import { useCellDimensions } from '@/features/block/grid';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { useBlockStore } from '@/entities/block';
-import { useDeleteBlock } from '@/features/block/manage';
 import { useDrag } from '@/features/block/drag';
-import { BlockName } from '@/features/block/name';
 import { CodeEditor } from '@/features/block/edit-code';
+import { useCellDimensions } from '@/features/block/grid';
+import { useDeleteBlock } from '@/features/block/manage';
+import { BlockName } from '@/features/block/name';
+import { useBlockNavigation, useFocusedBlock } from '@/features/block/navigate';
 import { useVizMenu } from '@/features/block/visualize';
-import { useBlockExtract } from './useBlockExtract';
 import { useBlockDimensions } from './useBlockDimensions';
+import { useBlockExtract } from './useBlockExtract';
 import { useBlockOutput } from './useBlockOutput';
 import { useBlockResize } from './useBlockResize';
 

@@ -1,8 +1,8 @@
 import { nextTick, toRaw } from 'vue';
-import { useCellDimensions } from '@/features/block/grid';
-import { usePendingNameFocus } from '@/features/block/navigate';
 import { useBlockStore } from '@/entities/block';
+import { useCellDimensions } from '@/features/block/grid';
 import { useBlockManager } from '@/features/block/manage';
+import { usePendingNameFocus } from '@/features/block/navigate';
 
 export function useBlockExtract(block, getEvaluation, snappedEditorWidth, cellWidth) {
     const { updateBlock } = useBlockStore();

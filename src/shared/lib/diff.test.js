@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'vitest';
-import { diffLines, diffChars } from './diff';
+import { describe, expect, test } from 'vitest';
+import { diffChars, diffLines } from './diff';
 
 // ---------------------------------------------------------------------------
 // diffChars

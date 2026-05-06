@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { usePendingNameFocus } from './usePendingNameFocus';
 
 // usePendingNameFocus is a singleton — reset between tests via consumeFocus

@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const MAX_OUTPUT_ROWS = 15;
 

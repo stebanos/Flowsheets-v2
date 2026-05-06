@@ -1,5 +1,5 @@
 import { reactive, ref } from 'vue';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 

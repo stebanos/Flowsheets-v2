@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted, onErrorCaptured } from 'vue';
+import { computed, nextTick, onErrorCaptured, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useCustomViz } from './useCustomViz';
 
 const props = defineProps({

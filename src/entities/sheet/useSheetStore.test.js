@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { useSheetStore } from './useSheetStore';
 
 // Singleton store — reset to a known empty state before each test

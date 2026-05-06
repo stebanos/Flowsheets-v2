@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { scopeCSS, escapeAttr, injectStyle } from './css-scope';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { escapeAttr, injectStyle, scopeCSS } from './css-scope';
 
 describe('scopeCSS — single rule', () => {
     test('prefixes selector with scope attribute', () => {

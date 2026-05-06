@@ -1,5 +1,5 @@
 import { ref, toValue } from 'vue';
-import { serializeSheet, deserializeBundle } from '@/shared/lib/persistence';
+import { deserializeBundle, serializeSheet } from '@/shared/lib/persistence';
 
 export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet }) {
     const bundleImportState = ref({ pending: false, entries: [] });

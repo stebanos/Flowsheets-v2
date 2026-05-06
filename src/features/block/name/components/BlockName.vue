@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { usePendingNameFocus } from '@/features/block/navigate';
 import { useBlockName } from '../composables/useBlockName';
 

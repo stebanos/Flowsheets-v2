@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockUpdateBlock = vi.fn();
 const mockCustomVizes = reactive({});

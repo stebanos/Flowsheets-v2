@@ -1,2 +1,2 @@
-export { serializeSheet, deserializeSheet, serializeVizes, deserializeVizes, serializeBundle, deserializeBundle } from './serializer';
 export { migrate } from './migrations';
+export { deserializeBundle, deserializeSheet, deserializeVizes, serializeBundle, serializeSheet, serializeVizes } from './serializer';

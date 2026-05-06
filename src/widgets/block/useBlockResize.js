@@ -1,4 +1,4 @@
-import { ref, onBeforeUnmount } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
 export function useBlockResize(props, {

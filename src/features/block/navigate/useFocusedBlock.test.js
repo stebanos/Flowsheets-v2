@@ -1,5 +1,5 @@
 import { nextTick } from 'vue';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The module is a singleton; resetModules gives each test a fresh ref/Map state.
 let useFocusedBlock;

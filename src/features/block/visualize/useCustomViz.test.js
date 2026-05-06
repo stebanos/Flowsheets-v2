@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from './useCustomViz';
 

@@ -1,17 +1,17 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
-import { useCellDimensions } from '@/features/block/grid';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
-import { useCanvasPan } from '@/features/canvas';
-import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
-import { useFileIO, useSheetStorage, useSheetManager } from '@/features/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
-import { useCustomViz } from '@/features/block/visualize';
+import { useCellDimensions } from '@/features/block/grid';
+import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFocusedBlock } from '@/features/block/navigate';
-import { Block, BlockGrid, CustomVizEditor, SheetTabs, SheetSidebar } from '@/widgets';
-import { AppBar, AppBarToggleButton, SheetTitle, SaveFileButton, UndoDeleteToast, EmptyCanvas, ResetPanButton } from './components';
+import { useCustomViz } from '@/features/block/visualize';
+import { useCanvasPan } from '@/features/canvas';
+import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { Block, BlockGrid, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
+import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SaveFileButton, SheetTitle, UndoDeleteToast } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores

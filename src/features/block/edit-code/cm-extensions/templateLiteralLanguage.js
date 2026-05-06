@@ -1,8 +1,8 @@
-import { parser as jsParser } from '@lezer/javascript';
-import { highlightTree } from '@lezer/highlight';
 import { defaultHighlightStyle } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, ViewPlugin } from '@codemirror/view';
+import { highlightTree } from '@lezer/highlight';
+import { parser as jsParser } from '@lezer/javascript';
 
 // Parse expressions as standalone JS — avoids needing a full template-literal lezer grammar.
 const expressionParser = jsParser.configure({ top: 'SingleExpression' });

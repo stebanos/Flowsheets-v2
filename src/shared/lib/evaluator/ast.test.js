@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { extractFreeIdentifiers } from './ast';
 
 // Helper: extract as sorted array for stable assertions

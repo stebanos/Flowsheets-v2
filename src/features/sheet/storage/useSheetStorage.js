@@ -1,9 +1,9 @@
-import { ref, reactive, watch } from 'vue';
-import { serializeSheet, deserializeSheet, migrate } from '@/shared/lib/persistence';
-import { useSheetStore } from '@/entities/sheet';
+import { reactive, ref, watch } from 'vue';
+import { deserializeSheet, migrate, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
-import { useOPFSStrategy } from './useOPFSStrategy';
+import { useSheetStore } from '@/entities/sheet';
 import { useLSStrategy } from './useLSStrategy';
+import { useOPFSStrategy } from './useOPFSStrategy';
 
 // ── pointer keys (localStorage — small, fast) ────────────────────────────────
 const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';

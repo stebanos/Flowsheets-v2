@@ -1,5 +1,5 @@
-import { shallowMount, flushPromises } from '@vue/test-utils';
-import { describe, test, expect } from 'vitest';
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { describe, expect, test } from 'vitest';
 import VizHtml from './VizHtml.vue';
 
 async function mountVizHtml(props) {

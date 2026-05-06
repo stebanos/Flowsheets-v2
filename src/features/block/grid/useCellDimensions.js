@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
 import { computeUnitX, snapX as pureSnapX, snapY as pureSnapY } from '@/shared/layout/cellDimensions';
 
 const cellWidth = ref(150);

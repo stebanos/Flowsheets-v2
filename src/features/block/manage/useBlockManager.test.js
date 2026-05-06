@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { describe, test, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { useBlockStore } from '@/entities/block';
 import { useBlockManager } from './useBlockManager';
 

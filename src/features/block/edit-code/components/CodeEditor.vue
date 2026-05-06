@@ -1,15 +1,15 @@
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CodeMirror from 'vue-codemirror6';
 import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
-import { Decoration, EditorView, ViewPlugin, keymap } from '@codemirror/view';
+import { Decoration, EditorView, keymap, ViewPlugin } from '@codemirror/view';
 import { detectStringMode } from '@/shared/lib/evaluator';
-import { templateLiteralHighlighting, findExpressionRanges } from '../cm-extensions/templateLiteralLanguage';
-import { useHoveredReference } from '../composables/useHoveredReference';
+import { findExpressionRanges, templateLiteralHighlighting } from '../cm-extensions/templateLiteralLanguage';
 import { useExtractSelection } from '../composables/useExtractSelection';
+import { useHoveredReference } from '../composables/useHoveredReference';
 
 const props = defineProps({
     code: {

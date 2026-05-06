@@ -1,7 +1,7 @@
-import { ref, nextTick } from 'vue';
-import { describe, test, expect, vi } from 'vitest';
+import { nextTick, ref } from 'vue';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
+import { describe, expect, test, vi } from 'vitest';
 import { useExtractSelection } from './useExtractSelection';
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 <script setup>
-import { ref, nextTick } from 'vue';
+import { nextTick, ref } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useSheetStorage, useSheetManager } from '@/features/sheet';
+import { useSheetManager, useSheetStorage } from '@/features/sheet';
 
 const emit = defineEmits(['open-sidebar']);
 

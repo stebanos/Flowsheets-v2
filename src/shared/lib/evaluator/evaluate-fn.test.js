@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { describe, test, expect } from 'vitest';
-import { compileFn, callFn, evaluateBlock, BLOCKED_GLOBALS } from './evaluate-fn';
+import { describe, expect, test } from 'vitest';
+import { BLOCKED_GLOBALS, callFn, compileFn, evaluateBlock } from './evaluate-fn';
 
 // ---------------------------------------------------------------------------
 // compileFn

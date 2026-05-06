@@ -1,7 +1,7 @@
-import { createApp, ref, nextTick } from 'vue';
-import { describe, test, expect, beforeEach } from 'vitest';
-import { useBlockDimensions } from './useBlockDimensions';
+import { createApp, nextTick, ref } from 'vue';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { useBlockStore } from '@/entities/block';
+import { useBlockDimensions } from './useBlockDimensions';
 
 function withSetup(composable) {
     let result;

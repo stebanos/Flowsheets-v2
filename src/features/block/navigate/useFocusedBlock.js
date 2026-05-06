@@ -1,4 +1,4 @@
-import { ref, readonly, nextTick } from 'vue';
+import { nextTick, readonly, ref } from 'vue';
 
 const focusedBlockName = ref(null);
 const registry = new Map();

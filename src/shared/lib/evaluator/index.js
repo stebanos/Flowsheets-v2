@@ -1,5 +1,5 @@
-export { compileFn, callFn, evaluateBlock, BLOCKED_GLOBALS } from './evaluate-fn';
 export { extractFreeIdentifiers } from './ast';
+export { BLOCKED_GLOBALS, callFn, compileFn, evaluateBlock } from './evaluate-fn';
 export { evaluateInContext } from './evaluateInContext';
-export { buildTemplateExpression, extractTemplateIdentifiers, detectStringMode } from './string-template';
 export { renameIdentifier } from './renameIdentifier';
+export { buildTemplateExpression, detectStringMode, extractTemplateIdentifiers } from './string-template';

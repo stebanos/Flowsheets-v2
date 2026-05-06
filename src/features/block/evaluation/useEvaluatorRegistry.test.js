@@ -1,5 +1,5 @@
-import { reactive, computed, nextTick, createApp } from 'vue';
-import { describe, test, expect } from 'vitest';
+import { computed, createApp, nextTick, reactive } from 'vue';
+import { describe, expect, test } from 'vitest';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
 function withSetup(fn) {

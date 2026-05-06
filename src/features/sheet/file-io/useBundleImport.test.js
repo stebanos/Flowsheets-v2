@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { useBundleImport } = await import('./useBundleImport');
 

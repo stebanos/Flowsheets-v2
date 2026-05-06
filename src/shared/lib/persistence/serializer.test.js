@@ -1,4 +1,4 @@
-import { serializeSheet, deserializeSheet, serializeVizes, deserializeVizes, serializeBundle, deserializeBundle } from './serializer';
+import { deserializeBundle, deserializeSheet, deserializeVizes, serializeBundle, serializeSheet, serializeVizes } from './serializer';
 
 const makeBlock = (overrides = {}) => ({
     id: 'block-1',

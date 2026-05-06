@@ -1,4 +1,4 @@
-import { reactive, computed, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { detectStringMode, extractFreeIdentifiers, extractTemplateIdentifiers } from '@/shared/lib/evaluator';
 import { useBlockStore } from './blockStore';
 

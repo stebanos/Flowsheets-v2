@@ -1,5 +1,5 @@
 import { createApp, nextTick } from 'vue';
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { renameIdentifier } from '@/shared/lib/evaluator';
 import { generateUniqueName, generateUniqueNameFromName, useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';

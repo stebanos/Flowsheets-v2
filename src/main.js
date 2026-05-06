@@ -1,14 +1,12 @@
-import './shared/assets/main.css';
-import 'primeicons/primeicons.css';
-
 import { createApp } from 'vue';
+import Aura from '@primevue/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
-
+import 'primeicons/primeicons.css';
 import App from './app/App.vue';
-import Aura from '@primevue/themes/aura';
+import './shared/assets/main.css';
 
 const app = createApp(App);
 app.use(PrimeVue, {

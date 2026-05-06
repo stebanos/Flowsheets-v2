@@ -1,5 +1,5 @@
 import { nextTick } from 'vue';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── localStorage mock ─────────────────────────────────────────────────────────
 // We build a fresh in-memory store before each test and restore afterwards.

@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { createBlock } from './block';
 
 const BASE = { id: '1', name: 'a', x: 0, y: 0, width: 2, height: 2 };

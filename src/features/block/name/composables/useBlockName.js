@@ -1,4 +1,4 @@
-import { ref, nextTick } from 'vue';
+import { nextTick, ref } from 'vue';
 import { renameIdentifier } from '@/shared/lib/evaluator';
 import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
 

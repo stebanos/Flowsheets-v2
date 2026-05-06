@@ -1,12 +1,13 @@
 import { ref, watch } from 'vue';
+import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
+import { useSheetStore } from '@/entities/sheet';
 
 // Prevent Vite HMR from resetting module-level state (fileHandle would be lost on hot reload)
 if (import.meta.hot) { import.meta.hot.decline(); }
+
 import { useCustomViz } from '@/features/block/visualize';
-import { useSheetStore } from '@/entities/sheet';
 import { useSheetStorage } from '@/features/sheet/storage';
-import { serializeSheet, deserializeSheet, migrate, serializeBundle } from '@/shared/lib/persistence';
 import { useBundleImport } from './useBundleImport';
 
 // Module-level singletons — shared across all callers

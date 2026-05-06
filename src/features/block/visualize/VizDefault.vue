@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { safeStringify } from './safeStringify';

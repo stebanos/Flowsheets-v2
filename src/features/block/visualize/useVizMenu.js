@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { VIZ_TYPES } from './viz-types';
 import { useCustomViz } from './useCustomViz';
+import { VIZ_TYPES } from './viz-types';
 
 export function useVizMenu(block, onEditViz) {
     const { updateBlock } = useBlockStore();

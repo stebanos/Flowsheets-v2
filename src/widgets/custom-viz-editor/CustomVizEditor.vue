@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
-import { useConfirm } from 'primevue/useconfirm';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import CodeMirror from 'vue-codemirror6';
-import { javascript } from '@codemirror/lang-javascript';
-import { html } from '@codemirror/lang-html';
+import { useConfirm } from 'primevue/useconfirm';
 import { css } from '@codemirror/lang-css';
-import { keymap, EditorView } from '@codemirror/view';
+import { html } from '@codemirror/lang-html';
+import { javascript } from '@codemirror/lang-javascript';
 import { Prec } from '@codemirror/state';
+import { EditorView, keymap } from '@codemirror/view';
 import { useBlockStore } from '@/entities/block/index.js';
 import { useCustomViz } from '@/features/block/visualize/index.js';
 

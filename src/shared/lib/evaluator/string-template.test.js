@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { buildTemplateExpression, extractTemplateIdentifiers, detectStringMode } from './string-template';
+import { describe, expect, it } from 'vitest';
+import { buildTemplateExpression, detectStringMode, extractTemplateIdentifiers } from './string-template';
 
 describe('buildTemplateExpression', () => {
     it('wraps plain text in backticks', () => {
