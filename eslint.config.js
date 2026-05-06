@@ -95,6 +95,7 @@ export default [
             'indent': ['error', 4],
             'space-before-function-paren': ['error', { anonymous: 'always', named: 'never', asyncArrow: 'always' }],
             'comma-dangle': ['error', 'never'],
+            'comma-spacing': ['error', { before: false, after: true }],
             'vue/multi-word-component-names': 'off' // Block.vue needs to be renamed (e.g. FlowBlock) before this can be turned on
         }
     },
