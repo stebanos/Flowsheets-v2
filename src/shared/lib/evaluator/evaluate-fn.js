@@ -106,4 +106,4 @@ function evaluateBlock(code, depNames, depValues, cachedEntry = null) {
     };
 }
 
-export { compileFn, callFn, evaluateBlock, BLOCKED_GLOBALS };
+export { BLOCKED_GLOBALS, callFn, compileFn, evaluateBlock };
