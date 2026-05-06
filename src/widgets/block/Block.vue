@@ -287,6 +287,7 @@ watch(
             <div v-if="editorCollapsed" class="block-code-preview w-full h-full font-mono text-[11px] px-1 py-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-gray-400">{{ block.code.slice(0, 60) }}</div>
             <code-editor v-else ref="codeEditorRef" class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"
+                :blockName="block.name"
                 :onExtract
                 :onNavigate="onNavigate"
                 @update:code="updateBlock(block.id, { code: $event })"

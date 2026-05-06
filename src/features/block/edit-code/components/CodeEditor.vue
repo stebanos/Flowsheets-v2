@@ -1,12 +1,12 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import CodeMirror from 'vue-codemirror6';
-import { autocompletion } from '@codemirror/autocomplete';
 import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, EditorView, keymap, ViewPlugin } from '@codemirror/view';
 import { detectStringMode } from '@/shared/lib/evaluator';
+import { makeBlockRefCompletion } from '../cm-extensions/blockRefCompletion';
 import { findExpressionRanges, templateLiteralHighlighting } from '../cm-extensions/templateLiteralLanguage';
 import { useExtractSelection } from '../composables/useExtractSelection';
 import { useHoveredReference } from '../composables/useHoveredReference';
@@ -18,6 +18,10 @@ const props = defineProps({
     },
     blocks: {
         type: Array,
+        required: true
+    },
+    blockName: {
+        type: String,
         required: true
     },
     setHovered: {
@@ -147,7 +151,7 @@ const { attachHoverHandlers, detachHoverHandlers } = useHoveredReference({
     clearHovered: props.clearHovered
 });
 
-const blockNames = computed(() => props.blocks.map(b => b.name));
+const otherBlockNames = computed(() => props.blocks.map(b => b.name).filter(n => n !== props.blockName));
 
 const extractKeymap = keymap.of([{
     key: 'Mod-Shift-x',
@@ -192,10 +196,12 @@ const navigationKeymap = keymap.of([
     }
 ]);
 
+const refCompletion = makeBlockRefCompletion(() => otherBlockNames.value);
+
 const extensions = computed(() => {
-    const blockPlugin = blockNameHighlighter(blockNames.value, isStringConcat.value, props.inputModes);
+    const blockPlugin = blockNameHighlighter(otherBlockNames.value, isStringConcat.value, props.inputModes);
     const ext = [
-        autocompletion({ activateOnTyping: false }),
+        ...refCompletion,
         fillTheme,
         blockPlugin,
         updateListenerExtension
