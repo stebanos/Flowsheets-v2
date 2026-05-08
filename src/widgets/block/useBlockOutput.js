@@ -25,9 +25,9 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
         const vizType = block.visualizationType ?? 'default';
         let autoHeight;
         if (vizType === 'default' && listIsPrimitive.value) {
-            autoHeight = Math.max(1, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
+            autoHeight = Math.max(2, Math.min(outputItems.value.length, MAX_OUTPUT_ROWS)) * cellHeight.value;
         } else {
-            const minRows = vizType !== 'default' ? 3 : 1;
+            const minRows = vizType !== 'default' ? 3 : 2;
             const rows = Math.max(minRows, Math.ceil(rawOutputHeight.value / cellHeight.value));
             autoHeight = Math.min(rows, MAX_OUTPUT_ROWS) * cellHeight.value;
         }
