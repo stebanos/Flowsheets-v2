@@ -112,7 +112,6 @@ const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
 
-const showVizBar = ref(false);
 const panelOpen = ref(false);
 
 const blockDeps = computed(() => {
@@ -178,10 +177,6 @@ function toggleInputsPanel() {
     panelOpen.value = !panelOpen.value;
 }
 
-function toggleVizBar() {
-    showVizBar.value = !showVizBar.value;
-}
-
 const { isResizingLocal, handleStartResizeEditor, handleStartResizeOutput } = useBlockResize(props, {
     snapX, snapY, cellWidth, cellHeight,
     manualMinEditorHeight, manualMinOutputHeight, manualMinWidth,
@@ -225,7 +220,7 @@ watch(
              : isHighlighted ? 'outline-black z-10'
              : 'outline-gray-300 hover:outline-black hover:z-10',
              wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
-             {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen, 'viz-bar-open': showVizBar}
+             {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}
          ]"
          @focusin="onFocusIn"
          @focusout="onFocusOut"
@@ -266,17 +261,6 @@ watch(
                         <rect x="8" y="4" width="6" height="8" rx="1.5"/>
                     </svg>
                 </button>
-                <button class="h-full px-1.5 flex items-center opacity-75 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
-                        :class="showVizBar ? 'opacity-100!' : ''"
-                        title="Visualization"
-                        @click.stop="toggleVizBar">
-                    <svg viewBox="0 0 16 16" width="14" height="14">
-                        <rect x="1" y="1" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                        <rect x="3"    y="9"   width="2.5" height="5"   fill="currentColor"/>
-                        <rect x="6.75" y="6.5" width="2.5" height="7.5" fill="currentColor"/>
-                        <rect x="10.5" y="4"   width="2.5" height="10"  fill="currentColor"/>
-                    </svg>
-                </button>
             </div>
         </div>
         <div class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
@@ -314,29 +298,31 @@ watch(
                 </div>
             </div>
         </div>
-        <div class="block-output w-full border-t border-gray-300 bg-white relative"
-            :style="{ height: snappedOutputHeight + 'px', overflowY: outputOverflowY }"
+        <div class="block-output w-full border-t border-gray-300 bg-white relative flex flex-col"
+            :style="{ height: snappedOutputHeight + 'px' }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
-            @animationend="flashType = null"
-            @wheel="outputOverflowY === 'auto' && $event.stopPropagation()">
-            <component
-                :is="activeVizComponent"
-                :value="outputValue"
-                :error="blockEval?.error ?? null"
-                :block="block"
-                :is-list="isList"
-                :output-items="outputItems"
-                :get-evaluation="context.getEvaluation"
-                class="h-full w-full"
-                @update:content-height="rawOutputHeight = $event"
-            />
-            <div v-if="showVizBar" class="absolute top-1 right-1 z-10">
-                <button class="flex items-center gap-0.5 text-[10px] rounded px-1 py-0 bg-white/90 hover:bg-white shadow-sm cursor-pointer"
-                        @click.stop="vizMenu.toggle($event)">
-                    {{ currentVizLabel }}<span class="text-[10px] opacity-50">▾</span>
-                </button>
-                <p-menu ref="vizMenu" :model="vizMenuItems" popup />
+            @animationend="flashType = null">
+            <div class="flex-1 min-h-0 relative"
+                 :style="{ overflowY: outputOverflowY }"
+                 @wheel="outputOverflowY === 'auto' && $event.stopPropagation()">
+                <component
+                    :is="activeVizComponent"
+                    :value="outputValue"
+                    :error="blockEval?.error ?? null"
+                    :block="block"
+                    :is-list="isList"
+                    :output-items="outputItems"
+                    :get-evaluation="context.getEvaluation"
+                    class="h-full w-full"
+                    @update:content-height="rawOutputHeight = $event"
+                />
             </div>
+            <button class="w-full flex items-center gap-1 px-2 border-t border-gray-100 text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer shrink-0 transition-colors"
+                    style="height: 20px"
+                    @click.stop="vizMenu.toggle($event)">
+                {{ currentVizLabel }}<span class="opacity-50 text-[14px]">▾</span>
+            </button>
+            <p-menu ref="vizMenu" :model="vizMenuItems" popup />
             <div class="block-output-handle absolute bottom-0 left-0 right-0 h-1 cursor-se-resize"
                  title="Resize output"
                  @mousedown.stop.prevent="handleStartResizeOutput($event)" />
