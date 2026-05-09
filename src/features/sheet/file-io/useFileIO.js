@@ -1,9 +1,9 @@
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
 
-// Prevent Vite HMR from resetting module-level state (fileHandle would be lost on hot reload)
+// Prevent Vite HMR from resetting module-level state (pendingImport would be lost on hot reload)
 if (import.meta.hot) { import.meta.hot.decline(); }
 
 import { useCustomViz } from '@/features/block/visualize';
@@ -11,17 +11,8 @@ import { useSheetStorage } from '@/features/sheet/storage';
 import { useBundleImport } from './useBundleImport';
 
 // Module-level singletons — shared across all callers
-const fileHandle = ref(null);
-const fileName = ref(null);
-// Async I/O pattern: exposes reactive fileStatus (null|'saving'|'saved'|'ambient'|'dirty')
-const fileStatus = ref(null);
-const fileDirty = ref(false);
 // { summary, data } | null
 const pendingImport = ref(null);
-
-let initialised = false;
-let trackDirty = false;
-let savedStatusTimer = null;
 
 function _triggerDownload(filename, content) {
     const blob = new Blob([content], { type: 'application/json' });
@@ -33,32 +24,11 @@ function _triggerDownload(filename, content) {
     URL.revokeObjectURL(url);
 }
 
-function _onSaveSuccess() {
-    fileDirty.value = false;
-    trackDirty = true;
-    fileStatus.value = 'saved';
-    clearTimeout(savedStatusTimer);
-    savedStatusTimer = setTimeout(() => {
-        if (fileStatus.value === 'saved') { fileStatus.value = 'ambient'; }
-    }, 3500);
-}
-
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, renameActiveSheet, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
+    const { activeSheetName, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
     const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet } = useSheetStorage();
-
-    if (!initialised) {
-        initialised = true;
-        watch(
-            [blocks, customVizes],
-            () => {
-                if (trackDirty) { fileDirty.value = true; fileStatus.value = 'dirty'; }
-            },
-            { deep: true }
-        );
-    }
 
     function _buildSuggestedName() {
         const raw = activeSheetName.value ?? 'untitled';
@@ -73,41 +43,27 @@ export function useFileIO() {
         return JSON.stringify(serializeSheet(blocks, customVizes, activeSheetName.value), null, 2);
     }
 
-    async function saveSheet() {
-        fileStatus.value = 'saving';
+    async function exportSheet() {
         const suggestedName = _buildSuggestedName();
         const content = _buildContent();
 
-        try {
-            if ('showSaveFilePicker' in window) {
-                if (fileHandle.value === null) {
-                    fileHandle.value = await window.showSaveFilePicker({
-                        suggestedName,
-                        types: [{ description: 'Flowsheets file', accept: { 'application/json': ['.flowsheet.json'] } }]
-                    });
-                }
-                const writable = await fileHandle.value.createWritable();
-                await writable.write(content);
-                await writable.close();
-                fileName.value = fileHandle.value.name;
-            } else {
-                _triggerDownload(suggestedName, content);
-                fileName.value = suggestedName;
+        if ('showSaveFilePicker' in window) {
+            let handle;
+            try {
+                handle = await window.showSaveFilePicker({
+                    suggestedName,
+                    types: [{ description: 'Flowsheets file', accept: { 'application/json': ['.flowsheet.json'] } }]
+                });
+            } catch (err) {
+                if (err.name === 'AbortError') { return; }
+                throw err;
             }
-            _onSaveSuccess();
-        } catch (err) {
-            if (err.name === 'AbortError') {
-                fileStatus.value = fileDirty.value ? 'dirty' : null;
-                return;
-            }
-            fileStatus.value = null;
-            throw err;
+            const writable = await handle.createWritable();
+            await writable.write(content);
+            await writable.close();
+        } else {
+            _triggerDownload(suggestedName, content);
         }
-    }
-
-    async function saveSheetAs() {
-        fileHandle.value = null;
-        await saveSheet();
     }
 
     async function prepareImport(file) {
@@ -202,12 +158,6 @@ export function useFileIO() {
         replaceBlocks(importedBlocks);
         loadVizes(vizes);
 
-        fileHandle.value = null;
-        fileName.value = null;
-        fileStatus.value = null;
-        fileDirty.value = false;
-        trackDirty = false;
-
         pendingImport.value = null;
     }
 
@@ -238,15 +188,11 @@ export function useFileIO() {
     const bundleImport = useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet });
 
     return {
-        fileStatus,
-        fileName,
-        fileDirty,
         pendingImport,
         cancelImport,
         confirmImport,
         prepareImport,
-        saveSheet,
-        saveSheetAs,
+        exportSheet,
         exportBundle,
         // bundle import state and actions from useBundleImport
         ...bundleImport

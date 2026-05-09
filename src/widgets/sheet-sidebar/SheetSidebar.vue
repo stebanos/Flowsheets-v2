@@ -17,7 +17,7 @@ const sortedSheets = computed(() =>
 );
 const { switchSheet } = useSheetStorage();
 const { createSheet, deleteSheet, renameSheet, deletingIds, deleteError } = useSheetManager();
-const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, saveSheetAs, exportBundle } = useFileIO();
+const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, exportSheet, exportBundle } = useFileIO();
 const confirm = useConfirm();
 const confirmPopupRef = ref(null);
 
@@ -248,7 +248,7 @@ function handleCancelBundleImport() {
                 >Import sheet...</button>
                 <button
                     class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 hover:bg-[#eef0f2] hover:text-gray-600 text-left"
-                    @click="saveSheetAs"
+                    @click="exportSheet"
                 >Export sheet</button>
                 <button
                     class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 hover:bg-[#eef0f2] hover:text-gray-600 text-left"

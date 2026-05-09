@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
@@ -11,7 +11,7 @@ import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan } from '@/features/canvas';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
-import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SaveFileButton, SheetTitle, UndoDeleteToast } from './components';
+import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
@@ -59,13 +59,12 @@ const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = 
     getPan:         () => ({ panX: panX.value, panY: panY.value }),
     onPanLoaded:    (view) => setPan(view.panX, view.panY)
 });
-const { fileStatus, fileName, fileDirty, saveSheet, prepareImport } = useFileIO();
+const { prepareImport } = useFileIO();
 watch([customVizes, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY], scheduleSave);
 
 // lifecycle
 onMounted(async () => {
-    document.addEventListener('keydown', handleKeydown);
     registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
     await loadFromStorage();
     if (isFirstBoot.value) {
@@ -73,16 +72,8 @@ onMounted(async () => {
         createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
     }
 });
-onBeforeUnmount(() => { document.removeEventListener('keydown', handleKeydown); });
 
 // handlers
-function handleKeydown(e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        saveSheet();
-    }
-}
-
 function onEditViz(vizName) {
     openSidebar();
     activeVizName.value = vizName;
@@ -133,38 +124,17 @@ function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
 
 // status
-const saveStatus = computed(() => {
-    if (deletedNotice.value) { return 'deleted'; }
-    if (fileStatus.value === 'saving' || localStatus.value === 'saving') { return 'saving'; }
-    if (fileStatus.value === 'dirty' || fileDirty.value) { return 'dirty'; }
-    if (fileStatus.value === 'saved') { return 'saved'; }
-    if (fileStatus.value === 'ambient' && fileName.value) { return 'ambient'; }
-    if (localStatus.value === 'error') { return 'error'; }
-    return 'clean';
-});
-
 const statusText = computed(() => {
-    switch (saveStatus.value) {
-    case 'deleted': return `"${deletedNotice.value}" deleted`;
-    case 'saving':  return 'Saving...';
-    case 'dirty':   return 'File not up to date · ⌘S';
-    case 'saved':   return `✓ Saved to ${fileName.value}`;
-    case 'ambient': return fileName.value;
-    case 'error':   return localError.value ?? 'Save error';
-    default:        return 'Auto-saved';
-    }
+    if (deletedNotice.value) { return `"${deletedNotice.value}" deleted`; }
+    if (localStatus.value === 'saving') { return 'Saving...'; }
+    if (localStatus.value === 'error') { return localError.value ?? 'Save error'; }
+    return 'Auto-saved';
 });
 
-const STATUS_COLORS = {
-    saved:   'text-green-400',
-    error:   'text-red-400',
-    dirty:   'text-amber-400',
-    default: 'text-gray-400'
-};
-
-const statusColor = computed(() => STATUS_COLORS[saveStatus.value] ?? STATUS_COLORS.default);
-
-const showSaveFile = computed(() => fileName.value !== null);
+const statusColor = computed(() => {
+    if (localStatus.value === 'error') { return 'text-red-400'; }
+    return 'text-gray-400';
+});
 </script>
 
 <template>
@@ -177,10 +147,9 @@ const showSaveFile = computed(() => fileName.value !== null);
                 </app-bar-toggle-button>
             </template>
             <template #title>
-                <sheet-title :sheet-name="activeSheetName" :file-dirty="fileDirty" :status-text="statusText" :status-color="statusColor" />
+                <sheet-title :sheet-name="activeSheetName" :status-text="statusText" :status-color="statusColor" />
             </template>
             <template #controls>
-                <save-file-button v-if="showSaveFile" @save="saveSheet" />
                 <reset-pan-button @reset="resetPan" />
                 <app-bar-toggle-button :open="sidebarOpen" aria-label="Toggle Viz Editor sidebar" @toggle="toggleSidebar">
                     <viz-sidebar-icon />
