@@ -32,12 +32,16 @@ describe('createBlock — defaults', () => {
         expect(createBlock(BASE).inputModes).toEqual({});
     });
 
-    test('userMinWidth defaults to null', () => {
-        expect(createBlock(BASE).userMinWidth).toBeNull();
+    test('editorHeight defaults to null', () => {
+        expect(createBlock(BASE).editorHeight).toBeNull();
     });
 
-    test('userMinEditorHeight defaults to null', () => {
-        expect(createBlock(BASE).userMinEditorHeight).toBeNull();
+    test('outputHeight defaults to null', () => {
+        expect(createBlock(BASE).outputHeight).toBeNull();
+    });
+
+    test('editorCollapsed defaults to false', () => {
+        expect(createBlock(BASE).editorCollapsed).toBe(false);
     });
 });
 
@@ -49,14 +53,14 @@ describe('createBlock — explicit values override defaults', () => {
             visualizationType: 'html',
             vizOptions: { customVizName: 'myViz' },
             inputModes: { b: 'each' },
-            userMinWidth: 100,
-            userMinEditorHeight: 200
+            editorHeight: 48,
+            outputHeight: 72
         });
         expect(b.code).toBe('x + 1');
         expect(b.visualizationType).toBe('html');
         expect(b.vizOptions).toEqual({ customVizName: 'myViz' });
         expect(b.inputModes).toEqual({ b: 'each' });
-        expect(b.userMinWidth).toBe(100);
-        expect(b.userMinEditorHeight).toBe(200);
+        expect(b.editorHeight).toBe(48);
+        expect(b.outputHeight).toBe(72);
     });
 });

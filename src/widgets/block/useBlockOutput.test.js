@@ -10,33 +10,58 @@ function withSetup(composable) {
 }
 
 describe('useBlockOutput', () => {
-    test('manualMinOutputHeight is initialised from block.userMinOutputHeight', () => {
-        const block = { visualizationType: null, userMinOutputHeight: 120 };
-        const { manualMinOutputHeight } = withSetup(() =>
+    test('outputHeight is initialised from block.outputHeight', () => {
+        const block = { visualizationType: null, outputHeight: 120 };
+        const { outputHeight } = withSetup(() =>
             useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
         );
 
-        expect(manualMinOutputHeight.value).toBe(120);
+        expect(outputHeight.value).toBe(120);
     });
 
-    test('snappedOutputHeight floors at manualMinOutputHeight when auto height is shorter', () => {
-        const block = { visualizationType: null, userMinOutputHeight: 120 };
+    test('outputHeight falls back to 3*cellHeight when block.outputHeight is missing', () => {
+        const block = { visualizationType: null };
+        const { outputHeight } = withSetup(() =>
+            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+        );
+
+        expect(outputHeight.value).toBe(120); // 3 * 40
+    });
+
+    test('snappedOutputHeight equals outputHeight directly', () => {
+        const block = { visualizationType: null, outputHeight: 120 };
         const { snappedOutputHeight } = withSetup(() =>
             useBlockOutput(block, { cellHeight: ref(40), blockEval: ref({ value: 42 }) })
         );
 
-        // auto height: max(1, ceil(40/40)) * 40 = 40, below manualMinOutputHeight(120)
         expect(snappedOutputHeight.value).toBe(120);
     });
 
-    test('snappedOutputHeight auto-sizes above manualMinOutputHeight when content is taller', () => {
-        const block = { visualizationType: null, userMinOutputHeight: 40 };
+    test('snappedOutputHeight reflects changes to outputHeight ref', () => {
+        const block = { visualizationType: null, outputHeight: 120 };
         const result = withSetup(() =>
             useBlockOutput(block, { cellHeight: ref(40), blockEval: ref({ value: 42 }) })
         );
 
-        result.rawOutputHeight.value = 200; // 5 rows of content
-        // floor is 40 (1 row), but auto height is 200 — should grow past the floor
+        result.outputHeight.value = 200;
         expect(result.snappedOutputHeight.value).toBe(200);
+    });
+
+    test('outputOverflowY is "hidden" for non-default viz types', () => {
+        const block = { visualizationType: 'html', outputHeight: 120 };
+        const { outputOverflowY } = withSetup(() =>
+            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+        );
+
+        expect(outputOverflowY.value).toBe('hidden');
+    });
+
+    test('outputOverflowY is "auto" for default viz type', () => {
+        const block = { visualizationType: 'default', outputHeight: 120 };
+        const { outputOverflowY } = withSetup(() =>
+            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+        );
+
+        expect(outputOverflowY.value).toBe('auto');
     });
 });

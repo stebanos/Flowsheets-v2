@@ -124,7 +124,7 @@ const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.val
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 
-const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, rawOutputHeight, manualMinOutputHeight } =
+const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, outputHeight } =
     useBlockOutput(props.block, { cellHeight, blockEval });
 
 const editorCollapsed = ref(props.block.editorCollapsed ?? false);
@@ -133,10 +133,8 @@ const {
     snappedEditorHeight,
     snappedEditorWidth,
     snappedBlockHeight,
-    manualMinEditorHeight,
-    manualMinWidth,
-    handleContentWidth,
-    handleContentHeight
+    editorHeight,
+    editorWidth
 } = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight, editorCollapsed });
 
 onBeforeUnmount(() => {
@@ -177,9 +175,9 @@ function toggleInputsPanel() {
 }
 
 const { isResizingLocal, handleStartResizeEditor, handleStartResizeOutput } = useBlockResize(props, {
-    snapX, snapY, cellWidth, cellHeight,
-    manualMinEditorHeight, manualMinOutputHeight, manualMinWidth,
-    snappedEditorHeight, snappedEditorWidth, snappedOutputHeight
+    snapX, snapY, cellHeight, unitX,
+    editorHeight, outputHeight, editorWidth,
+    snappedEditorHeight, snappedOutputHeight, snappedEditorWidth
 });
 
 function toggleEditorCollapse() {
@@ -273,8 +271,7 @@ watch(
                 :blockName="block.name"
                 :onExtract
                 :onNavigate="onNavigate"
-                @update:code="updateBlock(block.id, { code: $event })"
-                @update:content-height="handleContentHeight($event)" @update:content-width="handleContentWidth($event)" />
+                @update:code="updateBlock(block.id, { code: $event })" />
             <div v-if="!editorCollapsed" class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"
                  title="Resize editor"
                  @mousedown.stop.prevent="handleStartResizeEditor($event)" />
@@ -313,7 +310,6 @@ watch(
                     :output-items="outputItems"
                     :get-evaluation="context.getEvaluation"
                     class="h-full w-full"
-                    @update:content-height="rawOutputHeight = $event"
                 />
             </div>
             <viz-menu :label="currentVizLabel" :model="vizMenuItems" />

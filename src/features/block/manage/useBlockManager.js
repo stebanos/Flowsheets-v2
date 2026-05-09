@@ -15,14 +15,12 @@ export function useBlockManager() {
             x: Math.floor(x / cellWidth.value) * cellWidth.value,
             y: Math.floor(y / unitY.value) * unitY.value,
             width: cellWidth.value,
-            height: 3 * unitY.value,
+            editorHeight: 2 * unitY.value,
+            outputHeight: 3 * unitY.value,
             code,
             inputModes: {},
             visualizationType: 'default',
             vizOptions: {},
-            userMinWidth: null,
-            userMinEditorHeight: null,
-            userMinOutputHeight: null,
             editorCollapsed: false
         });
 

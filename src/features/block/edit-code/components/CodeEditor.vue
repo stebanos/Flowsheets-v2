@@ -46,7 +46,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:code', 'update:contentHeight', 'update:contentWidth']);
+const emit = defineEmits(['update:code']);
 
 const isStringConcat = computed(() => detectStringMode(props.code));
 const lang = computed(() => isStringConcat.value ? null : javascript());
@@ -228,42 +228,8 @@ const {
     updateListenerExtension
 } = useExtractSelection(editorView, props.onExtract);
 
-// defaultCharacterWidth starts at 7 (CM6 hardcoded fallback) and becomes accurate
-// after the first requestMeasure() cycle. Read it via editorView so it's always current.
-const emitWidth = () => {
-    const view = editorView.value;
-    if (!view) { return; }
-    const charWidth = view.defaultCharacterWidth;
-    if (charWidth === 0) { return; }
-    let maxLen = 0;
-    for (const line of view.state.doc.iterLines()) {
-        if (line.length > maxLen) { maxLen = line.length; }
-    }
-    const gutters = view.dom.querySelector('.cm-gutters');
-    const gutterWidth = gutters ? gutters.offsetWidth : 0;
-    emit('update:contentWidth', maxLen * charWidth + gutterWidth);
-};
-
-const emitHeight = () => {
-    const view = editorView.value;
-    if (!view) { return; }
-    const scrollbarH = view.scrollDOM.offsetHeight - view.scrollDOM.clientHeight;
-    emit('update:contentHeight', view.contentHeight + scrollbarH);
-};
-
-// Watch code changes for both dimensions — same pattern, same rationale:
-// Vue reactivity fires on every user edit; by then CM6 measurements are accurate.
-// Avoids ResizeObserver firing during container resize (block drag/resize handle),
-// which would fight the resize and cause oscillation.
-watch(code, emitHeight);
-watch(code, emitWidth);
-
 watch(editorView, (view) => {
     if (!view) { return; }
-    emitHeight();
-    // Defer initial width past CM6's first requestMeasure() cycle
-    // so defaultCharacterWidth reflects the real font, not the 7px fallback.
-    requestAnimationFrame(emitWidth);
     attachHoverHandlers(editorView);
 }, { immediate: true });
 

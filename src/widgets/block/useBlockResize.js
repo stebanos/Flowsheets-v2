@@ -2,9 +2,9 @@ import { onBeforeUnmount, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
 export function useBlockResize(props, {
-    snapX, snapY, cellWidth, cellHeight,
-    manualMinEditorHeight, manualMinOutputHeight, manualMinWidth,
-    snappedEditorHeight, snappedEditorWidth, snappedOutputHeight
+    snapX, snapY, cellHeight, unitX,
+    editorHeight, outputHeight, editorWidth,
+    snappedEditorHeight, snappedOutputHeight, snappedEditorWidth
 }) {
     const { updateBlock } = useBlockStore();
     const isResizingLocal = ref(false);
@@ -13,13 +13,14 @@ export function useBlockResize(props, {
     function handleStartResizeEditor(event) {
         const startY = event.clientY;
         const startH = snappedEditorHeight.value;
+        const MIN_EDITOR_H = cellHeight.value;
         isResizingLocal.value = true;
         const onMove = (e) => {
-            manualMinEditorHeight.value = Math.max(cellHeight.value, snapY(startH + e.clientY - startY));
+            editorHeight.value = Math.max(MIN_EDITOR_H, snapY(startH + e.clientY - startY));
         };
         const onUp = () => {
             isResizingLocal.value = false;
-            updateBlock(props.block.id, { userMinEditorHeight: manualMinEditorHeight.value });
+            updateBlock(props.block.id, { editorHeight: editorHeight.value });
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onUp);
             resizeCleanup = null;
@@ -37,16 +38,18 @@ export function useBlockResize(props, {
         const startY = event.clientY;
         const startOutH = snappedOutputHeight.value;
         const startW = snappedEditorWidth.value;
+        const MIN_OUTPUT_H = 2 * cellHeight.value;
+        const MIN_WIDTH = unitX.value;
         isResizingLocal.value = true;
         const onMove = (e) => {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
-            manualMinOutputHeight.value = Math.max(cellHeight.value, snapY(startOutH + dy));
-            manualMinWidth.value = Math.max(cellWidth.value, snapX(startW + dx));
+            outputHeight.value = Math.max(MIN_OUTPUT_H, snapY(startOutH + dy));
+            editorWidth.value = Math.max(MIN_WIDTH, snapX(startW + dx));
         };
         const onUp = () => {
             isResizingLocal.value = false;
-            updateBlock(props.block.id, { userMinOutputHeight: manualMinOutputHeight.value, userMinWidth: manualMinWidth.value });
+            updateBlock(props.block.id, { outputHeight: outputHeight.value, width: editorWidth.value });
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onUp);
             resizeCleanup = null;

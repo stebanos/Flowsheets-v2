@@ -6,18 +6,17 @@ const makeBlock = (overrides = {}) => ({
     x: 150,
     y: 48,
     width: 300,
-    height: 120,
+    editorHeight: 48,
+    outputHeight: 72,
     code: '42',
     inputModes: {},
     visualizationType: 'default',
     vizOptions: {},
-    userMinWidth: null,
-    userMinEditorHeight: null,
     ...overrides
 });
 
 describe('serializeSheet', () => {
-    it('produces version: 1, correct name, correct block fields, no width/height', () => {
+    it('produces version: 1, correct name, correct block fields', () => {
         const blocks = [makeBlock()];
         const vizes = {};
         const result = serializeSheet(blocks, vizes, 'My Sheet');
@@ -31,15 +30,18 @@ describe('serializeSheet', () => {
         expect(b.name).toBe('myBlock');
         expect(b.x).toBe(150);
         expect(b.y).toBe(48);
+        expect(b.width).toBe(300);
+        expect(b.editorHeight).toBe(48);
+        expect(b.outputHeight).toBe(72);
         expect(b.code).toBe('42');
         expect(b.inputModes).toEqual({});
         expect(b.visualizationType).toBe('default');
         expect(b.vizOptions).toEqual({});
-        expect(b.userMinWidth).toBeNull();
-        expect(b.userMinEditorHeight).toBeNull();
 
-        expect(b).not.toHaveProperty('width');
         expect(b).not.toHaveProperty('height');
+        expect(b).not.toHaveProperty('userMinWidth');
+        expect(b).not.toHaveProperty('userMinEditorHeight');
+        expect(b).not.toHaveProperty('userMinOutputHeight');
     });
 
     it('with no vizes produces customVizes: {}', () => {
@@ -100,8 +102,9 @@ describe('deserializeSheet', () => {
         expect(b.inputModes).toEqual({});
         expect(b.visualizationType).toBe('default');
         expect(b.vizOptions).toEqual({});
-        expect(b.userMinWidth).toBeNull();
-        expect(b.userMinEditorHeight).toBeNull();
+        expect(b.width).toBe(150);
+        expect(b.editorHeight).toBe(48);
+        expect(b.outputHeight).toBe(72);
     });
 
     it('preserves existing optional fields and does not override them', () => {
@@ -114,11 +117,12 @@ describe('deserializeSheet', () => {
                 x: 0,
                 y: 0,
                 code: '1',
+                width: 200,
+                editorHeight: 80,
+                outputHeight: 96,
                 inputModes: { bar: 'each' },
                 visualizationType: 'html',
-                vizOptions: { customVizName: 'Table' },
-                userMinWidth: 200,
-                userMinEditorHeight: 80
+                vizOptions: { customVizName: 'Table' }
             }],
             customVizes: {}
         };
@@ -126,11 +130,40 @@ describe('deserializeSheet', () => {
         const { blocks } = deserializeSheet(json);
         const b = blocks[0];
 
+        expect(b.width).toBe(200);
+        expect(b.editorHeight).toBe(80);
+        expect(b.outputHeight).toBe(96);
         expect(b.inputModes).toEqual({ bar: 'each' });
         expect(b.visualizationType).toBe('html');
         expect(b.vizOptions).toEqual({ customVizName: 'Table' });
-        expect(b.userMinWidth).toBe(200);
-        expect(b.userMinEditorHeight).toBe(80);
+    });
+
+    it('migrates old userMin* fields gracefully', () => {
+        const json = {
+            version: 1,
+            name: 'OldSheet',
+            blocks: [{
+                id: 'b1',
+                name: 'foo',
+                x: 0,
+                y: 0,
+                code: '1',
+                userMinWidth: 250,
+                userMinEditorHeight: 100,
+                userMinOutputHeight: 150
+            }],
+            customVizes: {}
+        };
+
+        const { blocks } = deserializeSheet(json);
+        const b = blocks[0];
+
+        expect(b.width).toBe(250);
+        expect(b.editorHeight).toBe(100);
+        expect(b.outputHeight).toBe(150);
+        expect(b.userMinWidth).toBeUndefined();
+        expect(b.userMinEditorHeight).toBeUndefined();
+        expect(b.userMinOutputHeight).toBeUndefined();
     });
 
     it('with missing customVizes returns empty vizes object', () => {
@@ -179,10 +212,11 @@ describe('round-trip', () => {
                 x: 300,
                 y: 96,
                 code: 'alpha',
+                width: 200,
+                editorHeight: 80,
+                outputHeight: 96,
                 visualizationType: 'html',
-                vizOptions: { customVizName: 'Table' },
-                userMinWidth: 200,
-                userMinEditorHeight: 100
+                vizOptions: { customVizName: 'Table' }
             })
         ];
         const vizes = {
@@ -200,13 +234,14 @@ describe('round-trip', () => {
         expect(b1.id).toBe('b1');
         expect(b1.name).toBe('alpha');
         expect(b1.code).toBe('"hello"');
-        expect(b1.userMinWidth).toBeNull();
+        expect(b1.width).toBe(300);
 
         const b2 = restoredBlocks[1];
         expect(b2.visualizationType).toBe('html');
         expect(b2.vizOptions).toEqual({ customVizName: 'Table' });
-        expect(b2.userMinWidth).toBe(200);
-        expect(b2.userMinEditorHeight).toBe(100);
+        expect(b2.width).toBe(200);
+        expect(b2.editorHeight).toBe(80);
+        expect(b2.outputHeight).toBe(96);
 
         expect(restoredVizes).toEqual({ Table: { source: '<table/>' } });
         expect(restoredVizes).not.toHaveProperty('Chart');
@@ -275,10 +310,9 @@ describe('serializeBundle', () => {
         expect(result.sheets[1].blocks).toHaveLength(0);
     });
 
-    it('strips width/height from block entries (delegates to serializeSheet)', () => {
+    it('strips height from block entries (delegates to serializeSheet)', () => {
         const entries = [{ id: 'a', name: 'A', blocks: [makeBlock()], vizes: {} }];
         const { sheets } = serializeBundle(entries, 'a');
-        expect(sheets[0].blocks[0]).not.toHaveProperty('width');
         expect(sheets[0].blocks[0]).not.toHaveProperty('height');
     });
 
@@ -343,7 +377,9 @@ describe('deserializeBundle', () => {
         expect(block.inputModes).toEqual({});
         expect(block.visualizationType).toBe('default');
         expect(block.vizOptions).toEqual({});
-        expect(block.userMinWidth).toBeNull();
+        expect(block.width).toBe(150);
+        expect(block.editorHeight).toBe(48);
+        expect(block.outputHeight).toBe(72);
     });
 
     it('handles missing sheets array gracefully', () => {

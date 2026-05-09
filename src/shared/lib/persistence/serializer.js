@@ -3,13 +3,13 @@ const PERSISTED_BLOCK_FIELDS = [
     'name',
     'x',
     'y',
+    'width',
+    'editorHeight',
+    'outputHeight',
     'code',
     'inputModes',
     'visualizationType',
     'vizOptions',
-    'userMinWidth',
-    'userMinEditorHeight',
-    'userMinOutputHeight',
     'editorCollapsed'
 ];
 
@@ -71,13 +71,16 @@ export function deserializeSheet(json) {
 
     const blocks = (json.blocks ?? []).map((block) => ({
         ...block,
+        width:        block.width        ?? block.userMinWidth        ?? 150,
+        editorHeight: block.editorHeight ?? block.userMinEditorHeight ?? 48,
+        outputHeight: block.outputHeight ?? block.userMinOutputHeight ?? 72,
         inputModes: block.inputModes ?? {},
         visualizationType: block.visualizationType ?? 'default',
         vizOptions: block.vizOptions ?? {},
-        userMinWidth: block.userMinWidth ?? null,
-        userMinEditorHeight: block.userMinEditorHeight ?? null,
-        userMinOutputHeight: block.userMinOutputHeight ?? null,
-        editorCollapsed: block.editorCollapsed ?? false
+        editorCollapsed: block.editorCollapsed ?? false,
+        userMinWidth: undefined,
+        userMinEditorHeight: undefined,
+        userMinOutputHeight: undefined
     }));
 
     const vizes = json.customVizes ?? {};

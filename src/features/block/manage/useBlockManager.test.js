@@ -78,13 +78,12 @@ describe('createBlock — block shape', () => {
         expect(block).toHaveProperty('x');
         expect(block).toHaveProperty('y');
         expect(block).toHaveProperty('width');
-        expect(block).toHaveProperty('height');
+        expect(block).toHaveProperty('editorHeight');
+        expect(block).toHaveProperty('outputHeight');
         expect(block).toHaveProperty('code');
         expect(block).toHaveProperty('inputModes');
         expect(block).toHaveProperty('visualizationType');
         expect(block).toHaveProperty('vizOptions');
-        expect(block).toHaveProperty('userMinWidth');
-        expect(block).toHaveProperty('userMinEditorHeight');
     });
 
     test('x and y are snapped to grid (multiples of cell dimensions)', () => {
