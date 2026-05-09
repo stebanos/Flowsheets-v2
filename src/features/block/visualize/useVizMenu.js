@@ -24,8 +24,10 @@ export function useVizMenu(block, onEditViz) {
         const items = [];
         for (const [key, { label }] of Object.entries(VIZ_TYPES)) {
             if (key === 'custom') { continue; }
+            const isActive = currentVizType.value === key;
             items.push({
-                label: currentVizType.value === key ? `✔ ${label}` : label,
+                label,
+                active: isActive,
                 command: () => updateBlock(block.id, { visualizationType: key })
             });
         }
@@ -35,7 +37,8 @@ export function useVizMenu(block, onEditViz) {
             for (const name of customNames) {
                 const isActive = currentVizType.value === 'custom' && block.vizOptions?.customVizName === name;
                 items.push({
-                    label: isActive ? `✔ ${name}` : name,
+                    label: name,
+                    active: isActive,
                     command: () => updateBlock(block.id, {
                         visualizationType: 'custom',
                         vizOptions: { ...(block.vizOptions ?? {}), customVizName: name }
@@ -47,6 +50,7 @@ export function useVizMenu(block, onEditViz) {
             items.push({ separator: true });
             items.push({
                 label: 'Edit viz code…',
+                class: 'viz-menu-edit',
                 command: () => onEditViz(block.vizOptions?.customVizName ?? null)
             });
         }

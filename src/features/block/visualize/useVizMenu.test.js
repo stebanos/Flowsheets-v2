@@ -44,8 +44,7 @@ describe('vizMenuItems — built-in types', () => {
     test('built-in types (excluding custom) appear as menu items', () => {
         const block = makeBlock();
         const { vizMenuItems } = useVizMenu(block, vi.fn());
-        // Strip any leading checkmark so the test is independent of active type
-        const labels = vizMenuItems.value.map(i => i.label?.replace(/^✔ /, '')).filter(Boolean);
+        const labels = vizMenuItems.value.map(i => i.label).filter(Boolean);
         expect(labels).toContain('Default');
         expect(labels).toContain('HTML');
         expect(labels).toContain('JSON');
@@ -53,11 +52,11 @@ describe('vizMenuItems — built-in types', () => {
         expect(labels).not.toContain('Custom');
     });
 
-    test('active built-in type gets a checkmark prefix', () => {
+    test('active built-in type has active flag set', () => {
         const block = makeBlock({ visualizationType: 'html' });
         const { vizMenuItems } = useVizMenu(block, vi.fn());
-        const htmlItem = vizMenuItems.value.find(i => i.label?.includes('HTML'));
-        expect(htmlItem.label).toBe('✔ HTML');
+        const htmlItem = vizMenuItems.value.find(i => i.label === 'HTML');
+        expect(htmlItem.active).toBe(true);
     });
 
     test('inactive built-in types do not get a checkmark', () => {
@@ -106,14 +105,14 @@ describe('vizMenuItems — with custom vizes', () => {
         expect(labels).toContain('MyTable');
     });
 
-    test('active custom viz gets a checkmark prefix', () => {
+    test('active custom viz has active flag set', () => {
         const block = makeBlock({
             visualizationType: 'custom',
             vizOptions: { customVizName: 'MyChart' }
         });
         const { vizMenuItems } = useVizMenu(block, vi.fn());
-        const item = vizMenuItems.value.find(i => i.label?.includes('MyChart'));
-        expect(item.label).toBe('✔ MyChart');
+        const item = vizMenuItems.value.find(i => i.label === 'MyChart');
+        expect(item.active).toBe(true);
     });
 
     test('inactive custom viz does not get a checkmark', () => {

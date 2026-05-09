@@ -8,7 +8,7 @@ import { useCellDimensions } from '@/features/block/grid';
 import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
 import { useBlockNavigation, useFocusedBlock } from '@/features/block/navigate';
-import { useVizMenu } from '@/features/block/visualize';
+import { useVizMenu, VizMenu } from '@/features/block/visualize';
 import { useBlockDimensions } from './useBlockDimensions';
 import { useBlockExtract } from './useBlockExtract';
 import { useBlockOutput } from './useBlockOutput';
@@ -161,7 +161,6 @@ const formattedResult = computed(() => {
 });
 
 // Viz selector bar
-const vizMenu = ref(null);
 const { vizMenuItems, currentVizLabel, activeVizComponent } =
     useVizMenu(props.block, (vizName) => emit('edit-viz', vizName));
 
@@ -317,12 +316,7 @@ watch(
                     @update:content-height="rawOutputHeight = $event"
                 />
             </div>
-            <button class="w-full flex items-center gap-1 px-2 border-t border-gray-100 text-[10px] text-gray-400 hover:text-gray-600 hover:bg-gray-50 cursor-pointer shrink-0 transition-colors"
-                    style="height: 20px"
-                    @click.stop="vizMenu.toggle($event)">
-                {{ currentVizLabel }}<span class="opacity-50 text-[14px]">▾</span>
-            </button>
-            <p-menu ref="vizMenu" :model="vizMenuItems" popup />
+            <viz-menu :label="currentVizLabel" :model="vizMenuItems" />
             <div class="block-output-handle absolute bottom-0 left-0 right-0 h-1 cursor-se-resize"
                  title="Resize output"
                  @mousedown.stop.prevent="handleStartResizeOutput($event)" />
