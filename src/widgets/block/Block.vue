@@ -258,21 +258,27 @@ watch(
                         <rect x="8" y="4" width="6" height="8" rx="1.5"/>
                     </svg>
                 </button>
-            </div>
-        </div>
-        <div class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
-            <button class="absolute top-0.5 right-0.5 z-10 opacity-0 group-hover:opacity-50 hover:opacity-100! cursor-pointer text-[10px] leading-none px-0.5 bg-transparent border-none"
+                <button
+                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                    :class="{ 'opacity-100!': editorCollapsed }"
                     title="Toggle editor"
                     @click.stop="toggleEditorCollapse"
-                    @mousedown.stop>{{ editorCollapsed ? '▸' : '▾' }}</button>
-            <div v-if="editorCollapsed" class="block-code-preview w-full h-full font-mono text-[11px] px-1 py-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-gray-400">{{ block.code.slice(0, 60) }}</div>
-            <code-editor v-else ref="codeEditorRef" class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
+                    @mousedown.stop>
+                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="5,2 1.5,7 5,12" />
+                        <polyline points="9,2 12.5,7 9,12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div v-if="!editorCollapsed" class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
+            <code-editor ref="codeEditorRef" class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"
                 :blockName="block.name"
                 :onExtract
                 :onNavigate="onNavigate"
                 @update:code="updateBlock(block.id, { code: $event })" />
-            <div v-if="!editorCollapsed" class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"
+            <div class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"
                  title="Resize editor"
                  @mousedown.stop.prevent="handleStartResizeEditor($event)" />
         </div>
