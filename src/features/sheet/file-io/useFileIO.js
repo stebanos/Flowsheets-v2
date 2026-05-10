@@ -43,9 +43,19 @@ export function useFileIO() {
         return JSON.stringify(serializeSheet(blocks, customVizes, activeSheetName.value), null, 2);
     }
 
-    async function exportSheet() {
-        const suggestedName = _buildSuggestedName();
-        const content = _buildContent();
+    async function exportSheet(sheetId = null) {
+        let suggestedName, content;
+
+        if (sheetId) {
+            const stored = await readSheetData(sheetId);
+            const name = sheets.find(s => s.id === sheetId)?.name ?? 'untitled';
+            const sanitized = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            suggestedName = `${sanitized || 'untitled'}.flowsheet.json`;
+            content = JSON.stringify(serializeSheet(stored?.blocks ?? [], stored?.customVizes ?? {}, name), null, 2);
+        } else {
+            suggestedName = _buildSuggestedName();
+            content = _buildContent();
+        }
 
         if ('showSaveFilePicker' in window) {
             let handle;

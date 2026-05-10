@@ -139,7 +139,17 @@ function handleCancelBundleImport() {
 <template>
     <p-panel unstyled :pt="panelPt">
         <template #header>
-            <span class="text-[10px] font-bold uppercase tracking-[0.07em] text-gray-500">Sheets</span>
+            <span class="flex-1 text-[10px] font-bold uppercase tracking-[0.07em] text-gray-500">Sheets</span>
+            <button
+                v-tooltip.bottom="{ value: 'Import sheet', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
+                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-200"
+                @click="openFilePicker"
+            >Import</button>
+            <button
+                v-tooltip.bottom="{ value: 'New sheet', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
+                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-200 ml-1"
+                @click="handleCreateSheet"
+            >+ New</button>
         </template>
 
         <ul class="py-1">
@@ -193,6 +203,7 @@ function handleCancelBundleImport() {
                 >
                     <!-- Rename -->
                     <button
+                        v-tooltip.top="{ value: 'Rename', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
                         class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-gray-300 hover:text-gray-700"
                         aria-label="Rename sheet"
                         @click.stop="startEditing(sheet.id, sheet.name)"
@@ -201,8 +212,20 @@ function handleCancelBundleImport() {
                             <path d="M8.5 1.5l2 2L3 11H1V9L8.5 1.5z" />
                         </svg>
                     </button>
+                    <!-- Export -->
+                    <button
+                        v-tooltip.top="{ value: 'Export', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
+                        class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-gray-300 hover:text-gray-700"
+                        aria-label="Export sheet"
+                        @click.stop="exportSheet(sheet.id)"
+                    >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 1v6M4 5l2 2 2-2M2 8v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8"/>
+                        </svg>
+                    </button>
                     <!-- Delete -->
                     <button
+                        v-tooltip.top="{ value: 'Delete', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
                         class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-red-100 hover:text-red-600"
                         aria-label="Delete sheet"
                         @click.stop="handleDeleteSheet($event, sheet.id)"
@@ -236,25 +259,9 @@ function handleCancelBundleImport() {
 
         <template #footer>
             <button
-                class="flex items-center gap-1.5 h-8 w-full px-2.5 text-xs text-gray-500 border-t border-gray-200 hover:bg-[#eef0f2] hover:text-gray-700 text-left"
-                @click="handleCreateSheet"
-            >
-                <span class="text-base leading-none">+</span> New sheet
-            </button>
-            <div class="border-t border-gray-200">
-                <button
-                    class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 hover:bg-[#eef0f2] hover:text-gray-600 text-left"
-                    @click="openFilePicker"
-                >Import sheet...</button>
-                <button
-                    class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 hover:bg-[#eef0f2] hover:text-gray-600 text-left"
-                    @click="exportSheet"
-                >Export sheet</button>
-                <button
-                    class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 hover:bg-[#eef0f2] hover:text-gray-600 text-left"
-                    @click="exportBundle"
-                >Export all sheets</button>
-            </div>
+                class="flex items-center gap-1.5 h-7 w-full px-2.5 text-[11px] text-gray-400 border-t border-gray-200 hover:bg-[#eef0f2] hover:text-gray-600 text-left"
+                @click="exportBundle"
+            >Export workbook</button>
         </template>
     </p-panel>
 

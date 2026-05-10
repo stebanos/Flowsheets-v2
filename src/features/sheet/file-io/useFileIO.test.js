@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockBlocks = reactive([]);
+const mockReadSheetData = vi.fn();
 
 // --- Mocks ---
 
@@ -36,7 +37,7 @@ vi.mock('@/entities/sheet', () => ({
 
 vi.mock('@/features/sheet/storage', () => ({
     useSheetStorage: () => ({
-        readSheetData: vi.fn(),
+        readSheetData: mockReadSheetData,
         writeSheetData: vi.fn(),
         switchSheet: vi.fn(),
         initNewSheet: mockInitNewSheet,
@@ -78,6 +79,7 @@ beforeEach(() => {
     mockRenameActiveSheet.mockClear();
     mockCreateSheet.mockClear();
     mockInitNewSheet.mockClear();
+    mockReadSheetData.mockClear();
     // Reset pendingImport between tests
     const io = useFileIO();
     io.cancelImport();
@@ -217,6 +219,26 @@ describe('cancelImport', () => {
         expect(pendingImport.value).not.toBeNull();
         cancelImport();
         expect(pendingImport.value).toBeNull();
+    });
+});
+
+describe('exportSheet', () => {
+    beforeEach(() => {
+        global.URL.createObjectURL = vi.fn(() => 'blob:mock');
+        global.URL.revokeObjectURL = vi.fn();
+    });
+
+    test('calls readSheetData with the provided sheetId', async () => {
+        mockReadSheetData.mockResolvedValueOnce({ blocks: [], customVizes: {} });
+        const { exportSheet } = useFileIO();
+        await exportSheet('sheet:local/abc');
+        expect(mockReadSheetData).toHaveBeenCalledWith('sheet:local/abc');
+    });
+
+    test('does not call readSheetData when called without sheetId', async () => {
+        const { exportSheet } = useFileIO();
+        await exportSheet();
+        expect(mockReadSheetData).not.toHaveBeenCalled();
     });
 });
 
