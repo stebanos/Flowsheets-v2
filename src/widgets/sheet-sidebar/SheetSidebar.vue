@@ -142,12 +142,12 @@ function handleCancelBundleImport() {
             <span class="flex-1 text-[10px] font-bold uppercase tracking-[0.07em] text-gray-500">Sheets</span>
             <button
                 v-tooltip.bottom="{ value: 'Import sheet', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
-                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-200"
+                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded bg-gray-200 hover:bg-gray-300"
                 @click="openFilePicker"
             >Import</button>
             <button
                 v-tooltip.bottom="{ value: 'New sheet', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
-                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded border border-gray-300 hover:bg-gray-200 ml-1"
+                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded bg-gray-200 hover:bg-gray-300 ml-1.5"
                 @click="handleCreateSheet"
             >+ New</button>
         </template>
