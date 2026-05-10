@@ -9,6 +9,8 @@ const mockCustomVizes = reactive({});
 const mockLoadVizes = vi.fn();
 const mockReplaceBlocks = vi.fn();
 const mockRenameActiveSheet = vi.fn();
+const mockCreateSheet = vi.fn(() => 'sheet:local/new');
+const mockInitNewSheet = vi.fn();
 
 vi.mock('@/entities/block', () => ({
     useBlockStore: () => ({ blocks: mockBlocks, replaceBlocks: mockReplaceBlocks })
@@ -28,7 +30,7 @@ vi.mock('@/entities/sheet', () => ({
         sheets: [],
         activeSheetId: ref(null),
         setActiveSheet: vi.fn(),
-        createSheet: vi.fn(() => 'sheet:local/new')
+        createSheet: mockCreateSheet
     })
 }));
 
@@ -37,7 +39,7 @@ vi.mock('@/features/sheet/storage', () => ({
         readSheetData: vi.fn(),
         writeSheetData: vi.fn(),
         switchSheet: vi.fn(),
-        initNewSheet: vi.fn(),
+        initNewSheet: mockInitNewSheet,
         persistDeleteSheet: vi.fn()
     })
 }));
@@ -74,6 +76,8 @@ beforeEach(() => {
     mockReplaceBlocks.mockClear();
     mockLoadVizes.mockClear();
     mockRenameActiveSheet.mockClear();
+    mockCreateSheet.mockClear();
+    mockInitNewSheet.mockClear();
     // Reset pendingImport between tests
     const io = useFileIO();
     io.cancelImport();
@@ -212,6 +216,64 @@ describe('cancelImport', () => {
         await prepareImport(mockFile(validJson()));
         expect(pendingImport.value).not.toBeNull();
         cancelImport();
+        expect(pendingImport.value).toBeNull();
+    });
+});
+
+describe('confirmImport', () => {
+    test('is a no-op when there is no pending import', () => {
+        const { confirmImport } = useFileIO();
+        confirmImport();
+        expect(mockCreateSheet).not.toHaveBeenCalled();
+        expect(mockReplaceBlocks).not.toHaveBeenCalled();
+        expect(mockLoadVizes).not.toHaveBeenCalled();
+    });
+
+    test('creates a new sheet with the imported name', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson({ name: 'My Project' })));
+        confirmImport();
+        expect(mockCreateSheet).toHaveBeenCalledWith('My Project');
+    });
+
+    test('initialises the new sheet with the returned id and name', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson({ name: 'My Project' })));
+        confirmImport();
+        expect(mockInitNewSheet).toHaveBeenCalledWith('sheet:local/new', 'My Project');
+    });
+
+    test('calls replaceBlocks with the imported blocks', async () => {
+        const blocks = [
+            { id: '1', name: 'a', x: 0, y: 0, width: 150, height: 160 },
+            { id: '2', name: 'b', x: 0, y: 1, width: 150, height: 160 }
+        ];
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson({ blocks })));
+        confirmImport();
+        expect(mockReplaceBlocks).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({ name: 'a' }),
+                expect.objectContaining({ name: 'b' })
+            ])
+        );
+    });
+
+    test('calls loadVizes with the imported vizes', async () => {
+        const customVizes = { myViz: { source: { template: '<div/>', script: '', style: '' } } };
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson({ customVizes })));
+        confirmImport();
+        expect(mockLoadVizes).toHaveBeenCalledWith(
+            expect.objectContaining({ myViz: expect.anything() })
+        );
+    });
+
+    test('clears pendingImport after confirmation', async () => {
+        const { prepareImport, confirmImport, pendingImport } = useFileIO();
+        await prepareImport(mockFile(validJson()));
+        expect(pendingImport.value).not.toBeNull();
+        confirmImport();
         expect(pendingImport.value).toBeNull();
     });
 });
