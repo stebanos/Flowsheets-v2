@@ -2,7 +2,9 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useSheetStore } from '@/entities/sheet';
+import { useVizLibrary } from '@/entities/viz';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { VizConflictResolver } from '@/widgets';
 
 const props = defineProps({
     open: {
@@ -17,7 +19,8 @@ const sortedSheets = computed(() =>
 );
 const { switchSheet } = useSheetStorage();
 const { createSheet, deleteSheet, renameSheet, deletingIds, deleteError } = useSheetManager();
-const { prepareImport, confirmImport, cancelImport, pendingImport, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, exportSheet, exportBundle } = useFileIO();
+const { prepareImport, confirmImport, cancelImport, pendingImport, conflictResolutions, resolveConflict, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, exportSheet, exportBundle } = useFileIO();
+const { library } = useVizLibrary();
 const confirm = useConfirm();
 const confirmPopupRef = ref(null);
 
@@ -106,6 +109,20 @@ function handleDeleteSheet(event, id) {
 const fileInputEl = ref(null);
 const importError = ref(null);
 
+const hasConflicts = computed(() => (pendingImport.value?.conflicts?.length ?? 0) > 0);
+
+const currentConflict = computed(() => {
+    if (!hasConflicts.value) { return null; }
+    return pendingImport.value.conflicts.find(c => !conflictResolutions.value[c.importedName]) ?? null;
+});
+
+const allConflictsResolved = computed(() => {
+    if (!hasConflicts.value) { return true; }
+    return pendingImport.value.conflicts.every(c => conflictResolutions.value[c.importedName]);
+});
+
+const systemVizNames = computed(() => Object.keys(library));
+
 function openFilePicker() {
     fileInputEl.value?.click();
 }
@@ -122,7 +139,10 @@ async function onFileInputChange(e) {
     }
     const result = await prepareImport(file);
     if (result.error) { importError.value = result.error; return; }
-    confirmImport();
+    if (!result.conflicts) {
+        confirmImport();
+    }
+    // if result.conflicts is true, the conflict dialog will appear via hasConflicts computed
 }
 
 function handleCancelImport() {
@@ -288,6 +308,41 @@ function handleCancelBundleImport() {
         <p class="text-sm text-red-500">{{ importError }}</p>
         <template #footer>
             <p-button label="Close" @click="handleCancelImport" />
+        </template>
+    </p-dialog>
+
+    <!-- Viz conflict resolver dialog -->
+    <p-dialog
+        v-if="hasConflicts && currentConflict"
+        :visible="true"
+        modal
+        :closable="false"
+        header="Resolve viz conflict"
+        class="w-4xl"
+    >
+        <viz-conflict-resolver
+            :conflict="currentConflict"
+            :system-viz-names="systemVizNames"
+            @resolve="(resolution) => resolveConflict(currentConflict.importedName, resolution)"
+        />
+        <template #footer>
+            <p-button label="Cancel import" severity="secondary" text @click="handleCancelImport" />
+        </template>
+    </p-dialog>
+
+    <!-- Confirm import after all conflicts resolved -->
+    <p-dialog
+        v-if="hasConflicts && allConflictsResolved && !currentConflict"
+        :visible="true"
+        modal
+        :closable="false"
+        header="Import sheet"
+        class="w-md"
+    >
+        <p class="text-sm text-gray-600">All conflicts resolved. Import "{{ pendingImport?.summary?.name }}"?</p>
+        <template #footer>
+            <p-button label="Cancel" severity="secondary" text @click="handleCancelImport" />
+            <p-button label="Import" @click="confirmImport" />
         </template>
     </p-dialog>
 

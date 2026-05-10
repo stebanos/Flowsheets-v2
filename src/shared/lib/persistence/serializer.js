@@ -41,12 +41,12 @@ export function serializeSheet(blocks, vizes, name, view) {
     const customVizes = {};
     for (const vizName of referencedVizNames) {
         if (vizes[vizName] != null) {
-            customVizes[vizName] = { source: vizes[vizName].source };
+            customVizes[vizName] = { hash: vizes[vizName].hash ?? null, source: vizes[vizName].source };
         }
     }
 
     const result = {
-        version: 1,
+        version: '1.1.0',
         name,
         blocks: serializedBlocks,
         customVizes
@@ -112,8 +112,8 @@ export function deserializeVizes(json) {
     return json.customVizes ?? {};
 }
 
-const BUNDLE_FORMAT_VERSION = '1.0.0';
-const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0']);
+const BUNDLE_FORMAT_VERSION = '1.1.0';
+const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0', '1.1.0']);
 
 /**
  * Serialize multiple sheets into a bundle.
@@ -122,15 +122,22 @@ const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0']);
  * @returns {Object} - { formatVersion, exportedAt, rootSheetId, sheets: [...] }
  */
 export function serializeBundle(sheetEntries, rootSheetId) {
+    const vizLibrary = {};
     const sheets = sheetEntries.map(({ id, name, blocks, vizes }) => {
         const serialized = serializeSheet(blocks ?? [], vizes ?? {}, name ?? 'Untitled');
-        return { id, name: serialized.name, blocks: serialized.blocks, customVizes: serialized.customVizes };
+        for (const [vizName, vizEntry] of Object.entries(serialized.customVizes)) {
+            if (!vizLibrary[vizName]) {
+                vizLibrary[vizName] = vizEntry;
+            }
+        }
+        return { id, name: serialized.name, blocks: serialized.blocks };
     });
 
     return {
         formatVersion: BUNDLE_FORMAT_VERSION,
         exportedAt: new Date().toISOString(),
         rootSheetId,
+        vizLibrary,
         sheets
     };
 }
@@ -149,15 +156,28 @@ export function deserializeBundle(json) {
         throw new Error(`Unsupported bundle version: ${json.formatVersion}`);
     }
 
+    let vizLibrary;
+    if (json.formatVersion === '1.1.0') {
+        vizLibrary = json.vizLibrary ?? {};
+    } else {
+        vizLibrary = {};
+        for (const sheet of json.sheets ?? []) {
+            for (const [name, entry] of Object.entries(sheet.customVizes ?? {})) {
+                if (!vizLibrary[name]) { vizLibrary[name] = entry; }
+            }
+        }
+    }
+
     const sheets = (json.sheets ?? []).map((sheet) => {
+        const sheetVizes = json.formatVersion === '1.1.0' ? vizLibrary : (sheet.customVizes ?? {});
         const { blocks, vizes, name } = deserializeSheet({
-            version: 1,
+            version: 2,
             blocks: sheet.blocks ?? [],
-            customVizes: sheet.customVizes ?? {},
+            customVizes: sheetVizes,
             name: sheet.name
         });
         return { id: sheet.id, name, blocks, vizes };
     });
 
-    return { rootSheetId: json.rootSheetId, sheets };
+    return { rootSheetId: json.rootSheetId, sheets, vizLibrary };
 }

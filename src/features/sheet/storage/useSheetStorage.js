@@ -114,7 +114,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
             customVizes: raw.customVizes ?? {},
             view:        raw.view        ?? {}
         };
-        const data = migrate(envelope);
+        const data = await migrate(envelope);
         const { blocks: loadedBlocks, vizes, view } = deserializeSheet(data);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
@@ -202,7 +202,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
             customVizes: data.customVizes ?? {},
             view:        data.view        ?? {}
         };
-        const migrated = migrate(envelope);
+        const migrated = await migrate(envelope);
         const { blocks: loadedBlocks, vizes, view } = deserializeSheet(migrated);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);

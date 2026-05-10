@@ -2,6 +2,8 @@ import { ref } from 'vue';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
 import { useSheetStore } from '@/entities/sheet';
+import { useVizLibrary } from '@/entities/viz';
+import { getHash } from '@/shared/lib/hash';
 
 // Prevent Vite HMR from resetting module-level state (pendingImport would be lost on hot reload)
 if (import.meta.hot) { import.meta.hot.decline(); }
@@ -11,8 +13,10 @@ import { useSheetStorage } from '@/features/sheet/storage';
 import { useBundleImport } from './useBundleImport';
 
 // Module-level singletons — shared across all callers
-// { summary, data } | null
+// { summary, data, conflicts } | null
 const pendingImport = ref(null);
+// { [importedName]: { action: 'use-system' | 'add-as-new' | 'remap', targetName?: string } }
+const conflictResolutions = ref({});
 
 function _triggerDownload(filename, content) {
     const blob = new Blob([content], { type: 'application/json' });
@@ -22,6 +26,13 @@ function _triggerDownload(filename, content) {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+function _nextAvailableName(baseName) {
+    const { library } = useVizLibrary();
+    let n = 2;
+    while (library[`${baseName}-${n}`]) { n++; }
+    return `${baseName}-${n}`;
 }
 
 export function useFileIO() {
@@ -92,7 +103,7 @@ export function useFileIO() {
         }
 
         try {
-            json = migrate(json);
+            json = await migrate(json);
         } catch (err) {
             return { error: err.message };
         }
@@ -109,70 +120,118 @@ export function useFileIO() {
             return { error: 'This file could not be read. It may be corrupted or not a valid Flowsheets file.' };
         }
 
-        // Resolve viz name conflicts
-        const renamedVizes = {};
-        const resolvedVizes = {};
+        const { library } = useVizLibrary();
+
+        // Classify each imported viz: case A (hash match), B (hash mismatch), C (new)
+        const silentVizes = {};   // case A + C — add without conflict UI
+        const conflicts = [];     // case B — requires user resolution
 
         for (const [name, vizData] of Object.entries(importedVizes)) {
-            const existing = customVizes[name];
-            if (existing && existing.source !== vizData.source) {
-                // Name collision with different source — rename
-                let candidate = `${name}-1`;
-                let counter = 1;
-                while (customVizes[candidate] || resolvedVizes[candidate]) {
-                    counter++;
-                    candidate = `${name}-${counter}`;
-                }
-                renamedVizes[name] = candidate;
-                resolvedVizes[candidate] = vizData;
+            const existing = library[name];
+            if (!existing) {
+                // Case C — name unknown, add silently
+                silentVizes[name] = vizData;
             } else {
-                resolvedVizes[name] = vizData;
+                // Need hash to compare — compute on the fly for imported entry
+                const importedHash = vizData.hash ?? await getHash(vizData.source ?? {});
+                if (existing.hash === importedHash) {
+                    // Case A — same content, add silently (already in library)
+                    silentVizes[name] = vizData;
+                } else {
+                    // Case B — conflict
+                    conflicts.push({
+                        importedName: name,
+                        systemEntry: { hash: existing.hash, source: existing.source },
+                        importedEntry: { hash: importedHash, source: vizData.source }
+                    });
+                }
             }
         }
 
-        // Update block vizOptions references to match renamed vizes
-        const resolvedBlocks = importedBlocks.map(block => {
-            const vizName = block.vizOptions?.customVizName;
-            if (vizName && renamedVizes[vizName]) {
-                return {
-                    ...block,
-                    vizOptions: { ...block.vizOptions, customVizName: renamedVizes[vizName] }
-                };
-            }
-            return block;
-        });
+        conflictResolutions.value = {};
 
         pendingImport.value = {
             summary: {
                 name: importedName,
-                blockCount: resolvedBlocks.length,
-                vizCount: Object.keys(resolvedVizes).length,
-                renamedVizes
+                blockCount: importedBlocks.length,
+                vizCount: Object.keys(importedVizes).length,
+                conflictCount: conflicts.length
             },
             data: {
-                blocks: resolvedBlocks,
-                vizes: resolvedVizes,
+                blocks: importedBlocks,
+                vizes: silentVizes,
                 name: importedName
-            }
+            },
+            conflicts
         };
 
+        if (conflicts.length > 0) {
+            return { pending: true, conflicts: true };
+        }
         return { pending: true };
     }
 
-    function confirmImport() {
+    async function confirmImport() {
         if (!pendingImport.value) { return; }
-        const { blocks: importedBlocks, vizes, name } = pendingImport.value.data;
+        const { data, conflicts } = pendingImport.value;
+        let { blocks: importedBlocks, vizes, name } = data;
+
+        const { saveLibraryEntry, library } = useVizLibrary();
+
+        // Apply conflict resolutions — mutate a working copy of blocks
+        let finalBlocks = importedBlocks;
+        if (conflicts?.length > 0) {
+            const blockRewrites = {};  // { [importedName]: resolvedName }
+
+            for (const conflict of conflicts) {
+                const resolution = conflictResolutions.value[conflict.importedName];
+                if (!resolution) { continue; }
+
+                if (resolution.action === 'use-system') {
+                    // Keep existing system viz; no block rewrite needed
+                } else if (resolution.action === 'add-as-new') {
+                    const newName = _nextAvailableName(conflict.importedName);
+                    await saveLibraryEntry(newName, conflict.importedEntry.source);
+                    blockRewrites[conflict.importedName] = newName;
+                } else if (resolution.action === 'remap') {
+                    blockRewrites[conflict.importedName] = resolution.targetName;
+                }
+            }
+
+            if (Object.keys(blockRewrites).length > 0) {
+                finalBlocks = importedBlocks.map(block => {
+                    const vizName = block.vizOptions?.customVizName;
+                    if (vizName && blockRewrites[vizName]) {
+                        return { ...block, vizOptions: { ...block.vizOptions, customVizName: blockRewrites[vizName] } };
+                    }
+                    return block;
+                });
+            }
+        }
+
+        // Add case A + C vizes (silent)
+        for (const [vizName, { source }] of Object.entries(vizes)) {
+            if (source && !library[vizName]) {
+                await saveLibraryEntry(vizName, source);
+            }
+        }
 
         const newId = createSheetInStore(name);
         initNewSheet(newId, name);
-        replaceBlocks(importedBlocks);
-        loadVizes(vizes);
+        replaceBlocks(finalBlocks);
+        loadVizes(library);
 
         pendingImport.value = null;
+        conflictResolutions.value = {};
+    }
+
+    function resolveConflict(importedName, resolution) {
+        conflictResolutions.value = { ...conflictResolutions.value, [importedName]: resolution };
     }
 
     function cancelImport() {
         pendingImport.value = null;
+        conflictResolutions.value = {};
     }
 
     // ── bundle export ─────────────────────────────────────────────────────────
@@ -195,13 +254,27 @@ export function useFileIO() {
         _triggerDownload(filename, JSON.stringify(bundle, null, 2));
     }
 
+    async function findSheetsReferencingViz(vizName) {
+        const matching = [];
+        for (const sheet of sheets) {
+            const data = await readSheetData(sheet.id);
+            const sheetBlocks = data?.blocks ?? [];
+            const refs = sheetBlocks.some(b => b.vizOptions?.customVizName === vizName);
+            if (refs) { matching.push(sheet.name); }
+        }
+        return matching;
+    }
+
     const bundleImport = useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet });
 
     return {
         pendingImport,
+        conflictResolutions,
         cancelImport,
         confirmImport,
         prepareImport,
+        resolveConflict,
+        findSheetsReferencingViz,
         exportSheet,
         exportBundle,
         // bundle import state and actions from useBundleImport

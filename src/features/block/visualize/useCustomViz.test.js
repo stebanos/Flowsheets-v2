@@ -2,6 +2,16 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from './useCustomViz';
 
+vi.mock('@/entities/viz', () => ({
+    useVizLibrary: () => ({
+        library: {},
+        createLibraryEntry: vi.fn(),
+        saveLibraryEntry: vi.fn(),
+        deleteLibraryEntry: vi.fn(),
+        renameLibraryEntry: vi.fn()
+    })
+}));
+
 const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel } = useCustomViz();
 const { blocks } = useBlockStore();
 

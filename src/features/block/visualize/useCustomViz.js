@@ -1,6 +1,9 @@
 import * as Vue from 'vue';
 import { markRaw, reactive, ref } from 'vue';
 import { injectStyle } from '@/shared/lib/css-scope';
+import { useVizLibrary } from '@/entities/viz';
+
+const { library, createLibraryEntry, saveLibraryEntry, deleteLibraryEntry, renameLibraryEntry } = useVizLibrary();
 
 const DEFAULT_TEMPLATE = `<div class="root">\n  {{ display }}\n</div>`;
 const DEFAULT_SCRIPT = `const { computed } = Vue;\nconst display = computed(() => props.value);\nreturn { display };`;
@@ -23,6 +26,7 @@ function createViz() {
     const name = `Viz ${n}`;
     customVizes[name] = { source: null, draft: makeDefaultDraft(), component: null, error: null, errorPanel: null };
     activeVizName.value = name;
+    createLibraryEntry(name);
 }
 
 function deleteViz(name) {
@@ -34,15 +38,16 @@ function deleteViz(name) {
         const remaining = Object.keys(customVizes);
         activeVizName.value = remaining[Math.min(idx, remaining.length - 1)] ?? null;
     }
+    deleteLibraryEntry(name);
 }
 
 function renameViz(oldName, newName) {
     if (!customVizes[oldName] || customVizes[newName]) { return false; }
-    // Rebuild in original key order so the renamed tab stays in place
     const entries = Object.entries(customVizes).map(([k, v]) => [k === oldName ? newName : k, v]);
     for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
     for (const [k, v] of entries) { customVizes[k] = v; }
     if (activeVizName.value === oldName) { activeVizName.value = newName; }
+    renameLibraryEntry(oldName, newName);
     return true;
 }
 
@@ -74,6 +79,7 @@ function runViz(name, draft) {
         entry.source = { ...draft };
         entry.error = null;
         entry.errorPanel = null;
+        saveLibraryEntry(name, draft);
     } catch (err) {
         entry.error = err.message;
         entry.component = null;

@@ -1,5 +1,6 @@
 import { ref, toValue } from 'vue';
 import { deserializeBundle, serializeSheet } from '@/shared/lib/persistence';
+import { useVizLibrary } from '@/entities/viz';
 
 export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet }) {
     const bundleImportState = ref({ pending: false, entries: [] });
@@ -36,13 +37,25 @@ export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, se
             action: localIds.has(sheet.id) ? 'skip' : 'import'
         }));
 
-        bundleImportState.value = { pending: true, entries, rootSheetId: parsed.rootSheetId };
+        bundleImportState.value = { pending: true, entries, rootSheetId: parsed.rootSheetId, vizLibrary: parsed.vizLibrary ?? {} };
         return { pending: true };
     }
 
     async function confirmBundleImport() {
         if (!bundleImportState.value.pending) { return; }
-        const { entries, rootSheetId } = bundleImportState.value;
+        const { saveLibraryEntry, library } = useVizLibrary();
+        const { entries, rootSheetId, vizLibrary } = bundleImportState.value;
+
+        for (const [vizName, entry] of Object.entries(vizLibrary ?? {})) {
+            if (!entry.source) { continue; }
+            const existing = library[vizName];
+            if (!existing) {
+                await saveLibraryEntry(vizName, entry.source);
+            } else if (existing.hash === entry.hash) {
+                // already present — no-op
+            }
+            // if hash differs: use system version (skip import)
+        }
 
         let resolvedRootId = rootSheetId;
         const stagedIds = [];

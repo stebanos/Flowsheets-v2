@@ -9,6 +9,7 @@ import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFocusedBlock } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan } from '@/features/canvas';
+import { useVizLibrary } from '@/entities/viz';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
@@ -32,6 +33,7 @@ setCellDimensions(150, 24);
 // viz sidebar
 const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
 const { activeVizName, customVizes, loadVizes } = useCustomViz();
+const { library, loadLibrary } = useVizLibrary();
 
 // sheet sidebar
 const { isOpen: sheetSidebarOpen, toggle: toggleSheetSidebar } = useSidebar();
@@ -54,18 +56,19 @@ let _lastScrollTime = 0;
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
 const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
-    getCustomVizes: () => customVizes,
-    onVizesLoaded:  loadVizes,
+    getCustomVizes: () => library,
     getPan:         () => ({ panX: panX.value, panY: panY.value }),
     onPanLoaded:    (view) => setPan(view.panX, view.panY)
 });
 const { prepareImport } = useFileIO();
-watch([customVizes, activeVizName], scheduleSave, { deep: true });
+watch([library, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY], scheduleSave);
 
 // lifecycle
 onMounted(async () => {
     registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
+    await loadLibrary();
+    loadVizes(library);
     await loadFromStorage();
     if (isFirstBoot.value) {
         createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);

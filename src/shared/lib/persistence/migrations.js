@@ -1,26 +1,35 @@
-const CURRENT_VERSION = 1;
+import { getHash } from '@/shared/lib/hash';
+
+const CURRENT_VERSION = '1.1.0';
 
 /**
  * Apply version migrations to a raw parsed JSON object.
- * Throws if the version is unknown (higher than current).
- * Returns the migrated object (may be the same reference for v1).
+ * Throws if the version is unknown or unrecognised.
+ * Returns a Promise resolving to the migrated object.
  * @param {Object} json
- * @returns {Object}
+ * @returns {Promise<Object>}
  */
-export function migrate(json) {
-    if (typeof json.version !== 'number') {
+export async function migrate(json) {
+    const version = json.version;
+
+    if (version == null) {
         throw new Error('Invalid file: missing version field');
     }
 
-    if (json.version > CURRENT_VERSION) {
-        throw new Error(
-            `This file was created by a newer version of Flowsheets (version ${json.version}). Please update the app.`
-        );
+    if (version === 1) {
+        const customVizes = {};
+        for (const [name, entry] of Object.entries(json.customVizes ?? {})) {
+            const hash = entry.source ? await getHash(entry.source) : null;
+            customVizes[name] = { ...entry, hash };
+        }
+        return { ...json, version: '1.1.0', customVizes };
     }
 
-    if (json.version === 1) {
+    if (version === CURRENT_VERSION) {
         return json;
     }
 
-    return json;
+    throw new Error(
+        `This file was created by a newer version of Flowsheets (version ${version}). Please update the app.`
+    );
 }

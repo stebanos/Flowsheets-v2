@@ -9,11 +9,15 @@ import { Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { useBlockStore } from '@/entities/block/index.js';
 import { useCustomViz } from '@/features/block/visualize/index.js';
+import { useFileIO } from '@/features/sheet/file-io/useFileIO';
 
 const { blocks, updateBlock } = useBlockStore();
 const { customVizes, activeVizName, createViz, deleteViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();
+const { findSheetsReferencingViz } = useFileIO();
 const confirm = useConfirm();
 const confirmPopupRef = ref(null);
+
+const deleteWarning = ref(null);  // { name: string, otherSheets: string[] } | null
 
 const htmlLang = html();
 const jsLang = javascript();
@@ -179,12 +183,20 @@ function handleRevert() {
 }
 
 // --- Delete ---
-function handleDelete(event, name) {
+async function handleDelete(event, name) {
     const usingBlocks = blocks.filter(b => b.vizOptions?.customVizName === name);
-    if (usingBlocks.length === 0) {
+    const otherSheets = await findSheetsReferencingViz(name);
+
+    if (usingBlocks.length === 0 && otherSheets.length === 0) {
         deleteViz(name);
         return;
     }
+
+    if (otherSheets.length > 0) {
+        deleteWarning.value = { name, otherSheets, usingBlocks };
+        return;
+    }
+
     confirm.require({
         group: 'viz-delete',
         target: event.currentTarget,
@@ -201,6 +213,20 @@ function handleDelete(event, name) {
         }
     });
     nextTick(() => confirmPopupRef.value?.alignOverlay());
+}
+
+function confirmDeleteWarning() {
+    if (!deleteWarning.value) { return; }
+    const { name, usingBlocks } = deleteWarning.value;
+    deleteViz(name);
+    for (const block of usingBlocks) {
+        updateBlock(block.id, { visualizationType: 'default', vizOptions: {} });
+    }
+    deleteWarning.value = null;
+}
+
+function cancelDeleteWarning() {
+    deleteWarning.value = null;
 }
 
 // --- Platform ---
@@ -299,4 +325,27 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
         </div>
         <p-confirm-popup ref="confirmPopupRef" group="viz-delete" />
     </div>
+
+    <p-dialog
+        v-if="deleteWarning"
+        :visible="true"
+        modal
+        :closable="false"
+        header="Delete viz?"
+        class="w-md"
+    >
+        <p class="text-sm text-gray-700 mb-2">
+            The following sheets still use "{{ deleteWarning.name }}":
+        </p>
+        <ul class="text-sm text-gray-600 list-disc pl-5 mb-2">
+            <li v-for="sheet in deleteWarning.otherSheets" :key="sheet">{{ sheet }}</li>
+        </ul>
+        <p v-if="deleteWarning.usingBlocks.length > 0" class="text-sm text-gray-500">
+            {{ deleteWarning.usingBlocks.length }} block(s) on the current sheet will also revert to the default visualization.
+        </p>
+        <template #footer>
+            <p-button label="Cancel" severity="secondary" text @click="cancelDeleteWarning" />
+            <p-button label="Delete anyway" severity="danger" @click="confirmDeleteWarning" />
+        </template>
+    </p-dialog>
 </template>
