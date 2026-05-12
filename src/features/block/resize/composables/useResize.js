@@ -1,8 +1,8 @@
 import { reactive } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
-export function useResize(snapX, snapY, cellWidth, cellHeight) {
-    const { updateBlock } = useBlockStore();
+export function useResize(snapX, snapY, cellWidth, cellHeight, updateFn) {
+    const _updateFn = updateFn ?? useBlockStore().updateBlock;
 
     const resizeState = reactive({
         block: null,
@@ -29,8 +29,7 @@ export function useResize(snapX, snapY, cellWidth, cellHeight) {
         const dx = event.clientX - resizeState.startX;
         const dy = event.clientY - resizeState.startY;
 
-        updateBlock(resizeState.block.id, {
-            // Minimum 1 full column; snap to sub-grid units (same as drag).
+        _updateFn(resizeState.block.id, {
             width: Math.max(cellWidth.value, snapX(resizeState.startWidth + dx)),
             height: Math.max(3 * cellHeight.value, snapY(resizeState.startHeight + dy))
         });

@@ -1,6 +1,7 @@
 import { reactive, ref, watch } from 'vue';
 import { deserializeSheet, migrate, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
+import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
@@ -61,11 +62,14 @@ function _persistOpenIds() {
 
 // ── composable ───────────────────────────────────────────────────────────────
 
-export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded } = {}) {
+export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded, getNotes, onNotesLoaded } = {}) {
     const _customVizGetter = getCustomVizes ?? (() => ({}));
     const _onVizesLoaded   = onVizesLoaded   ?? (() => {});
     const _panGetter       = getPan           ?? (() => ({ panX: 0, panY: 0 }));
     const _onPanLoaded     = onPanLoaded      ?? (() => {});
+    const { notes: _storeNotes } = useNoteStore();
+    const _notesGetter     = getNotes         ?? (() => _storeNotes);
+    const _onNotesLoaded   = onNotesLoaded    ?? (() => {});
 
     const { blocks, replaceBlocks } = useBlockStore();
     const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
@@ -82,9 +86,9 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         const name = activeSheetName.value;
         try {
             const view = _panGetter();
-            const serialized = serializeSheet(blocks, _customVizGetter(), name, view);
+            const serialized = serializeSheet(blocks, _customVizGetter(), name, view, _notesGetter());
             if (_pendingDelete.has(id)) { return; }
-            await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view });
+            await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view, notes: serialized.notes });
             localStatus.value = 'idle';
         } catch (err) {
             localStatus.value = 'error';
@@ -112,13 +116,15 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
             version:     raw.version     ?? 1,
             blocks:      raw.blocks      ?? [],
             customVizes: raw.customVizes ?? {},
-            view:        raw.view        ?? {}
+            view:        raw.view        ?? {},
+            notes:       raw.notes       ?? []
         };
         const data = await migrate(envelope);
-        const { blocks: loadedBlocks, vizes, view } = deserializeSheet(data);
+        const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(data);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
         _onPanLoaded(view);
+        _onNotesLoaded(loadedNotes);
     }
 
     // ── loadFromStorage ───────────────────────────────────────────────────────
@@ -200,13 +206,15 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
             version:     data.version     ?? 1,
             blocks:      data.blocks      ?? [],
             customVizes: data.customVizes ?? {},
-            view:        data.view        ?? {}
+            view:        data.view        ?? {},
+            notes:       data.notes       ?? []
         };
         const migrated = await migrate(envelope);
-        const { blocks: loadedBlocks, vizes, view } = deserializeSheet(migrated);
+        const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(migrated);
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
         _onPanLoaded(view);
+        _onNotesLoaded(loadedNotes);
         loading = false;
     }
 
@@ -216,6 +224,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         replaceBlocks([]);
         _onVizesLoaded({});
         _onPanLoaded({ panX: 0, panY: 0 });
+        _onNotesLoaded([]);
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
@@ -268,7 +277,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
     if (!initialised) {
         initialised = true;
         watch(
-            [blocks, activeSheetName],
+            [blocks, _storeNotes, activeSheetName],
             () => { _scheduleSave(); },
             { deep: true }
         );

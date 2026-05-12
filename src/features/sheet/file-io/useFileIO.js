@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
+import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 import { getHash } from '@/shared/lib/hash';
@@ -37,6 +38,7 @@ function _nextAvailableName(baseName) {
 
 export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
+    const { notes, replaceNotes } = useNoteStore();
     const { customVizes, loadVizes } = useCustomViz();
     const { activeSheetName, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
     const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet } = useSheetStorage();
@@ -51,7 +53,7 @@ export function useFileIO() {
     }
 
     function _buildContent() {
-        return JSON.stringify(serializeSheet(blocks, customVizes, activeSheetName.value), null, 2);
+        return JSON.stringify(serializeSheet(blocks, customVizes, activeSheetName.value, null, notes), null, 2);
     }
 
     async function exportSheet(sheetId = null) {
@@ -62,7 +64,7 @@ export function useFileIO() {
             const name = sheets.find(s => s.id === sheetId)?.name ?? 'untitled';
             const sanitized = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             suggestedName = `${sanitized || 'untitled'}.flowsheet.json`;
-            content = JSON.stringify(serializeSheet(stored?.blocks ?? [], stored?.customVizes ?? {}, name), null, 2);
+            content = JSON.stringify(serializeSheet(stored?.blocks ?? [], stored?.customVizes ?? {}, name, null, stored?.notes ?? []), null, 2);
         } else {
             suggestedName = _buildSuggestedName();
             content = _buildContent();
@@ -111,11 +113,13 @@ export function useFileIO() {
         let importedBlocks;
         let importedVizes;
         let importedName;
+        let importedNotes;
         try {
             const result = deserializeSheet(json);
             importedBlocks = result.blocks;
             importedVizes = result.vizes ?? {};
             importedName = result.name ?? 'Untitled';
+            importedNotes = result.notes ?? [];
         } catch (_err) {
             return { error: 'This file could not be read. It may be corrupted or not a valid Flowsheets file.' };
         }
@@ -160,7 +164,8 @@ export function useFileIO() {
             data: {
                 blocks: importedBlocks,
                 vizes: silentVizes,
-                name: importedName
+                name: importedName,
+                notes: importedNotes
             },
             conflicts
         };
@@ -219,6 +224,7 @@ export function useFileIO() {
         const newId = createSheetInStore(name);
         initNewSheet(newId, name);
         replaceBlocks(finalBlocks);
+        replaceNotes(data.notes ?? []);
         loadVizes(library);
 
         pendingImport.value = null;
@@ -243,7 +249,8 @@ export function useFileIO() {
                 id: sheet.id,
                 name: sheet.name,
                 blocks: stored?.blocks ?? [],
-                vizes: stored?.customVizes ?? {}
+                vizes: stored?.customVizes ?? {},
+                notes: stored?.notes ?? []
             };
         }));
 

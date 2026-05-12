@@ -2,21 +2,24 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
+import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
+import { useDeleteNote } from '@/features/note/useDeleteNote';
 import { useFocusedBlock } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan } from '@/features/canvas';
 import { useVizLibrary } from '@/entities/viz';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
-import { Block, BlockGrid, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
+import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
 const { blocks } = useBlockStore();
+const { notes, addNote, replaceNotes } = useNoteStore();
 const { sheets, activeSheetName } = useSheetStore();
 
 // evaluation
@@ -26,6 +29,7 @@ const context = useBlockEvaluation(dependsOn);
 // block interaction
 const { createBlock } = useBlockManager();
 const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
+const { undoPending: noteUndoPending, undoDelete: undoNoteDelete, dismissUndo: dismissNoteUndo } = useDeleteNote();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
@@ -44,6 +48,26 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
 
+// canvas context menu
+const canvasContextMenu = ref(null);
+const contextMenuPos = ref({ x: 0, y: 0 });
+const canvasContextMenuItems = [
+    {
+        label: 'Add note',
+        command: () => {
+            addNote({
+                id: crypto.randomUUID(),
+                x: contextMenuPos.value.x,
+                y: contextMenuPos.value.y,
+                width: 200,
+                height: 150,
+                title: '',
+                body: ''
+            });
+        }
+    }
+];
+
 // keyboard nav
 const { registerCanvas } = useFocusedBlock();
 const canvasEl = ref(null);
@@ -56,9 +80,11 @@ let _lastScrollTime = 0;
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
 const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
-    getCustomVizes: () => library,
-    getPan:         () => ({ panX: panX.value, panY: panY.value }),
-    onPanLoaded:    (view) => setPan(view.panX, view.panY)
+    getCustomVizes:  () => library,
+    getPan:          () => ({ panX: panX.value, panY: panY.value }),
+    onPanLoaded:     (view) => setPan(view.panX, view.panY),
+    getNotes:        () => notes,
+    onNotesLoaded:   replaceNotes
 });
 const { prepareImport } = useFileIO();
 watch([library, activeVizName], scheduleSave, { deep: true });
@@ -95,7 +121,7 @@ function onCreate(event) {
 
 function onCanvasMousedown(event) {
     if (event.button !== 0) { return; }
-    if (event.target.closest('[data-block]')) { return; }
+    if (event.target.closest('[data-block]') || event.target.closest('[data-note]')) { return; }
     startPan(event);
 }
 
@@ -125,6 +151,16 @@ function onCanvasWheel(event) {
 
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
+
+function onCanvasContextMenu(event) {
+    if (event.target.closest('[data-block]') || event.target.closest('[data-note]')) { return; }
+    const { left, top } = canvasEl.value.getBoundingClientRect();
+    contextMenuPos.value = {
+        x: event.clientX - left - panX.value,
+        y: event.clientY - top - panY.value
+    };
+    canvasContextMenu.value.show(event);
+}
 
 // status
 const statusText = computed(() => {
@@ -176,10 +212,12 @@ const statusColor = computed(() => {
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
                     @wheel="onCanvasWheel"
+                    @contextmenu="onCanvasContextMenu"
                 >
                     <span ref="wrapAnnouncerEl" aria-live="polite" class="sr-only" />
                     <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
+                        <canvas-note v-for="note in notes" :key="`note-${note.id}`" class="pointer-events-auto" :note />
                         <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
                     </div>
                     <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
@@ -194,5 +232,7 @@ const statusColor = computed(() => {
             </template>
         </p-drawer>
         <undo-delete-toast :pending="undoPending" @undo="undoDelete" @dismiss="dismissUndo" />
+        <undo-delete-toast :pending="noteUndoPending" :stacked="!!undoPending" @undo="undoNoteDelete" @dismiss="dismissNoteUndo" />
+        <p-context-menu ref="canvasContextMenu" :model="canvasContextMenuItems" />
     </div>
 </template>

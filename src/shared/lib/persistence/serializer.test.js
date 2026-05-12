@@ -16,12 +16,12 @@ const makeBlock = (overrides = {}) => ({
 });
 
 describe('serializeSheet', () => {
-    it('produces version: 1.1.0, correct name, correct block fields', () => {
+    it('produces version: 1.2.0, correct name, correct block fields', () => {
         const blocks = [makeBlock()];
         const vizes = {};
         const result = serializeSheet(blocks, vizes, 'My Sheet');
 
-        expect(result.version).toBe('1.1.0');
+        expect(result.version).toBe('1.2.0');
         expect(result.name).toBe('My Sheet');
         expect(result.blocks).toHaveLength(1);
 
@@ -301,9 +301,9 @@ describe('serializeVizes / deserializeVizes round-trip', () => {
 // ── serializeBundle ───────────────────────────────────────────────────────────
 
 describe('serializeBundle', () => {
-    it('produces formatVersion 1.1.0 and a rootSheetId', () => {
+    it('produces formatVersion 1.2.0 and a rootSheetId', () => {
         const result = serializeBundle([], 'root-1');
-        expect(result.formatVersion).toBe('1.1.0');
+        expect(result.formatVersion).toBe('1.2.0');
         expect(result.rootSheetId).toBe('root-1');
     });
 

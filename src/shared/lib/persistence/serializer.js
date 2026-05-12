@@ -21,7 +21,9 @@ const PERSISTED_BLOCK_FIELDS = [
  * @param {string} name - sheet name
  * @returns {Object} - { version: 1, name, blocks: [...], customVizes: {...} }
  */
-export function serializeSheet(blocks, vizes, name, view) {
+const PERSISTED_NOTE_FIELDS = ['id', 'x', 'y', 'width', 'height', 'title', 'body'];
+
+export function serializeSheet(blocks, vizes, name, view, notes) {
     const serializedBlocks = blocks.map((block) => {
         const out = {};
         for (const field of PERSISTED_BLOCK_FIELDS) {
@@ -45,11 +47,20 @@ export function serializeSheet(blocks, vizes, name, view) {
         }
     }
 
+    const serializedNotes = (notes ?? []).map((note) => {
+        const out = {};
+        for (const field of PERSISTED_NOTE_FIELDS) {
+            out[field] = note[field];
+        }
+        return out;
+    });
+
     const result = {
-        version: '1.1.0',
+        version: '1.2.0',
         name,
         blocks: serializedBlocks,
-        customVizes
+        customVizes,
+        notes: serializedNotes
     };
 
     if (view != null) {
@@ -85,8 +96,17 @@ export function deserializeSheet(json) {
 
     const vizes = json.customVizes ?? {};
     const view = { panX: json.view?.panX ?? 0, panY: json.view?.panY ?? 0 };
+    const notes = (json.notes ?? []).map(n => ({
+        id: n.id,
+        x: n.x ?? 0,
+        y: n.y ?? 0,
+        width: n.width ?? 200,
+        height: n.height ?? 150,
+        title: n.title ?? '',
+        body: n.body ?? ''
+    }));
 
-    return { blocks, vizes, name, view };
+    return { blocks, vizes, name, view, notes };
 }
 
 /**
@@ -112,8 +132,8 @@ export function deserializeVizes(json) {
     return json.customVizes ?? {};
 }
 
-const BUNDLE_FORMAT_VERSION = '1.1.0';
-const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0', '1.1.0']);
+const BUNDLE_FORMAT_VERSION = '1.2.0';
+const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0', '1.1.0', '1.2.0']);
 
 /**
  * Serialize multiple sheets into a bundle.
@@ -123,14 +143,14 @@ const RECOGNISED_FORMAT_VERSIONS = new Set(['1.0.0', '1.1.0']);
  */
 export function serializeBundle(sheetEntries, rootSheetId) {
     const vizLibrary = {};
-    const sheets = sheetEntries.map(({ id, name, blocks, vizes }) => {
-        const serialized = serializeSheet(blocks ?? [], vizes ?? {}, name ?? 'Untitled');
+    const sheets = sheetEntries.map(({ id, name, blocks, vizes, notes }) => {
+        const serialized = serializeSheet(blocks ?? [], vizes ?? {}, name ?? 'Untitled', null, notes ?? []);
         for (const [vizName, vizEntry] of Object.entries(serialized.customVizes)) {
             if (!vizLibrary[vizName]) {
                 vizLibrary[vizName] = vizEntry;
             }
         }
-        return { id, name: serialized.name, blocks: serialized.blocks };
+        return { id, name: serialized.name, blocks: serialized.blocks, notes: serialized.notes ?? [] };
     });
 
     return {
@@ -157,7 +177,7 @@ export function deserializeBundle(json) {
     }
 
     let vizLibrary;
-    if (json.formatVersion === '1.1.0') {
+    if (json.formatVersion === '1.1.0' || json.formatVersion === '1.2.0') {
         vizLibrary = json.vizLibrary ?? {};
     } else {
         vizLibrary = {};
@@ -169,14 +189,15 @@ export function deserializeBundle(json) {
     }
 
     const sheets = (json.sheets ?? []).map((sheet) => {
-        const sheetVizes = json.formatVersion === '1.1.0' ? vizLibrary : (sheet.customVizes ?? {});
-        const { blocks, vizes, name } = deserializeSheet({
-            version: 2,
+        const sheetVizes = (json.formatVersion === '1.1.0' || json.formatVersion === '1.2.0') ? vizLibrary : (sheet.customVizes ?? {});
+        const { blocks, vizes, name, notes } = deserializeSheet({
+            version: '1.2.0',
             blocks: sheet.blocks ?? [],
             customVizes: sheetVizes,
-            name: sheet.name
+            name: sheet.name,
+            notes: sheet.notes ?? []
         });
-        return { id: sheet.id, name, blocks, vizes };
+        return { id: sheet.id, name, blocks, vizes, notes };
     });
 
     return { rootSheetId: json.rootSheetId, sheets, vizLibrary };

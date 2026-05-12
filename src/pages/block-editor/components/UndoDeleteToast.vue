@@ -1,6 +1,7 @@
 <script setup>
-defineProps({
-    pending: { type: Object, default: null }
+const props = defineProps({
+    pending: { type: Object, default: null },
+    stacked: { type: Boolean, default: false }
 });
 defineEmits(['undo', 'dismiss']);
 </script>
@@ -14,9 +15,10 @@ defineEmits(['undo', 'dismiss']);
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 translate-y-2">
         <div v-if="pending"
-             class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl z-50 whitespace-nowrap">
+             class="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-xl z-50 whitespace-nowrap"
+             :style="{ bottom: props.stacked ? '4.5rem' : '1rem' }">
             <span>
-                Deleted "{{ pending.block.name }}"<span v-if="pending.hasDownstream"> (downstream blocks affected)</span> —
+                Deleted "{{ pending.label }}"<span v-if="pending.hasDownstream"> (downstream blocks affected)</span> —
             </span>
             <button class="font-semibold underline cursor-pointer hover:text-gray-200 transition-colors"
                     @click="$emit('undo')">Undo</button>

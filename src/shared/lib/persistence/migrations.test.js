@@ -2,17 +2,17 @@ import { getHash } from '@/shared/lib/hash';
 import { migrate } from './migrations';
 
 describe('migrate', () => {
-    it('migrates version 1 to version 1.1.0, returning new object', async () => {
+    it('migrates version 1 to version 1.2.0, returning new object', async () => {
         const json = { version: 1, name: 'Sheet', blocks: [], customVizes: {} };
         const result = await migrate(json);
-        expect(result.version).toBe('1.1.0');
+        expect(result.version).toBe('1.2.0');
         expect(result).not.toBe(json);
     });
 
-    it('v1 with no customVizes produces empty customVizes on v1.1.0', async () => {
+    it('v1 with no customVizes produces empty customVizes on v1.2.0', async () => {
         const json = { version: 1, name: 'Sheet', blocks: [] };
         const result = await migrate(json);
-        expect(result.version).toBe('1.1.0');
+        expect(result.version).toBe('1.2.0');
         expect(result.customVizes).toEqual({});
     });
 
@@ -41,8 +41,15 @@ describe('migrate', () => {
         expect(result.customVizes.Empty.hash).toBeNull();
     });
 
-    it('v1.1.0 sheet passes through unchanged (same reference)', async () => {
+    it('v1.1.0 sheet migrates to v1.2.0', async () => {
         const json = { version: '1.1.0', name: 'Sheet', blocks: [], customVizes: {} };
+        const result = await migrate(json);
+        expect(result.version).toBe('1.2.0');
+        expect(result.notes).toEqual([]);
+    });
+
+    it('v1.2.0 sheet passes through unchanged (same reference)', async () => {
+        const json = { version: '1.2.0', name: 'Sheet', blocks: [], customVizes: {}, notes: [] };
         const result = await migrate(json);
         expect(result).toBe(json);
     });
