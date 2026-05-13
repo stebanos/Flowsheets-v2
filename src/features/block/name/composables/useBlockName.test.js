@@ -126,6 +126,38 @@ describe('saveName — cascade rename', () => {
         expect(mockUpdateBlock).not.toHaveBeenCalled();
     });
 
+    test('updates vizOptions.compareBlock when it references the renamed block', () => {
+        const name = makeName('a');
+        const blocks = [
+            { id: '1', name: 'a', code: '' },
+            { id: '2', name: 'b', code: '', vizOptions: { compareBlock: 'a' } }
+        ];
+        const identifiersByBlock = { b: [] };
+        const { editName, saveName } = useBlockName(name, makeNameInput(), blocks, identifiersByBlock);
+        editName.value = 'renamed';
+        saveName();
+        expect(mockUpdateBlock).toHaveBeenCalledWith('2', expect.objectContaining({
+            vizOptions: expect.objectContaining({ compareBlock: 'renamed' })
+        }));
+    });
+
+    test('batches code and vizOptions update in a single call when both apply', () => {
+        const name = makeName('a');
+        const blocks = [
+            { id: '1', name: 'a', code: '' },
+            { id: '2', name: 'b', code: 'a + 1', vizOptions: { compareBlock: 'a' } }
+        ];
+        const identifiersByBlock = { b: ['a'] };
+        const { editName, saveName } = useBlockName(name, makeNameInput(), blocks, identifiersByBlock);
+        editName.value = 'renamed';
+        saveName();
+        const call = mockUpdateBlock.mock.calls.find(([id]) => id === '2');
+        expect(call[1]).toMatchObject({
+            code: expect.stringContaining('renamed'),
+            vizOptions: expect.objectContaining({ compareBlock: 'renamed' })
+        });
+    });
+
     test('does not throw when renameIdentifier fails (silent catch)', () => {
         // Force renameIdentifier to throw by giving it a block with null code
         // and ensuring identifiersByBlock claims a reference exists

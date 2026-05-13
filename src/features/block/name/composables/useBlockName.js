@@ -35,9 +35,17 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
     function renameReferences(oldName, newName) {
         try {
             for (const b of blocks) {
+                const updates = {};
                 const ids = identifiersByBlock[b.name] || [];
-                if (!ids.includes(oldName)) { continue; }
-                updateBlock(b.id, { code: renameIdentifier(b.code || '', oldName, newName) });
+                if (ids.includes(oldName)) {
+                    updates.code = renameIdentifier(b.code || '', oldName, newName);
+                }
+                if (b.vizOptions?.compareBlock === oldName) {
+                    updates.vizOptions = { ...b.vizOptions, compareBlock: newName };
+                }
+                if (Object.keys(updates).length > 0) {
+                    updateBlock(b.id, updates);
+                }
             }
         } catch {
         }
