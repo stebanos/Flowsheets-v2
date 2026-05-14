@@ -6,7 +6,7 @@ import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
-import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
+import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useDeleteNote } from '@/features/note';
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
@@ -28,7 +28,8 @@ const context = useBlockEvaluation(dependsOn);
 
 // block interaction
 const { createBlock } = useBlockManager();
-const { undoPending, undoDelete, dismissUndo } = useDeleteBlock();
+const { copySelected, cutSelected, pasteBlocks, duplicateSelected } = useBlockClipboard();
+const { undoPending, undoDelete, dismissUndo, deleteBlock } = useDeleteBlock();
 const { undoPending: noteUndoPending, undoDelete: undoNoteDelete, dismissUndo: dismissNoteUndo } = useDeleteNote();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
@@ -50,16 +51,49 @@ const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCan
 
 // rubber-band selection
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
-const { setSelection, clearSelection } = useBlockSelection();
+const { selectedNames, selectAll, setSelection, clearSelection } = useBlockSelection();
 
 const isSpaceHeld = ref(false);
+const canvasMousePos = ref(null);
 
 function _onKeydown(e) {
-    if (e.code !== 'Space' || e.repeat) { return; }
     const tag = document.activeElement?.tagName?.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable) { return; }
-    e.preventDefault();
-    isSpaceHeld.value = true;
+    const inInput = tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable;
+
+    if (e.code !== 'Space' && inInput) { return; }
+
+    if (e.code === 'Space') {
+        if (e.repeat || inInput) { return; }
+        isSpaceHeld.value = true;
+        e.preventDefault();
+        return;
+    }
+
+    const cmd = e.metaKey || e.ctrlKey;
+
+    if (cmd && e.key === 'a') { selectAll(blocks); e.preventDefault(); return; }
+    if (cmd && e.key === 'c') { copySelected(blocks, [...selectedNames.value]); return; }
+    if (cmd && e.key === 'x') {
+        cutSelected(blocks, [...selectedNames.value]).then(ok => { if (ok) { clearSelection(); } });
+        return;
+    }
+    if (cmd && e.key === 'v') {
+        pasteBlocks({ canvasX: canvasMousePos.value?.x, canvasY: canvasMousePos.value?.y, canvasEl: canvasEl.value, panX, panY })
+            .then(newNames => { if (newNames) { setSelection(newNames); } });
+        return;
+    }
+    if (cmd && e.key === 'd') {
+        const newNames = duplicateSelected(blocks, [...selectedNames.value], { cellWidth, unitY });
+        if (newNames) { setSelection(newNames); }
+        e.preventDefault();
+        return;
+    }
+    if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && selectedNames.value.size > 0) {
+        const toDelete = blocks.filter(b => selectedNames.value.has(b.name));
+        clearSelection();
+        for (const b of toDelete) { deleteBlock(b); }
+    }
 }
 
 function _onKeyup(e) {
@@ -87,7 +121,7 @@ const canvasContextMenuItems = [
 ];
 
 // keyboard nav
-const { registerCanvas } = useFocusedBlock();
+const { registerCanvas, focusedBlockName } = useFocusedBlock();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 
@@ -105,6 +139,7 @@ const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = 
 const { prepareImport } = useFileIO();
 watch([library, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY], scheduleSave);
+watch(activeSheetName, () => clearSelection());
 
 // lifecycle
 onMounted(async () => {
@@ -192,6 +227,14 @@ function onCanvasWheel(event) {
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
 
+function onCanvasMousemove(e) {
+    const { left, top } = canvasEl.value.getBoundingClientRect();
+    canvasMousePos.value = {
+        x: e.clientX - left - panX.value,
+        y: e.clientY - top - panY.value
+    };
+}
+
 function onCanvasContextMenu(event) {
     if (event.target.closest('[data-block]') || event.target.closest('[data-note]')) { return; }
     const { left, top } = canvasEl.value.getBoundingClientRect();
@@ -251,6 +294,7 @@ const statusColor = computed(() => {
                     @dragover.prevent
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
+                    @mousemove="onCanvasMousemove"
                     @wheel="onCanvasWheel"
                     @contextmenu="onCanvasContextMenu"
                 >
