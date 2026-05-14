@@ -225,7 +225,7 @@ watch(
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
              :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
-            <div class="absolute inset-0 flex items-center justify-center cursor-move"
+            <div class="absolute inset-0 flex items-center justify-center cursor-move overflow-hidden pr-16"
                  :class="{ 'z-20': isNameEditing }"
                  @mousedown="startDrag(block, $event)">
                 <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
