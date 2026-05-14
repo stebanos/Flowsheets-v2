@@ -191,7 +191,7 @@ function onCanvasMousedown(event) {
             e.clientY - canvasRect.top - panY.value
         );
         const onUp = () => {
-            finishRubberBand(blocks.value, setSelection, clearSelection);
+            finishRubberBand(blocks, setSelection, clearSelection);
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onUp);
         };
