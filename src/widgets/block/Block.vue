@@ -264,9 +264,9 @@ watch(
                     title="Toggle editor"
                     @click.stop="toggleEditorCollapse"
                     @mousedown.stop>
-                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="5,2 1.5,7 5,12" />
-                        <polyline points="9,2 12.5,7 9,12" />
+                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter">
+                        <polyline points="5,3 2,7 5,11" />
+                        <polyline points="9,3 12,7 9,11" />
                     </svg>
                 </button>
             </div>
