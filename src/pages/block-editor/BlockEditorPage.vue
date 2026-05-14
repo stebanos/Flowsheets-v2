@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useNoteStore } from '@/entities/note';
@@ -48,6 +48,20 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
 
+const isSpaceHeld = ref(false);
+
+function _onKeydown(e) {
+    if (e.code !== 'Space' || e.repeat) { return; }
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable) { return; }
+    e.preventDefault();
+    isSpaceHeld.value = true;
+}
+
+function _onKeyup(e) {
+    if (e.code === 'Space') { isSpaceHeld.value = false; }
+}
+
 // canvas context menu
 const canvasContextMenu = ref(null);
 const contextMenuPos = ref({ x: 0, y: 0 });
@@ -90,6 +104,8 @@ watch([panX, panY], scheduleSave);
 
 // lifecycle
 onMounted(async () => {
+    window.addEventListener('keydown', _onKeydown);
+    window.addEventListener('keyup', _onKeyup);
     registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
     await loadLibrary();
     loadVizes(library);
@@ -98,6 +114,11 @@ onMounted(async () => {
         createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
         createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
     }
+});
+
+onUnmounted(() => {
+    window.removeEventListener('keydown', _onKeydown);
+    window.removeEventListener('keyup', _onKeyup);
 });
 
 // handlers
@@ -118,9 +139,8 @@ function onCreate(event) {
 }
 
 function onCanvasMousedown(event) {
-    if (event.button !== 0) { return; }
-    if (event.target.closest('[data-block]') || event.target.closest('[data-note]')) { return; }
-    startPan(event);
+    if (event.button === 1) { startPan(event); return; }
+    if (event.button === 0 && isSpaceHeld.value) { startPan(event); return; }
 }
 
 function onCanvasWheel(event) {
@@ -204,8 +224,8 @@ const statusColor = computed(() => {
                     tabindex="-1"
                     aria-label="Block canvas"
                     title="Arrow keys to navigate · Enter to edit · Escape to exit"
-                    class="relative flex-1 overflow-hidden"
-                    :class="{ 'cursor-grabbing select-none': isPanning }"
+                    class="relative flex-1 overflow-hidden outline-none"
+                    :class="{ 'cursor-grabbing select-none': isPanning && !isSpaceHeld }"
                     @dragover.prevent
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
@@ -213,6 +233,12 @@ const statusColor = computed(() => {
                     @contextmenu="onCanvasContextMenu"
                 >
                     <span ref="wrapAnnouncerEl" aria-live="polite" class="sr-only" />
+                    <div
+                        v-if="isSpaceHeld"
+                        class="absolute inset-0 z-50"
+                        :class="isPanning ? 'cursor-grabbing select-none' : 'cursor-grab'"
+                        @mousedown="onCanvasMousedown"
+                    />
                     <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
                         <canvas-note v-for="note in notes" :key="`note-${note.id}`" class="pointer-events-auto" :note />
