@@ -16,6 +16,19 @@ const singleSheetBundle = JSON.stringify({
     sheets: [{ id: 'sheet:local/s1', name: 'Sheet 1', blocks: [], customVizes: {} }]
 });
 
+const bundleWithBlock = JSON.stringify({
+    formatVersion: '1.2.0',
+    exportedAt: new Date().toISOString(),
+    rootSheetId: 'sheet:local/s1',
+    vizLibrary: {},
+    sheets: [{
+        id: 'sheet:local/s1',
+        name: 'Sheet 1',
+        blocks: [{ id: 'block-original', name: 'foo', x: 0, y: 0, width: 150, code: '1' }],
+        notes: []
+    }]
+});
+
 const twoSheetBundle = JSON.stringify({
     formatVersion: '1.0.0',
     exportedAt: new Date().toISOString(),
@@ -150,6 +163,25 @@ describe('confirmBundleImport — happy path', () => {
         await prepareBundleImport(mockFile(singleSheetBundle));
         await confirmBundleImport();
         expect(bundleImportState.value.pending).toBe(false);
+    });
+
+    test('remaps block IDs to fresh UUIDs when importing a sheet', async () => {
+        const deps = makeDeps();
+        const { prepareBundleImport, confirmBundleImport } = useBundleImport(deps);
+        await prepareBundleImport(mockFile(bundleWithBlock));
+        await confirmBundleImport();
+        const writtenBlocks = deps.writeSheetData.mock.calls[0][2].blocks;
+        expect(writtenBlocks[0].id).not.toBe('block-original');
+    });
+
+    test('remaps block IDs to fresh UUIDs when copying a sheet', async () => {
+        const deps = makeDeps();
+        const { prepareBundleImport, bundleImportState, confirmBundleImport } = useBundleImport(deps);
+        await prepareBundleImport(mockFile(bundleWithBlock));
+        bundleImportState.value.entries[0].action = 'copy';
+        await confirmBundleImport();
+        const writtenBlocks = deps.writeSheetData.mock.calls[0][2].blocks;
+        expect(writtenBlocks[0].id).not.toBe('block-original');
     });
 });
 

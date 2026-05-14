@@ -309,6 +309,16 @@ describe('confirmImport', () => {
         await confirmImport();
         expect(pendingImport.value).toBeNull();
     });
+
+    test('remaps block IDs to fresh UUIDs on import', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson({
+            blocks: [{ id: 'old-id', name: 'foo', x: 0, y: 0, width: 150 }]
+        })));
+        await confirmImport();
+        const calledBlocks = mockReplaceBlocks.mock.calls[0][0];
+        expect(calledBlocks[0].id).not.toBe('old-id');
+    });
 });
 
 describe('confirmImport — conflict resolution', () => {
