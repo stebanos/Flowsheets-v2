@@ -66,12 +66,20 @@ describe('vizMenuItems — built-in types', () => {
         expect(defaultItem).toBeTruthy();
     });
 
-    test('selecting a built-in type calls updateBlock with the type key', () => {
+    test('selecting a built-in type calls updateBlock with the type key and vizOptions', () => {
         const block = makeBlock();
         const { vizMenuItems } = useVizMenu(block, vi.fn());
         const htmlItem = vizMenuItems.value.find(i => i.label === 'HTML');
         htmlItem.command();
-        expect(mockUpdateBlock).toHaveBeenCalledWith('block-1', { visualizationType: 'html' });
+        expect(mockUpdateBlock).toHaveBeenCalledWith('block-1', { visualizationType: 'html', vizOptions: {} });
+    });
+
+    test('switching from custom to a built-in type strips customVizName from vizOptions', () => {
+        const block = makeBlock({ visualizationType: 'custom', vizOptions: { customVizName: 'MyChart' } });
+        const { vizMenuItems } = useVizMenu(block, vi.fn());
+        const htmlItem = vizMenuItems.value.find(i => i.label === 'HTML');
+        htmlItem.command();
+        expect(mockUpdateBlock).toHaveBeenCalledWith('block-1', { visualizationType: 'html', vizOptions: {} });
     });
 });
 

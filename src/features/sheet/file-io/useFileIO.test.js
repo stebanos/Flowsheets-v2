@@ -24,12 +24,15 @@ vi.mock('@/features/block/visualize', () => ({
     })
 }));
 
+const mockSheets = reactive([]);
+const mockActiveSheetId = ref(null);
+
 vi.mock('@/entities/sheet', () => ({
     useSheetStore: () => ({
         activeSheetName: ref('Test'),
         renameActiveSheet: mockRenameActiveSheet,
-        sheets: [],
-        activeSheetId: ref(null),
+        sheets: mockSheets,
+        activeSheetId: mockActiveSheetId,
         setActiveSheet: vi.fn(),
         createSheet: mockCreateSheet
     })
@@ -90,6 +93,8 @@ function validJson(overrides = {}) {
 beforeEach(() => {
     for (const key of Object.keys(mockCustomVizes)) { delete mockCustomVizes[key]; }
     for (const key of Object.keys(mockLibrary)) { delete mockLibrary[key]; }
+    mockSheets.splice(0);
+    mockActiveSheetId.value = null;
     mockReplaceBlocks.mockClear();
     mockLoadVizes.mockClear();
     mockSaveLibraryEntry.mockClear();
@@ -399,12 +404,36 @@ describe('resolveConflict', () => {
 });
 
 describe('findSheetsReferencingViz', () => {
-    test('returns sheet names whose blocks reference the viz', async () => {
+    test('returns name of a sheet whose block actively uses the viz', async () => {
+        mockSheets.push({ id: 'sheet-a', name: 'Charts' });
         mockReadSheetData.mockResolvedValueOnce({
-            blocks: [{ vizOptions: { customVizName: 'Bar Chart' } }]
+            blocks: [{ visualizationType: 'custom', vizOptions: { customVizName: 'Bar Chart' } }]
         });
         const { findSheetsReferencingViz } = useFileIO();
         const result = await findSheetsReferencingViz('Bar Chart');
-        expect(result).toEqual([]);  // sheets is [] in mock
+        expect(result).toEqual(['Charts']);
+    });
+
+    test('excludes the active sheet from results', async () => {
+        mockSheets.push({ id: 'sheet-active', name: 'Active Sheet' });
+        mockSheets.push({ id: 'sheet-other', name: 'Other Sheet' });
+        mockActiveSheetId.value = 'sheet-active';
+        mockReadSheetData.mockResolvedValueOnce({
+            blocks: [{ visualizationType: 'custom', vizOptions: { customVizName: 'Bar Chart' } }]
+        });
+        const { findSheetsReferencingViz } = useFileIO();
+        const result = await findSheetsReferencingViz('Bar Chart');
+        expect(result).toEqual(['Other Sheet']);
+        expect(result).not.toContain('Active Sheet');
+    });
+
+    test('does not count a block with stale customVizName but non-custom visualizationType', async () => {
+        mockSheets.push({ id: 'sheet-a', name: 'Charts' });
+        mockReadSheetData.mockResolvedValueOnce({
+            blocks: [{ visualizationType: 'table', vizOptions: { customVizName: 'Bar Chart' } }]
+        });
+        const { findSheetsReferencingViz } = useFileIO();
+        const result = await findSheetsReferencingViz('Bar Chart');
+        expect(result).toEqual([]);
     });
 });

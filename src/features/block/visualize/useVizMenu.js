@@ -28,7 +28,10 @@ export function useVizMenu(block, onEditViz) {
             items.push({
                 label,
                 active: isActive,
-                command: () => updateBlock(block.id, { visualizationType: key })
+                command: () => {
+                    const { customVizName: _, ...restVizOptions } = block.vizOptions ?? {};
+                    updateBlock(block.id, { visualizationType: key, vizOptions: restVizOptions });
+                }
             });
         }
         const customNames = Object.keys(customVizes);

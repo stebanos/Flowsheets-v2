@@ -265,10 +265,10 @@ export function useFileIO() {
 
     async function findSheetsReferencingViz(vizName) {
         const matching = [];
-        for (const sheet of sheets) {
+        for (const sheet of sheets.filter(s => s.id !== activeSheetId.value)) {
             const data = await readSheetData(sheet.id);
             const sheetBlocks = data?.blocks ?? [];
-            const refs = sheetBlocks.some(b => b.vizOptions?.customVizName === vizName);
+            const refs = sheetBlocks.some(b => b.visualizationType === 'custom' && b.vizOptions?.customVizName === vizName);
             if (refs) { matching.push(sheet.name); }
         }
         return matching;

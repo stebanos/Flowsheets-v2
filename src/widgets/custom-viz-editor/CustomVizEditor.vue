@@ -188,7 +188,7 @@ function handleRevert() {
 
 // --- Delete ---
 async function handleDelete(event, name) {
-    const usingBlocks = blocks.filter(b => b.vizOptions?.customVizName === name);
+    const usingBlocks = blocks.filter(b => b.visualizationType === 'custom' && b.vizOptions?.customVizName === name);
     const otherSheets = await findSheetsReferencingViz(name);
 
     if (usingBlocks.length === 0 && otherSheets.length === 0) {
