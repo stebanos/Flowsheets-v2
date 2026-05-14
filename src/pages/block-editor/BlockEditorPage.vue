@@ -8,9 +8,9 @@ import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useDeleteNote } from '@/features/note';
-import { useFocusedBlock } from '@/features/block/navigate';
+import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
-import { useCanvasPan } from '@/features/canvas';
+import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
 import { useVizLibrary } from '@/entities/viz';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
@@ -47,6 +47,10 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
+
+// rubber-band selection
+const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
+const { setSelection, clearSelection } = useBlockSelection();
 
 const isSpaceHeld = ref(false);
 
@@ -141,6 +145,24 @@ function onCreate(event) {
 function onCanvasMousedown(event) {
     if (event.button === 1) { startPan(event); return; }
     if (event.button === 0 && isSpaceHeld.value) { startPan(event); return; }
+    if (event.button === 0 && !event.target.closest('[data-block], [data-note]')) {
+        const canvasRect = canvasEl.value.getBoundingClientRect();
+        startRubberBand(
+            event.clientX - canvasRect.left - panX.value,
+            event.clientY - canvasRect.top - panY.value
+        );
+        const onMove = (e) => updateRubberBand(
+            e.clientX - canvasRect.left - panX.value,
+            e.clientY - canvasRect.top - panY.value
+        );
+        const onUp = () => {
+            finishRubberBand(blocks.value, setSelection, clearSelection);
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }
 }
 
 function onCanvasWheel(event) {
@@ -245,6 +267,16 @@ const statusColor = computed(() => {
                         <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
                     </div>
                     <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
+                    <div
+                        v-if="isSelecting && rect"
+                        class="pointer-events-none absolute border border-blue-400 bg-blue-100/30"
+                        :style="{
+                            left: Math.min(rect.x1, rect.x2) + 'px',
+                            top: Math.min(rect.y1, rect.y2) + 'px',
+                            width: Math.abs(rect.x2 - rect.x1) + 'px',
+                            height: Math.abs(rect.y2 - rect.y1) + 'px'
+                        }"
+                    />
                 </div>
             </div>
         </div>
