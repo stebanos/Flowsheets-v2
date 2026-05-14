@@ -234,7 +234,7 @@ watch(
                     @editing-change="isNameEditing = $event" />
             </div>
             <!-- Right icons -->
-            <div class="flex items-center shrink-0 h-full ml-auto relative z-10 group-[.resizing-local]:invisible">
+            <div class="flex items-center shrink-0 pr-1 h-full ml-auto relative z-10 group-[.resizing-local]:invisible">
                 <button
                     class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
                     title="Delete block"
