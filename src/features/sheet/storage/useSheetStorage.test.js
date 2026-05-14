@@ -247,6 +247,73 @@ describe('switchSheet — pending save flush', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe('switchSheet — note store', () => {
+    it('clears notes from the previous sheet when switching without onNotesLoaded callback', async () => {
+        // Reproduces the bug: SheetTabs/SheetSidebar call useSheetStorage() with no
+        // onNotesLoaded, so _onNotesLoaded is a no-op and notes never get replaced.
+        vi.resetModules();
+        const [{ useSheetStorage }, { useNoteStore }] = await Promise.all([
+            import('./useSheetStorage'),
+            import('@/entities/note')
+        ]);
+
+        const id1 = 'sheet:local/s1';
+        const id2 = 'sheet:local/s2';
+
+        fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
+            { id: id1, name: 'S1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'S2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+        ]));
+        fakeStorage.setItem(KEY_ACTIVE_ID, id1);
+        fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
+        fakeStorage.setItem(KEY_SHEET(id1), JSON.stringify({ blocks: [], customVizes: {}, notes: [] }));
+        fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({ blocks: [], customVizes: {}, notes: [] }));
+
+        const { notes, addNote } = useNoteStore();
+        const storage = useSheetStorage(); // no callbacks — mirrors SheetTabs.vue
+        await storage.loadFromStorage();
+
+        addNote({ id: 'n1', x: 10, y: 20, width: 200, height: 150, title: 'Sheet A note', body: '' });
+        expect(notes).toHaveLength(1);
+
+        await storage.switchSheet(id2);
+
+        expect(notes).toHaveLength(0);
+    });
+
+    it('loads the target sheet notes into the note store after switchSheet', async () => {
+        vi.resetModules();
+        const [{ useSheetStorage }, { useNoteStore }] = await Promise.all([
+            import('./useSheetStorage'),
+            import('@/entities/note')
+        ]);
+
+        const id1 = 'sheet:local/s1';
+        const id2 = 'sheet:local/s2';
+        const noteB = { id: 'n2', x: 0, y: 0, width: 200, height: 150, title: 'Sheet B note', body: '' };
+
+        fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
+            { id: id1, name: 'S1', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: id2, name: 'S2', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+        ]));
+        fakeStorage.setItem(KEY_ACTIVE_ID, id1);
+        fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify([id1]));
+        fakeStorage.setItem(KEY_SHEET(id1), JSON.stringify({ blocks: [], customVizes: {}, notes: [] }));
+        fakeStorage.setItem(KEY_SHEET(id2), JSON.stringify({ blocks: [], customVizes: {}, notes: [noteB] }));
+
+        const { notes } = useNoteStore();
+        const storage = useSheetStorage(); // no callbacks — mirrors SheetTabs.vue
+        await storage.loadFromStorage();
+
+        await storage.switchSheet(id2);
+
+        expect(notes).toHaveLength(1);
+        expect(notes[0].id).toBe('n2');
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe('closeSheet', () => {
     async function setupTwoOpenSheets() {
         const { useSheetStorage, useSheetStore, useBlockStore } = await freshImports();
