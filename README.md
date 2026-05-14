@@ -22,7 +22,7 @@ Visit http://localhost:5173.
 
 **Extract a sub-expression** — select any part of an expression and press `⌘⇧X` (Mac) / `Ctrl+Shift+X` (Windows/Linux) to pull it out into its own block, replacing the selection with the new block's name.
 
-**Visualizations** — by default, arrays render as a scrollable list and other values as text. Click the chart icon on a block to switch to HTML (rendered in a sandboxed iframe), JSON (pretty-printed), text diff (line-level diff against another block), or a custom JS component authored in the sidebar.
+**Visualizations** — by default, arrays render as a scrollable list and other values as text. Click the chart icon on a block to switch to HTML (rendered in a sandboxed iframe), JSON (pretty-printed), text diff (line-level diff against another block), data table (arrays of objects or arrays rendered as a scrollable table), or a custom JS component authored in the sidebar.
 
 **Persistence** — the sheet auto-saves to browser storage. Use *Save As* in the top bar to export a `.flowsheet.json` file, and *Open* to import one.
 
