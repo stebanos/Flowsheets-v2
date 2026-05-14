@@ -9,15 +9,17 @@ export function useDrag(snapX, snapY, updateFn) {
         startX: 0,
         startY: 0,
         startLeft: 0,
-        startTop: 0
+        startTop: 0,
+        coparticipants: []
     });
 
-    function startDrag(block, event) {
+    function startDrag(block, event, coparticipants = []) {
         dragState.block = block;
         dragState.startX = event.clientX;
         dragState.startY = event.clientY;
         dragState.startLeft = block.x;
         dragState.startTop = block.y;
+        dragState.coparticipants = coparticipants;
 
         window.addEventListener('mousemove', onDrag);
         window.addEventListener('mouseup', stopDrag);
@@ -33,10 +35,18 @@ export function useDrag(snapX, snapY, updateFn) {
             x: snapX(dragState.startLeft + dx),
             y: snapY(dragState.startTop + dy)
         });
+
+        for (const cp of dragState.coparticipants) {
+            _updateFn(cp.id, {
+                x: snapX(cp.startX + dx),
+                y: snapY(cp.startY + dy)
+            });
+        }
     }
 
     function stopDrag() {
         dragState.block = null;
+        dragState.coparticipants = [];
         window.removeEventListener('mousemove', onDrag);
         window.removeEventListener('mouseup', stopDrag);
     }

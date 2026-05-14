@@ -7,7 +7,7 @@ import { CodeEditor } from '@/features/block/edit-code';
 import { useCellDimensions } from '@/features/block/grid';
 import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
-import { useBlockNavigation, useFocusedBlock } from '@/features/block/navigate';
+import { useBlockNavigation, useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
 import { useVizMenu, VizMenu } from '@/features/block/visualize';
 import { useBlockDimensions } from './useBlockDimensions';
 import { useBlockExtract } from './useBlockExtract';
@@ -46,6 +46,8 @@ const { blocks, updateBlock } = useBlockStore();
 
 const { focusedBlockName, wrapIndicator, setWrapIndicator, register, unregister, selectBlock, focusCanvas } = useFocusedBlock();
 const { focusNext, focusPrev } = useBlockNavigation(blocks);
+const { selectedNames, selectOne, toggleSelect, clearSelection } = useBlockSelection();
+const isSelected = computed(() => selectedNames.value.has(props.block.name));
 
 const wrapperEl = ref(null);
 const codeEditorRef = ref(null);
@@ -99,6 +101,7 @@ function onWrapperKeyDown(e) {
     } else if (e.key === 'Escape') {
         e.preventDefault();
         focusCanvas();
+        clearSelection();
     }
 }
 
@@ -185,6 +188,39 @@ function toggleEditorCollapse() {
     updateBlock(props.block.id, { editorCollapsed: editorCollapsed.value });
 }
 
+function onWrapperMousedown(e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey) {
+        toggleSelect(props.block.name);
+        return;
+    }
+    if (isSelected.value && selectedNames.value.size > 1) {
+        function cleanup() {
+            window.removeEventListener('mousemove', onFirstMove);
+            window.removeEventListener('mouseup', onMouseup);
+        }
+        function onFirstMove() { cleanup(); }
+        function onMouseup() { selectOne(props.block.name); cleanup(); }
+        window.addEventListener('mousemove', onFirstMove);
+        window.addEventListener('mouseup', onMouseup);
+    } else {
+        selectOne(props.block.name);
+    }
+}
+
+function onNameMousedown(event) {
+    const coparticipants = isSelected.value && selectedNames.value.size > 1
+        ? blocks
+            .filter(b => selectedNames.value.has(b.name) && b.name !== props.block.name)
+            .map(b => ({ id: b.id, startX: b.x, startY: b.y }))
+        : [];
+    startDrag(props.block, event, coparticipants);
+}
+
+function onDeleteBlock() {
+    deleteBlock(props.block);
+    clearSelection();
+}
+
 const { onExtract } = useBlockExtract(
     props.block, props.context.getEvaluation, snappedEditorWidth, cellWidth
 );
@@ -213,7 +249,7 @@ watch(
          :style="blockPositionStyle"
          :class="[
              isEditing ? 'outline-amber-400 z-10'
-             : isFocused ? 'outline-blue-400 z-10'
+             : isSelected || isFocused ? 'outline-blue-400 z-10'
              : isHighlighted ? 'outline-black z-10'
              : 'outline-gray-300 hover:outline-black hover:z-10',
              wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
@@ -221,13 +257,14 @@ watch(
          ]"
          @focusin="onFocusIn"
          @focusout="onFocusOut"
-         @keydown="onWrapperKeyDown">
+         @keydown="onWrapperKeyDown"
+         @mousedown="onWrapperMousedown">
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
-             :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
+             :class="isHighlighted ? 'bg-yellow-200 text-black' : isSelected ? 'bg-blue-600 text-white' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
             <div class="absolute inset-0 flex items-center justify-center cursor-move overflow-hidden pr-16"
                  :class="{ 'z-20': isNameEditing }"
-                 @mousedown="startDrag(block, $event)">
+                 @mousedown="onNameMousedown($event)">
                 <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
                     class="block-name w-full"
                     @update:name="updateBlock(block.id, { name: $event })"
@@ -238,7 +275,7 @@ watch(
                 <button
                     class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
                     title="Delete block"
-                    @click.stop="deleteBlock(block)"
+                    @click.stop="onDeleteBlock()"
                     @mousedown.stop>
                     <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1M3.5 3.5l.75 8h5.5l.75-8"/>
