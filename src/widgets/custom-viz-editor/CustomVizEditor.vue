@@ -7,9 +7,9 @@ import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
 import { Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
-import { useBlockStore } from '@/entities/block/index.js';
-import { useCustomViz } from '@/features/block/visualize/index.js';
-import { useFileIO } from '@/features/sheet/file-io/useFileIO';
+import { useBlockStore } from '@/entities/block';
+import { useCustomViz } from '@/features/block/visualize';
+import { useFileIO } from '@/features/sheet';
 
 const { blocks, updateBlock } = useBlockStore();
 const { customVizes, activeVizName, createViz, deleteViz, renameViz, runViz, saveDraft, revertDraft } = useCustomViz();

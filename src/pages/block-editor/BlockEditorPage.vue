@@ -7,7 +7,7 @@ import { useSheetStore } from '@/entities/sheet';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useBlockManager, useDeleteBlock } from '@/features/block/manage';
-import { useDeleteNote } from '@/features/note/useDeleteNote';
+import { useDeleteNote } from '@/features/note';
 import { useFocusedBlock } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan } from '@/features/canvas';

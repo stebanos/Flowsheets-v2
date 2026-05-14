@@ -2,8 +2,7 @@
 import { computed, ref } from 'vue';
 import { useDrag } from '@/features/block/drag';
 import { useNoteStore } from '@/entities/note';
-import { useDeleteNote } from '@/features/note/useDeleteNote';
-import { useFocusedNote } from '@/features/note/useFocusedNote';
+import { useDeleteNote, useFocusedNote } from '@/features/note';
 
 const props = defineProps({
     note: {
