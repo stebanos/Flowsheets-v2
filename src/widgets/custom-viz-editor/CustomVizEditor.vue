@@ -309,6 +309,9 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
         <!-- Run bar -->
         <div v-if="vizNames.length > 0"
              class="flex items-center gap-3 px-3 py-2 bg-gray-50 border-t border-gray-200 shrink-0">
+            <button class="px-3 py-1 bg-black text-white text-xs rounded hover:bg-gray-800 cursor-pointer shrink-0"
+                    @click="handleRun">Run</button>
+            <span class="text-xs text-gray-400 shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
             <div class="flex-1 text-xs min-w-0">
                 <span v-if="runBarStatus === 'dirty'" class="text-gray-400 italic">Run to apply changes</span>
                 <span v-else-if="runBarStatus === 'success'" class="text-green-600">✓ Compiled</span>
@@ -319,9 +322,6 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
                             @click="handleRevert">Revert</button>
                 </template>
             </div>
-            <span class="text-xs text-gray-400 shrink-0">{{ isMac ? '⌘' : 'Ctrl' }}+Enter</span>
-            <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 cursor-pointer shrink-0"
-                    @click="handleRun">Run</button>
         </div>
         <p-confirm-popup ref="confirmPopupRef" group="viz-delete" />
     </div>
