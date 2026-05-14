@@ -246,7 +246,7 @@ function handleCancelBundleImport() {
                     <!-- Delete -->
                     <button
                         v-tooltip.top="{ value: 'Delete', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
-                        class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-red-100 hover:text-red-600"
+                        class="flex items-center justify-center w-5.5 h-5.5 rounded text-gray-400 hover:bg-red-100 hover:text-red-600 border border-transparent hover:border-red-200"
                         aria-label="Delete sheet"
                         @click.stop="handleDeleteSheet($event, sheet.id)"
                     >
