@@ -74,7 +74,8 @@ export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, se
                     if (entry.id === rootSheetId) { resolvedRootId = targetId; }
                 }
 
-                const serialized = serializeSheet(entry.blocks ?? [], entry.vizes ?? {}, targetName, null, entry.notes ?? []);
+                const remappedBlocks = (entry.blocks ?? []).map(b => ({ ...b, id: crypto.randomUUID() }));
+                const serialized = serializeSheet(remappedBlocks, entry.vizes ?? {}, targetName, null, entry.notes ?? []);
                 await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes, notes: serialized.notes ?? [] });
                 stagedIds.push(targetId);
                 setActiveSheet(targetId, targetName);

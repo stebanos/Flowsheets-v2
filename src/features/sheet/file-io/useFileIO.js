@@ -221,6 +221,8 @@ export function useFileIO() {
             }
         }
 
+        finalBlocks = finalBlocks.map(b => ({ ...b, id: crypto.randomUUID() }));
+
         const newId = createSheetInStore(name);
         initNewSheet(newId, name);
         replaceBlocks(finalBlocks);
