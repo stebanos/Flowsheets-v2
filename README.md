@@ -24,7 +24,7 @@ Visit http://localhost:5173.
 
 **Visualizations** — by default, arrays render as a scrollable list and other values as text. Click the chart icon on a block to switch to HTML (rendered in a sandboxed iframe), JSON (pretty-printed), text diff (line-level diff against another block), data table (arrays of objects or arrays rendered as a scrollable table), or a custom JS component authored in the sidebar.
 
-**Persistence** — the sheet auto-saves to browser storage. Use *Save As* in the top bar to export a `.flowsheet.json` file, and *Open* to import one.
+**Persistence** — the sheet auto-saves to browser storage. Use the *Export* icon next to a sheet in the left sidebar to download a `.flowsheet.json` file, and *Import* at the top of the sidebar to load one.
 
 ## Development
 
