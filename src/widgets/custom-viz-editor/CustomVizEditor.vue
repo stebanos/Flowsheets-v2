@@ -1,3 +1,7 @@
+<script>
+export default { inheritAttrs: false };
+</script>
+
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import CodeMirror from 'vue-codemirror6';
@@ -236,7 +240,7 @@ onBeforeUnmount(() => { clearTimeout(successTimeout); });
 </script>
 
 <template>
-    <div class="flex flex-col h-full">
+    <div class="flex flex-col h-full" v-bind="$attrs">
         <!-- Outer tab strip -->
         <div class="flex items-end border-b border-gray-200 bg-gray-50 shrink-0 overflow-x-auto">
             <div v-for="name in vizNames" :key="name"
