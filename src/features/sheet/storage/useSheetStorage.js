@@ -62,14 +62,12 @@ function _persistOpenIds() {
 
 // ── composable ───────────────────────────────────────────────────────────────
 
-export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded, getNotes, onNotesLoaded } = {}) {
+export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded } = {}) {
     const _customVizGetter = getCustomVizes ?? (() => ({}));
     const _onVizesLoaded   = onVizesLoaded   ?? (() => {});
     const _panGetter       = getPan           ?? (() => ({ panX: 0, panY: 0 }));
     const _onPanLoaded     = onPanLoaded      ?? (() => {});
-    const { notes: _storeNotes } = useNoteStore();
-    const _notesGetter     = getNotes         ?? (() => _storeNotes);
-    const _onNotesLoaded   = onNotesLoaded    ?? (() => {});
+    const { notes: _storeNotes, replaceNotes } = useNoteStore();
 
     const { blocks, replaceBlocks } = useBlockStore();
     const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
@@ -86,7 +84,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         const name = activeSheetName.value;
         try {
             const view = _panGetter();
-            const serialized = serializeSheet(blocks, _customVizGetter(), name, view, _notesGetter());
+            const serialized = serializeSheet(blocks, _customVizGetter(), name, view, _storeNotes);
             if (_pendingDelete.has(id)) { return; }
             await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view, notes: serialized.notes });
             localStatus.value = 'idle';
@@ -124,7 +122,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
         _onPanLoaded(view);
-        _onNotesLoaded(loadedNotes);
+        replaceNotes(loadedNotes);
     }
 
     // ── loadFromStorage ───────────────────────────────────────────────────────
@@ -214,7 +212,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         replaceBlocks(loadedBlocks);
         _onVizesLoaded(vizes);
         _onPanLoaded(view);
-        _onNotesLoaded(loadedNotes);
+        replaceNotes(loadedNotes);
         loading = false;
     }
 
@@ -224,7 +222,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         replaceBlocks([]);
         _onVizesLoaded({});
         _onPanLoaded({ panX: 0, panY: 0 });
-        _onNotesLoaded([]);
+        replaceNotes([]);
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {

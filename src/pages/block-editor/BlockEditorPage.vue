@@ -19,7 +19,7 @@ import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
 const { blocks } = useBlockStore();
-const { notes, addNote, replaceNotes } = useNoteStore();
+const { notes, addNote } = useNoteStore();
 const { sheets, activeSheetName } = useSheetStore();
 
 // evaluation
@@ -82,9 +82,7 @@ const { createSheet, deletedNotice } = useSheetManager();
 const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
     getCustomVizes:  () => library,
     getPan:          () => ({ panX: panX.value, panY: panY.value }),
-    onPanLoaded:     (view) => setPan(view.panX, view.panY),
-    getNotes:        () => notes,
-    onNotesLoaded:   replaceNotes
+    onPanLoaded:     (view) => setPan(view.panX, view.panY)
 });
 const { prepareImport } = useFileIO();
 watch([library, activeVizName], scheduleSave, { deep: true });
