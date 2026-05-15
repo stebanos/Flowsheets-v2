@@ -172,13 +172,14 @@ test('E7 — circular dependency shows error', async ({ page }) => {
 
 // ── E8 — Delete a block ───────────────────────────────────────────────────────
 
-test('E8 — delete a block via header trash button', async ({ page }) => {
+test('E8 — delete a block via options menu', async ({ page }) => {
     await createBlock(page, 300, 200);
     await expect(page.locator('.block-output')).toHaveCount(1);
 
-    // Hover to reveal the inline header icons, then click the trash button.
+    // Hover to reveal the inline header icons, then open the options menu.
     await page.locator('.block-header').first().hover();
-    await page.getByTitle('Delete block').first().click();
+    await page.getByRole('button', { name: 'Block options' }).first().click();
+    await page.getByRole('menuitem', { name: 'Delete block' }).click();
 
     await expect(page.locator('.block-output')).toHaveCount(0);
 });
@@ -238,7 +239,8 @@ test('E11 — undo delete restores the block', async ({ page }) => {
     const name = (await page.locator('[data-block-name]').first().textContent()).trim();
 
     await page.locator('.block-header').first().hover();
-    await page.getByTitle('Delete block').first().click();
+    await page.getByRole('button', { name: 'Block options' }).first().click();
+    await page.getByRole('menuitem', { name: 'Delete block' }).click();
 
     // Block gone, undo toast visible
     await expect(page.locator('.block-output')).toHaveCount(0);
