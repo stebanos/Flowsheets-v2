@@ -115,6 +115,16 @@ const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { deleteBlock } = useDeleteBlock();
 const { startDrag } = useDrag(snapX, snapY);
 
+const blockMenuRef = ref(null);
+const blockMenuItems = [
+    { label: 'Delete block', command: () => onDeleteBlock() }
+];
+
+function onBlockMenuClick(event) {
+    event.stopPropagation();
+    blockMenuRef.value.toggle(event);
+}
+
 const panelOpen = ref(false);
 
 const blockDeps = computed(() => {
@@ -272,15 +282,6 @@ watch(
             </div>
             <!-- Right icons -->
             <div class="flex items-center shrink-0 pr-1 h-full ml-auto relative z-10 group-[.resizing-local]:invisible">
-                <button
-                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
-                    title="Delete block"
-                    @click.stop="onDeleteBlock()"
-                    @mousedown.stop>
-                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 3.5h10M5 3.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1M3.5 3.5l.75 8h5.5l.75-8"/>
-                    </svg>
-                </button>
                 <button v-if="hasInputs"
                     class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
                     :class="panelOpen ? 'opacity-100!' : ''"
@@ -306,6 +307,18 @@ watch(
                         <polyline points="9,3 12,7 9,11" />
                     </svg>
                 </button>
+                <button
+                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                    aria-label="Block options"
+                    @click="onBlockMenuClick"
+                    @mousedown.stop>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                        <circle cx="6" cy="2" r="1.2" />
+                        <circle cx="6" cy="6" r="1.2" />
+                        <circle cx="6" cy="10" r="1.2" />
+                    </svg>
+                </button>
+                <p-menu ref="blockMenuRef" :model="blockMenuItems" popup />
             </div>
         </div>
         <div v-if="!editorCollapsed" class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
