@@ -242,16 +242,16 @@ watch(
 </script>
 
 <template>
-    <div data-block class="group absolute select-none outline bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
+    <div data-block class="group absolute select-none bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
          ref="wrapperEl"
          tabindex="0"
          :aria-label="isEditing ? `Block: ${block.name}, editing` : `Block: ${block.name}`"
          :style="blockPositionStyle"
          :class="[
-             isEditing ? 'outline-amber-400 z-10'
-             : isSelected || isFocused ? 'outline-blue-400 z-10'
-             : isHighlighted ? 'outline-black z-10'
-             : 'outline-gray-300 hover:outline-black hover:z-10',
+             isEditing ? 'ring-[1.5px] ring-amber-400 z-10'
+             : isSelected || isFocused ? 'ring-[1.5px] ring-cyan-400 z-10'
+             : isHighlighted ? 'ring-[1.5px] ring-black z-10'
+             : 'ring-[1px] ring-gray-300 hover:ring-[1.5px] hover:ring-slate-400 hover:z-10',
              wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
              {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}
          ]"

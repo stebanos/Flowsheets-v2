@@ -313,7 +313,7 @@ const statusColor = computed(() => {
                     <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
                     <div
                         v-if="isSelecting && rect"
-                        class="pointer-events-none absolute border border-blue-400 bg-blue-100/30"
+                        class="pointer-events-none absolute border border-cyan-400 bg-cyan-100/30"
                         :style="{
                             left: Math.min(rect.x1, rect.x2) + panX + 'px',
                             top: Math.min(rect.y1, rect.y2) + panY + 'px',
