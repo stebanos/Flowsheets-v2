@@ -315,8 +315,8 @@ const statusColor = computed(() => {
                         v-if="isSelecting && rect"
                         class="pointer-events-none absolute border border-blue-400 bg-blue-100/30"
                         :style="{
-                            left: Math.min(rect.x1, rect.x2) + 'px',
-                            top: Math.min(rect.y1, rect.y2) + 'px',
+                            left: Math.min(rect.x1, rect.x2) + panX + 'px',
+                            top: Math.min(rect.y1, rect.y2) + panY + 'px',
                             width: Math.abs(rect.x2 - rect.x1) + 'px',
                             height: Math.abs(rect.y2 - rect.y1) + 'px'
                         }"
