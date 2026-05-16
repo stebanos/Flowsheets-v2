@@ -51,7 +51,7 @@ describe('VizDefault — scalar value rendering', () => {
 
     test('renders object as highlighted JSON in a pre.viz-json element', () => {
         const wrapper = shallowMount(VizDefault, { props: { value: { x: 1 } } });
-        expect(wrapper.find('pre.viz-json').exists()).toBe(true);
+        expect(wrapper.find('pre.viz-highlighted').exists()).toBe(true);
     });
 });
 
@@ -74,7 +74,7 @@ describe('VizDefault — error rendering', () => {
 
     test('pre.viz-json not rendered when error is set', () => {
         const wrapper = shallowMount(VizDefault, { props: { value: { x: 1 }, error: 'oops' } });
-        expect(wrapper.find('pre.viz-json').exists()).toBe(false);
+        expect(wrapper.find('pre.viz-highlighted').exists()).toBe(false);
     });
 });
 
@@ -107,7 +107,7 @@ describe('VizDefault — list mode', () => {
         const wrapper = shallowMount(VizDefault, {
             props: { isList: true, outputItems: [{ x: 1 }], value: [{ x: 1 }] }
         });
-        expect(wrapper.find('pre.viz-json').exists()).toBe(true);
+        expect(wrapper.find('pre.viz-highlighted').exists()).toBe(true);
         const rowDivs = wrapper.findAll('div.font-mono');
         expect(rowDivs).toHaveLength(0);
     });
