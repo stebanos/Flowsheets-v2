@@ -113,7 +113,7 @@ function onNavigate(dir) {
 
 const { cellHeight, cellWidth, unitX, snapX, snapY } = useCellDimensions();
 const { deleteBlock } = useDeleteBlock();
-const { startDrag } = useDrag(snapX, snapY);
+const { isDragging, startDrag } = useDrag(snapX, snapY);
 
 const blockMenuRef = ref(null);
 const blockMenuItems = [
@@ -252,7 +252,7 @@ watch(
 </script>
 
 <template>
-    <div data-block class="group absolute select-none bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
+    <div data-block class="group absolute bg-white shadow-md text-[.875rem] leading-4 flex flex-col"
          ref="wrapperEl"
          tabindex="0"
          :aria-label="isEditing ? `Block: ${block.name}, editing` : `Block: ${block.name}`"
@@ -263,7 +263,7 @@ watch(
              : isHighlighted ? 'ring-[1.5px] ring-black z-10'
              : 'ring-[1px] ring-gray-300 hover:ring-[1.5px] hover:ring-slate-400 hover:z-10',
              wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
-             {'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}
+             {'select-none': isDragging, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}
          ]"
          @focusin="onFocusIn"
          @focusout="onFocusOut"

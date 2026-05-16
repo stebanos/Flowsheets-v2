@@ -1,8 +1,10 @@
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
 export function useDrag(snapX, snapY, updateFn) {
     const _updateFn = updateFn ?? useBlockStore().updateBlock;
+
+    const isDragging = ref(false);
 
     const dragState = reactive({
         block: null,
@@ -14,6 +16,7 @@ export function useDrag(snapX, snapY, updateFn) {
     });
 
     function startDrag(block, event, coparticipants = []) {
+        isDragging.value = true;
         dragState.block = block;
         dragState.startX = event.clientX;
         dragState.startY = event.clientY;
@@ -45,6 +48,7 @@ export function useDrag(snapX, snapY, updateFn) {
     }
 
     function stopDrag() {
+        isDragging.value = false;
         dragState.block = null;
         dragState.coparticipants = [];
         window.removeEventListener('mousemove', onDrag);
@@ -52,6 +56,7 @@ export function useDrag(snapX, snapY, updateFn) {
     }
 
     return {
+        isDragging,
         startDrag,
         stopDrag
     };
