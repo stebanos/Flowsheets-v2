@@ -355,8 +355,7 @@ watch(
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
             @animationend="flashType = null">
             <div class="flex-1 min-h-0 relative"
-                 :style="{ overflowY: outputOverflowY }"
-                 @wheel="outputOverflowY === 'auto' && $event.stopPropagation()">
+                 :style="{ overflowY: outputOverflowY }">
                 <component
                     :is="activeVizComponent"
                     :value="outputValue"

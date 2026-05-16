@@ -200,6 +200,15 @@ function onCanvasMousedown(event) {
     }
 }
 
+function _findScrollableAncestor(el) {
+    while (el && el !== canvasEl.value) {
+        const oy = getComputedStyle(el).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) { return el; }
+        el = el.parentElement;
+    }
+    return null;
+}
+
 function onCanvasWheel(event) {
     const now = Date.now();
     const isMidScroll = (now - _lastScrollTime) < SCROLL_RESUME_MS;
@@ -208,6 +217,13 @@ function onCanvasWheel(event) {
         const active = document.activeElement;
         const tag = active?.tagName?.toLowerCase();
         if (tag === 'input' || tag === 'textarea' || tag === 'select' || active?.isContentEditable) { return; }
+
+        const scrollable = _findScrollableAncestor(event.target);
+        if (scrollable) {
+            const canScrollDown = event.deltaY > 0 && scrollable.scrollTop < scrollable.scrollHeight - scrollable.clientHeight;
+            const canScrollUp = event.deltaY < 0 && scrollable.scrollTop > 0;
+            if (canScrollDown || canScrollUp) { return; }
+        }
     }
 
     event.preventDefault();
@@ -295,7 +311,7 @@ const statusColor = computed(() => {
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
                     @mousemove="onCanvasMousemove"
-                    @wheel="onCanvasWheel"
+                    @wheel.capture="onCanvasWheel"
                     @contextmenu="onCanvasContextMenu"
                 >
                     <span ref="wrapAnnouncerEl" aria-live="polite" class="sr-only" />
