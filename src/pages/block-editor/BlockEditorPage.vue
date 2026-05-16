@@ -288,7 +288,7 @@ const statusColor = computed(() => {
                     role="group"
                     tabindex="-1"
                     aria-label="Block canvas"
-                    title="Arrow keys to navigate · Enter to edit · Escape to exit"
+
                     class="relative flex-1 overflow-hidden outline-none"
                     :class="{ 'cursor-grabbing select-none': isPanning && !isSpaceHeld }"
                     @dragover.prevent
