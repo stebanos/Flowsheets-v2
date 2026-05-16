@@ -92,7 +92,7 @@ function _onKeydown(e) {
         e.preventDefault();
         return;
     }
-    if (cmd && e.shiftKey && e.key === 'z') { history.redo(); e.preventDefault(); return; }
+    if (cmd && e.shiftKey && e.key === 'Z') { history.redo(); e.preventDefault(); return; }
     if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
     if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && selectedNames.value.size > 0) {
