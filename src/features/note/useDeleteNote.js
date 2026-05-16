@@ -2,38 +2,26 @@ import { ref, toRaw } from 'vue';
 import { useNoteStore } from '@/entities/note';
 import { useFocusedNote } from './useFocusedNote';
 
-const undoPending = ref(null);
-let timer = null;
-
-const UNDO_TIMEOUT_MS = 20000;
+const _pendingLabel = ref(null); // { label } — shown in toast; cleared on next action
 
 export function useDeleteNote() {
-    const { removeNote, addNote } = useNoteStore();
+    const { removeNote } = useNoteStore();
     const { clearNote } = useFocusedNote();
 
     function deleteNote(note) {
         const raw = toRaw(note);
         clearNote();
         removeNote(raw.id);
-        undoPending.value = { note: { ...raw }, label: raw.title || 'Note' };
-        if (timer) { clearTimeout(timer); }
-        timer = setTimeout(() => {
-            undoPending.value = null;
-            timer = null;
-        }, UNDO_TIMEOUT_MS);
-    }
-
-    function undoDelete() {
-        if (!undoPending.value) { return; }
-        addNote(undoPending.value.note);
-        undoPending.value = null;
-        if (timer) { clearTimeout(timer); timer = null; }
+        _pendingLabel.value = { label: raw.title || 'Note' };
     }
 
     function dismissUndo() {
-        undoPending.value = null;
-        if (timer) { clearTimeout(timer); timer = null; }
+        _pendingLabel.value = null;
     }
 
-    return { deleteNote, undoDelete, dismissUndo, undoPending };
+    return {
+        deleteNote,
+        dismissUndo,
+        undoPending: _pendingLabel
+    };
 }

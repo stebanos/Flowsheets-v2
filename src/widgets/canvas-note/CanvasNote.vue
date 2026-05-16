@@ -22,7 +22,7 @@ const noteTitle = computed({
 
 const noteBody = computed({
     get: () => props.note.body,
-    set: (val) => updateNote(props.note.id, { body: val })
+    set: (val) => updateNote(props.note.id, { body: val }, `noteBody:${props.note.id}`)
 });
 
 const identity = x => x;

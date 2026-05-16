@@ -3,12 +3,14 @@ import { useBlockStore } from '@/entities/block';
 import { useCellDimensions } from '@/features/block/grid';
 import { useBlockManager } from '@/features/block/manage';
 import { usePendingNameFocus } from '@/features/block/navigate';
+import { useHistory } from '@/features/sheet/history';
 
 export function useBlockExtract(block, getEvaluation, snappedEditorWidth, cellWidth) {
     const { updateBlock } = useBlockStore();
     const { createBlock } = useBlockManager();
     const { unitY } = useCellDimensions();
     const { requestFocus } = usePendingNameFocus();
+    const { beginGroup, endGroup } = useHistory();
 
     function outputsEqual(a, b) {
         if (a === b) { return true; }
@@ -20,8 +22,10 @@ export function useBlockExtract(block, getEvaluation, snappedEditorWidth, cellWi
         const outputBefore = evalResult?.error ? null : toRaw(evalResult?.value);
         const x = block.x + snappedEditorWidth.value + cellWidth.value;
         const y = block.y;
+        beginGroup();
         const newName = createBlock({ x, y }, null, selectedText, cellWidth, unitY);
         updateBlock(block.id, { inputModes: { ...block.inputModes, [newName]: 'each' } });
+        endGroup();
         requestFocus(newName);
 
         nextTick(() => {

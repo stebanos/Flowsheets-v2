@@ -1,6 +1,7 @@
 import { nextTick, ref } from 'vue';
 import { renameIdentifier } from '@/shared/lib/evaluator';
 import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
+import { useHistory } from '@/features/sheet/history';
 
 const JS_RESERVED = new Set([
     'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do',
@@ -22,6 +23,7 @@ function isValidIdentifier(name) {
  */
 export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
     const { updateBlock } = useBlockStore();
+    const { beginGroup, endGroup } = useHistory();
 
     const isEditing = ref(false);
     const editName = ref('');
@@ -66,8 +68,10 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
         const newName = generateUniqueNameFromName(trimmed, existingNames);
         const old = name.value;
 
+        beginGroup();
         name.value = newName;
         renameReferences(old, newName);
+        endGroup();
 
         finishEdit();
     }

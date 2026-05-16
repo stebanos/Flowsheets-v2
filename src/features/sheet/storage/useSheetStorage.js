@@ -3,6 +3,7 @@ import { deserializeSheet, migrate, serializeSheet } from '@/shared/lib/persiste
 import { useBlockStore } from '@/entities/block';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
+import { useHistory } from '@/features/sheet/history';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
 
@@ -119,10 +120,13 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         };
         const data = await migrate(envelope);
         const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(data);
-        replaceBlocks(loadedBlocks);
-        _onVizesLoaded(vizes);
-        _onPanLoaded(view);
-        replaceNotes(loadedNotes);
+        const { suppress } = useHistory();
+        suppress(() => {
+            replaceBlocks(loadedBlocks);
+            _onVizesLoaded(vizes);
+            _onPanLoaded(view);
+            replaceNotes(loadedNotes);
+        });
     }
 
     // ── loadFromStorage ───────────────────────────────────────────────────────
@@ -209,20 +213,26 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         };
         const migrated = await migrate(envelope);
         const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(migrated);
-        replaceBlocks(loadedBlocks);
-        _onVizesLoaded(vizes);
-        _onPanLoaded(view);
-        replaceNotes(loadedNotes);
+        const { suppress } = useHistory();
+        suppress(() => {
+            replaceBlocks(loadedBlocks);
+            _onVizesLoaded(vizes);
+            _onPanLoaded(view);
+            replaceNotes(loadedNotes);
+        });
         loading = false;
     }
 
     // ── initNewSheet ──────────────────────────────────────────────────────────
 
     function initNewSheet(id, name) {
-        replaceBlocks([]);
-        _onVizesLoaded({});
-        _onPanLoaded({ panX: 0, panY: 0 });
-        replaceNotes([]);
+        const { suppress } = useHistory();
+        suppress(() => {
+            replaceBlocks([]);
+            _onVizesLoaded({});
+            _onPanLoaded({ panX: 0, panY: 0 });
+            replaceNotes([]);
+        });
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
@@ -251,6 +261,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
 
         openSheetIds.splice(idx, 1);
         _persistOpenIds();
+        useHistory().closeSheet(id);
 
         if (activeSheetId.value !== id) { return; }
 

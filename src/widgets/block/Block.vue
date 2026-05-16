@@ -235,6 +235,10 @@ const { onExtract } = useBlockExtract(
     props.block, props.context.getEvaluation, snappedEditorWidth, cellWidth
 );
 
+function onUpdateCode(code) {
+    updateBlock(props.block.id, { code }, `code:${props.block.id}`);
+}
+
 const isHighlighted = computed(() => props.hovered === props.block.name);
 const isNameEditing = ref(false);
 
@@ -327,7 +331,7 @@ watch(
                 :blockName="block.name"
                 :onExtract
                 :onNavigate="onNavigate"
-                @update:code="updateBlock(block.id, { code: $event })" />
+                @update:code="onUpdateCode($event)" />
             <div class="block-code-handle absolute bottom-0 left-0 right-0 h-1 cursor-row-resize"
                  title="Resize editor"
                  @mousedown.stop.prevent="handleStartResizeEditor($event)" />

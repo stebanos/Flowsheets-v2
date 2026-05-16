@@ -1,8 +1,10 @@
 import { useBlockStore, generateUniqueNameFromName } from '@/entities/block';
+import { useHistory } from '@/features/sheet/history';
 import { generateUniqueId } from '@/shared/utils';
 
 export function useBlockClipboard() {
     const { blocks: storeBlocks, addBlock, removeBlock } = useBlockStore();
+    const { beginGroup, endGroup } = useHistory();
 
     async function copySelected(blocks, selectedNames) {
         const selected = blocks.filter(b => selectedNames.includes(b.name));
@@ -32,7 +34,9 @@ export function useBlockClipboard() {
         const ok = await copySelected(blocks, selectedNames);
         if (!ok) { return false; }
 
+        beginGroup();
         for (const id of ids) { removeBlock(id); }
+        endGroup();
         return true;
     }
 
@@ -71,6 +75,7 @@ export function useBlockClipboard() {
         }
 
         const newNames = [];
+        beginGroup();
         for (const b of pastedBlocks) {
             const newName = nameMap.get(b.name);
             let code = b.code || '';
@@ -88,6 +93,7 @@ export function useBlockClipboard() {
             });
             newNames.push(newName);
         }
+        endGroup();
 
         return newNames;
     }
@@ -108,6 +114,7 @@ export function useBlockClipboard() {
         }
 
         const newNames = [];
+        beginGroup();
         for (const b of selected) {
             const newName = nameMap.get(b.name);
             let code = b.code || '';
@@ -125,6 +132,7 @@ export function useBlockClipboard() {
             });
             newNames.push(newName);
         }
+        endGroup();
 
         return newNames;
     }

@@ -32,7 +32,7 @@ export function useSheetManager() {
         deletingIds.add(id);
         sheetStorage.markPendingDelete(id);
         try {
-            sheetStorage.closeSheet(id);
+            sheetStorage.closeSheet(id); // also calls history.closeSheet via useSheetStorage
             // one frame so Vue renders the sheet switch before the storage delete
             await new Promise(resolve => requestAnimationFrame(resolve));
             await sheetStorage.persistDeleteSheet(id);

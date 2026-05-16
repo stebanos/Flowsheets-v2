@@ -1,1 +1,1 @@
-export { useNoteStore } from './noteStore';
+export { setBeforeMutationHook, useNoteStore } from './noteStore';

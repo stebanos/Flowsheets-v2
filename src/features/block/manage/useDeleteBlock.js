@@ -1,13 +1,10 @@
 import { ref, toRaw } from 'vue';
 import { useBlockStore } from '@/entities/block';
 
-const undoPending = ref(null); // { block, hasDownstream }
-let timer = null;
-
-const UNDO_TIMEOUT_MS = 20000;
+const _pendingLabel = ref(null); // { label, hasDownstream } — shown in toast; cleared on next action
 
 export function useDeleteBlock() {
-    const { removeBlock, addBlock, blocks } = useBlockStore();
+    const { removeBlock, blocks } = useBlockStore();
 
     function deleteBlock(block) {
         const raw = toRaw(block);
@@ -15,25 +12,17 @@ export function useDeleteBlock() {
         const pattern = new RegExp(`\\b${escaped}\\b`);
         const hasDownstream = blocks.some(b => b.id !== raw.id && pattern.test(b.code || ''));
         removeBlock(raw.id);
-        undoPending.value = { block: { ...raw }, hasDownstream, label: raw.name };
-        if (timer) { clearTimeout(timer); }
-        timer = setTimeout(() => {
-            undoPending.value = null;
-            timer = null;
-        }, UNDO_TIMEOUT_MS);
-    }
-
-    function undoDelete() {
-        if (!undoPending.value) { return; }
-        addBlock(undoPending.value.block);
-        undoPending.value = null;
-        if (timer) { clearTimeout(timer); timer = null; }
+        _pendingLabel.value = { label: raw.name, hasDownstream };
     }
 
     function dismissUndo() {
-        undoPending.value = null;
-        if (timer) { clearTimeout(timer); timer = null; }
+        _pendingLabel.value = null;
     }
 
-    return { deleteBlock, undoDelete, dismissUndo, undoPending };
+    return {
+        deleteBlock,
+        dismissUndo,
+        // undoPending shape kept for UndoDeleteToast compatibility
+        undoPending: _pendingLabel
+    };
 }

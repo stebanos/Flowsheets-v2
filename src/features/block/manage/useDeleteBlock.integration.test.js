@@ -4,7 +4,7 @@ import { useDeleteBlock } from './useDeleteBlock';
 
 // Real store — no mocks.
 const { blocks, addBlock } = useBlockStore();
-const { deleteBlock, undoDelete, dismissUndo, undoPending } = useDeleteBlock();
+const { deleteBlock, dismissUndo, undoPending } = useDeleteBlock();
 
 beforeEach(() => {
     blocks.splice(0);
@@ -18,10 +18,11 @@ describe('deleteBlock', () => {
         expect(blocks).toHaveLength(0);
     });
 
-    it('sets undoPending with the exact block data', () => {
+    it('sets undoPending with the block label', () => {
         addBlock({ id: '1', name: 'myBlock', x: 10, y: 20, code: '42' });
         deleteBlock(blocks[0]);
-        expect(undoPending.value.block).toMatchObject({ id: '1', name: 'myBlock', x: 10, y: 20, code: '42' });
+        expect(undoPending.value).not.toBeNull();
+        expect(undoPending.value.label).toBe('myBlock');
     });
 
     it('detects downstream references against the real store', () => {
@@ -46,50 +47,11 @@ describe('deleteBlock', () => {
     });
 });
 
-describe('undoDelete round-trip', () => {
-    it('restores the block to the real store', () => {
-        addBlock({ id: '1', name: 'a', x: 10, y: 20, code: '42' });
-        deleteBlock(blocks[0]);
-        expect(blocks).toHaveLength(0);
-
-        undoDelete();
-        expect(blocks).toHaveLength(1);
-        expect(blocks[0]).toMatchObject({ id: '1', name: 'a', x: 10, y: 20, code: '42' });
-    });
-
-    it('clears undoPending after restoring', () => {
+describe('dismissUndo', () => {
+    it('clears undoPending', () => {
         addBlock({ id: '1', name: 'a', x: 0, y: 0, code: '' });
         deleteBlock(blocks[0]);
-        undoDelete();
+        dismissUndo();
         expect(undoPending.value).toBeNull();
-    });
-
-    it('preserves all block fields through a delete-undo cycle', () => {
-        const original = { id: 'abc', name: 'myBlock', x: 123, y: 456, code: 'x + y' };
-        addBlock({ ...original });
-        deleteBlock(blocks[0]);
-        undoDelete();
-        expect(blocks[0]).toMatchObject(original);
-    });
-
-    it('is a no-op when there is nothing to undo', () => {
-        addBlock({ id: '1', name: 'a', x: 0, y: 0, code: '' });
-        undoDelete(); // nothing pending
-        expect(blocks).toHaveLength(1); // block untouched
-    });
-});
-
-describe('sequential deletes', () => {
-    it('only the last deleted block is restored on undo', () => {
-        addBlock({ id: '1', name: 'a', x: 0, y: 0, code: '' });
-        addBlock({ id: '2', name: 'b', x: 0, y: 0, code: '' });
-
-        deleteBlock(blocks[0]); // delete 'a'
-        deleteBlock(blocks[0]); // delete 'b' (now at index 0)
-        expect(blocks).toHaveLength(0);
-
-        undoDelete();
-        expect(blocks).toHaveLength(1);
-        expect(blocks[0].name).toBe('b');
     });
 });

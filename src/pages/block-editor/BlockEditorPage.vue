@@ -12,15 +12,16 @@ import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
 import { useVizLibrary } from '@/entities/viz';
-import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
-const { blocks } = useBlockStore();
-const { notes, addNote } = useNoteStore();
-const { sheets, activeSheetName } = useSheetStore();
+const { blocks, replaceBlocks } = useBlockStore();
+const { notes, addNote, replaceNotes } = useNoteStore();
+const { sheets, activeSheetName, activeSheetId } = useSheetStore();
 
 // evaluation
 const { identifiersByBlock, dependsOn } = useBlockDependencies({ debounceMs: 0 });
@@ -29,8 +30,8 @@ const context = useBlockEvaluation(dependsOn);
 // block interaction
 const { createBlock } = useBlockManager();
 const { copySelected, cutSelected, pasteBlocks, duplicateSelected } = useBlockClipboard();
-const { undoPending, undoDelete, dismissUndo, deleteBlock } = useDeleteBlock();
-const { undoPending: noteUndoPending, undoDelete: undoNoteDelete, dismissUndo: dismissNoteUndo } = useDeleteNote();
+const { undoPending, dismissUndo, deleteBlock } = useDeleteBlock();
+const { undoPending: noteUndoPending, dismissUndo: dismissNoteUndo } = useDeleteNote();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
@@ -48,6 +49,9 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
+
+// history
+const history = useHistory();
 
 // rubber-band selection
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
@@ -88,6 +92,8 @@ function _onKeydown(e) {
         e.preventDefault();
         return;
     }
+    if (cmd && e.shiftKey && e.key === 'z') { history.redo(); e.preventDefault(); return; }
+    if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
     if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && selectedNames.value.size > 0) {
         const toDelete = blocks.filter(b => selectedNames.value.has(b.name));
@@ -141,11 +147,24 @@ watch([library, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY], scheduleSave);
 watch(activeSheetName, () => clearSelection());
 
+// track active sheet for per-sheet history stacks
+watch(activeSheetId, (id) => { if (id) { history.setActiveSheet(id); } }, { immediate: true });
+
 // lifecycle
 onMounted(async () => {
     window.addEventListener('keydown', _onKeydown);
     window.addEventListener('keyup', _onKeyup);
     registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
+    // wire history snapshot capture/restore + register store hooks
+    await initHistory(
+        () => serializeSheet(blocks, {}, activeSheetName.value, { panX: panX.value, panY: panY.value }, notes),
+        (snapshot) => {
+            const { blocks: loadedBlocks, view, notes: loadedNotes } = deserializeSheet(snapshot);
+            replaceBlocks(loadedBlocks);
+            setPan(view.panX, view.panY);
+            replaceNotes(loadedNotes);
+        }
+    );
     await loadLibrary();
     loadVizes(library);
     await loadFromStorage();
@@ -347,8 +366,8 @@ const statusColor = computed(() => {
                 </div>
             </template>
         </p-drawer>
-        <undo-delete-toast :pending="undoPending" @undo="undoDelete" @dismiss="dismissUndo" />
-        <undo-delete-toast :pending="noteUndoPending" :stacked="!!undoPending" @undo="undoNoteDelete" @dismiss="dismissNoteUndo" />
+        <undo-delete-toast :pending="undoPending" @undo="history.undo(); dismissUndo()" @dismiss="dismissUndo" />
+        <undo-delete-toast :pending="noteUndoPending" :stacked="!!undoPending" @undo="history.undo(); dismissNoteUndo()" @dismiss="dismissNoteUndo" />
         <p-context-menu ref="canvasContextMenu" :model="canvasContextMenuItems" />
     </div>
 </template>
