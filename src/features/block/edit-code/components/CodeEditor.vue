@@ -5,6 +5,7 @@ import { javascript } from '@codemirror/lang-javascript';
 import { syntaxTree } from '@codemirror/language';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, EditorView, keymap, ViewPlugin } from '@codemirror/view';
+import { tomorrow } from 'thememirror';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { makeBlockRefCompletion } from '../cm-extensions/blockRefCompletion';
 import { findExpressionRanges, templateLiteralHighlighting } from '../cm-extensions/templateLiteralLanguage';
@@ -202,6 +203,7 @@ const extensions = computed(() => {
     const blockPlugin = blockNameHighlighter(otherBlockNames.value, isStringConcat.value, props.inputModes);
     const ext = [
         ...refCompletion,
+        tomorrow,
         fillTheme,
         blockPlugin,
         updateListenerExtension

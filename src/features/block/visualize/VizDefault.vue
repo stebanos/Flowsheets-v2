@@ -29,9 +29,9 @@ const listIsPrimitive = computed(() =>
 );
 
 function typeColor(v) {
-    if (typeof v === 'string') { return 'text-green-700'; }
-    if (typeof v === 'number') { return 'text-blue-600'; }
-    if (typeof v === 'boolean' || v === null) { return 'text-gray-400'; }
+    if (typeof v === 'string') { return 'text-tomorrow-string'; }
+    if (typeof v === 'number') { return 'text-tomorrow-number'; }
+    if (typeof v === 'boolean' || v === null) { return 'text-tomorrow-keyword'; }
     return '';
 }
 
@@ -66,23 +66,23 @@ onBeforeUnmount(() => { ro?.disconnect(); });
         </template>
         <div v-else ref="contentEl" class="px-2 py-1">
             <span v-if="error" class="text-red-600">{{ error }}</span>
-            <pre v-else-if="isComplex" class="viz-json" v-html="highlighted" />
+            <pre v-else-if="isComplex" class="viz-highlighted" v-html="highlighted" />
             <span v-else class="whitespace-pre-wrap break-words" :class="scalarClass">{{ formatValue(value) }}</span>
         </div>
     </div>
 </template>
 
 <style scoped>
-.viz-json {
+.viz-highlighted {
     font-family: ui-monospace, monospace;
     font-size: 13px;
     white-space: pre-wrap;
     word-break: break-word;
     margin: 0;
 }
-.viz-json :deep(.token.number)     { color: #2563eb; }
-.viz-json :deep(.token.string)     { color: #15803d; }
-.viz-json :deep(.token.boolean),
-.viz-json :deep(.token.null)       { color: #9ca3af; }
-.viz-json :deep(.token.punctuation){ color: inherit; }
+.viz-highlighted :deep(.token.number)     { color: var(--color-tomorrow-number); }
+.viz-highlighted :deep(.token.string)     { color: var(--color-tomorrow-string); }
+.viz-highlighted :deep(.token.boolean),
+.viz-highlighted :deep(.token.null)       { color: var(--color-tomorrow-keyword); }
+.viz-highlighted :deep(.token.punctuation){ color: inherit; }
 </style>

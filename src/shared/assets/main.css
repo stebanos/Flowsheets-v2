@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import 'tailwindcss-primeui';
 
+@theme {
+    --color-tomorrow-string:  #718c00;
+    --color-tomorrow-number:  #f5871f;
+    --color-tomorrow-keyword: #8959a8;
+}
+
 html {
     font-size: 16px;
     line-height: 1.25;
