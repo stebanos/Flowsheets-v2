@@ -32,8 +32,19 @@ export function useNoteStore() {
 
     function replaceNotes(newNotes, tag) {
         _beforeMutation?.(tag ?? null);
-        notes.splice(0, notes.length);
-        for (const note of newNotes) { notes.push(note); }
+        const newById = new Map(newNotes.map(n => [n.id, n]));
+        for (let i = notes.length - 1; i >= 0; i--) {
+            if (!newById.has(notes[i].id)) { notes.splice(i, 1); }
+        }
+        for (const existing of notes) {
+            const next = newById.get(existing.id);
+            for (const key of Object.keys(existing)) {
+                if (!(key in next)) { delete existing[key]; }
+            }
+            Object.assign(existing, next);
+            newById.delete(existing.id);
+        }
+        for (const note of newById.values()) { notes.push(note); }
     }
 
     return { notes, addNote, removeNote, replaceNotes, updateNote };

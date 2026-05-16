@@ -32,8 +32,19 @@ export function useBlockStore() {
 
     function replaceBlocks(newBlocks, tag) {
         _beforeMutation?.(tag ?? null);
-        blocks.splice(0, blocks.length);
-        for (const block of newBlocks) { blocks.push(block); }
+        const newById = new Map(newBlocks.map(b => [b.id, b]));
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            if (!newById.has(blocks[i].id)) { blocks.splice(i, 1); }
+        }
+        for (const existing of blocks) {
+            const next = newById.get(existing.id);
+            for (const key of Object.keys(existing)) {
+                if (!(key in next)) { delete existing[key]; }
+            }
+            Object.assign(existing, next);
+            newById.delete(existing.id);
+        }
+        for (const block of newById.values()) { blocks.push(block); }
     }
 
     return { blocks, addBlock, removeBlock, replaceBlocks, updateBlock };
