@@ -96,6 +96,15 @@ describe('replaceBlocks', () => {
         replaceBlocks([{ id: '2', name: 'b', code: '2' }, { id: '3', name: 'c', code: '3' }]);
         expect(count.value).toBe(2);
     });
+
+    test('updates existing block in-place, preserving object reference', () => {
+        const { blocks, addBlock, replaceBlocks } = useBlockStore();
+        addBlock({ id: '1', name: 'a', visualizationType: 'default' });
+        const ref = blocks[0];
+        replaceBlocks([{ id: '1', name: 'a', visualizationType: 'table' }]);
+        expect(blocks[0]).toBe(ref);
+        expect(ref.visualizationType).toBe('table');
+    });
 });
 
 describe('singleton', () => {
