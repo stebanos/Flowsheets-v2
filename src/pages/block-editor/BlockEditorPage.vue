@@ -15,7 +15,7 @@ import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
 import { useDeleteNote } from '@/features/note';
 import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
-import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
+import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast, UndoRedoButtons } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
@@ -52,6 +52,7 @@ const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCan
 
 // history
 const history = useHistory();
+const { canUndo, canRedo } = history;
 
 // rubber-band selection
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
@@ -307,6 +308,7 @@ const statusColor = computed(() => {
                 <sheet-title :sheet-name="activeSheetName" :status-text="statusText" :status-color="statusColor" />
             </template>
             <template #controls>
+                <undo-redo-buttons :can-undo="canUndo" :can-redo="canRedo" @undo="history.undo()" @redo="history.redo()" />
                 <reset-pan-button @reset="resetPan" />
                 <app-bar-toggle-button :open="sidebarOpen" aria-label="Toggle Viz Editor sidebar" @toggle="toggleSidebar">
                     <viz-sidebar-icon />

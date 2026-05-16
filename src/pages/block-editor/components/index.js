@@ -4,3 +4,4 @@ export { default as EmptyCanvas } from './EmptyCanvas.vue';
 export { default as ResetPanButton } from './ResetPanButton.vue';
 export { default as SheetTitle } from './SheetTitle.vue';
 export { default as UndoDeleteToast } from './UndoDeleteToast.vue';
+export { default as UndoRedoButtons } from './UndoRedoButtons.vue';
