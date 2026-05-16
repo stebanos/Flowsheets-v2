@@ -12,10 +12,9 @@ import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/b
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
-import { useDeleteNote } from '@/features/note';
 import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
-import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast, UndoRedoButtons } from './components';
+import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
@@ -30,8 +29,7 @@ const context = useBlockEvaluation(dependsOn);
 // block interaction
 const { createBlock } = useBlockManager();
 const { copySelected, cutSelected, pasteBlocks, duplicateSelected } = useBlockClipboard();
-const { undoPending, dismissUndo, deleteBlock } = useDeleteBlock();
-const { undoPending: noteUndoPending, dismissUndo: dismissNoteUndo } = useDeleteNote();
+const { deleteBlock } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
@@ -368,8 +366,6 @@ const statusColor = computed(() => {
                 </div>
             </template>
         </p-drawer>
-        <undo-delete-toast :pending="undoPending" @undo="history.undo(); dismissUndo()" @dismiss="dismissUndo" />
-        <undo-delete-toast :pending="noteUndoPending" :stacked="!!undoPending" @undo="history.undo(); dismissNoteUndo()" @dismiss="dismissNoteUndo" />
         <p-context-menu ref="canvasContextMenu" :model="canvasContextMenuItems" />
     </div>
 </template>
