@@ -1,19 +1,19 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
+import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
+import { useVizLibrary } from '@/entities/viz';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
-import { useDeleteNote } from '@/features/note';
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
-import { useVizLibrary } from '@/entities/viz';
+import { useDeleteNote } from '@/features/note';
 import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
-import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoDeleteToast } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
