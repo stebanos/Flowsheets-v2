@@ -5,6 +5,10 @@
     --color-tomorrow-string:  #718c00;
     --color-tomorrow-number:  #f5871f;
     --color-tomorrow-keyword: #8959a8;
+
+    --color-code-string:  var(--color-tomorrow-string);
+    --color-code-number:  var(--color-tomorrow-number);
+    --color-code-keyword: var(--color-tomorrow-keyword);
 }
 
 html {

@@ -29,9 +29,9 @@ const listIsPrimitive = computed(() =>
 );
 
 function typeColor(v) {
-    if (typeof v === 'string') { return 'text-tomorrow-string'; }
-    if (typeof v === 'number') { return 'text-tomorrow-number'; }
-    if (typeof v === 'boolean' || v === null) { return 'text-tomorrow-keyword'; }
+    if (typeof v === 'string') { return 'text-code-string'; }
+    if (typeof v === 'number') { return 'text-code-number'; }
+    if (typeof v === 'boolean' || v === null) { return 'text-code-keyword'; }
     return '';
 }
 
@@ -80,9 +80,9 @@ onBeforeUnmount(() => { ro?.disconnect(); });
     word-break: break-word;
     margin: 0;
 }
-.viz-highlighted :deep(.token.number)     { color: var(--color-tomorrow-number); }
-.viz-highlighted :deep(.token.string)     { color: var(--color-tomorrow-string); }
+.viz-highlighted :deep(.token.number)     { color: var(--color-code-number); }
+.viz-highlighted :deep(.token.string)     { color: var(--color-code-string); }
 .viz-highlighted :deep(.token.boolean),
-.viz-highlighted :deep(.token.null)       { color: var(--color-tomorrow-keyword); }
+.viz-highlighted :deep(.token.null)       { color: var(--color-code-keyword); }
 .viz-highlighted :deep(.token.punctuation){ color: inherit; }
 </style>

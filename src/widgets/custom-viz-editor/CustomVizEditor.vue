@@ -11,7 +11,7 @@ import { html } from '@codemirror/lang-html';
 import { javascript } from '@codemirror/lang-javascript';
 import { Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
-import { tomorrow } from 'thememirror';
+import { codeTheme } from '@/shared/lib/codeTheme';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from '@/features/block/visualize';
 import { useFileIO } from '@/features/sheet';
@@ -80,7 +80,7 @@ const runBarStatus = computed(() => {
 
 // --- CM6 extensions ---
 const extensions = computed(() => [
-    tomorrow,
+    codeTheme,
     fillTheme,
     EditorView.lineWrapping,
     Prec.highest(keymap.of([{ key: 'Mod-Enter', run: () => { handleRun(); return true; } }]))

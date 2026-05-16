@@ -38,9 +38,9 @@ const highlighted = computed(() => {
 </template>
 
 <style scoped>
-.viz-highlighted :deep(.token.number)     { color: var(--color-tomorrow-number); }
-.viz-highlighted :deep(.token.string)     { color: var(--color-tomorrow-string); }
+.viz-highlighted :deep(.token.number)     { color: var(--color-code-number); }
+.viz-highlighted :deep(.token.string)     { color: var(--color-code-string); }
 .viz-highlighted :deep(.token.boolean),
-.viz-highlighted :deep(.token.null)       { color: var(--color-tomorrow-keyword); }
+.viz-highlighted :deep(.token.null)       { color: var(--color-code-keyword); }
 .viz-highlighted :deep(.token.punctuation){ color: inherit; }
 </style>
