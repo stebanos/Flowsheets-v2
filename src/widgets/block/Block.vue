@@ -136,6 +136,7 @@ const hasInputs = computed(() => blockDeps.value.length > 0);
 const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.value ? blockDeps.value.length * cellHeight.value : 0);
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
+const status = computed(() => props.context.getStatus(props.block.name));
 
 const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, outputHeight } =
     useBlockOutput(props.block, { cellHeight, blockEval });
@@ -265,8 +266,10 @@ watch(
              isEditing ? 'ring-[1.5px] ring-amber-400 z-10'
              : isSelected || isFocused ? 'ring-[1.5px] ring-cyan-400 z-10'
              : isHighlighted ? 'ring-[1.5px] ring-black z-10'
+             : status === 'error' ? 'ring-[1.5px] ring-red-400'
              : 'ring-[1px] ring-gray-300 hover:ring-[1.5px] hover:ring-slate-400 hover:z-10',
              wrapFlash ? 'ring-2 ring-offset-1 ring-amber-300 animate-pulse' : '',
+             status === 'blocked' ? 'opacity-[0.72]' : '',
              {'select-none': isDragging, 'resizing-local': isResizingLocal, 'inputs-panel-open': panelOpen}
          ]"
          @focusin="onFocusIn"
@@ -360,7 +363,12 @@ watch(
             @animationend="flashType = null">
             <div class="flex-1 min-h-0 relative"
                  :style="{ overflowY: outputOverflowY }">
+                <div v-if="status === 'blocked'"
+                     class="h-full w-full flex items-center bg-amber-50 text-amber-700 font-mono text-[.8125rem] px-2">
+                    blocked — upstream error
+                </div>
                 <component
+                    v-else
                     :is="activeVizComponent"
                     :value="outputValue"
                     :error="blockEval?.error ?? null"
@@ -371,7 +379,12 @@ watch(
                     class="h-full w-full"
                 />
             </div>
-            <viz-menu :label="currentVizLabel" :model="vizMenuItems" />
+            <div v-if="status === 'blocked'"
+                 class="w-full flex items-center px-2 border-t border-amber-100 bg-amber-50 text-amber-700 text-[10px] font-mono shrink-0"
+                 style="height: 20px">
+                Blocked
+            </div>
+            <viz-menu v-else :label="currentVizLabel" :model="vizMenuItems" />
             <div class="block-output-handle absolute bottom-0 left-0 right-0 h-1 cursor-se-resize"
                  title="Resize output"
                  @mousedown.stop.prevent="handleStartResizeOutput($event)" />
