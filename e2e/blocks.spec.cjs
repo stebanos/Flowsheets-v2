@@ -165,9 +165,15 @@ test('E7 — circular dependency shows error', async ({ page }) => {
     await typeCode(page, nameB, 0);
     await typeCode(page, nameA, 1);
 
-    // Error message is "Circular dependency: a → b → a"
-    await expect(blockOutput(page, 0)).toContainText('Circular');
-    await expect(blockOutput(page, 1)).toContainText('Circular');
+    // Error message is "Circular dependency: a → b → a". With blast-radius status,
+    // the blast-radius cycle guard resolves one cycle member as the error root
+    // (shows "Circular") and the other as blocked by it (shows the blocked
+    // placeholder instead of its own duplicate error) — "blocked wins over own
+    // error" is intentional (see _doc/plans/error-blast-radius.md). At least one
+    // block must surface the actual "Circular dependency" message.
+    const outputs = await page.locator('.block-output').allTextContents();
+    expect(outputs.some(t => t.includes('Circular'))).toBe(true);
+    expect(outputs.some(t => t.includes('blocked — upstream error'))).toBe(true);
 });
 
 // ── E8 — Delete a block ───────────────────────────────────────────────────────
@@ -385,4 +391,24 @@ test('E19 — viz selector switches to JSON', async ({ page }) => {
     await expect(page.locator('.block-output pre')).toBeVisible();
     await expect(page.locator('.block-output pre')).toContainText('"a": 1');
     await expect(page.locator('.block-output pre')).toContainText('"b": 2');
+});
+
+// ── E20 — Upstream error blocks downstream blocks ────────────────────────────
+
+test('E20 — upstream error blocks downstream blocks', async ({ page }) => {
+    await createBlock(page, 150, 150);
+    await createBlock(page, 450, 150);
+
+    await typeCode(page, 'undeclaredVariable', 0);
+    const nameA = (await page.locator('[data-block-name]').nth(0).textContent()).trim();
+    await typeCode(page, `${nameA} + 1`, 1);
+
+    // Root-cause block gets a red ring, not the dimmed/blocked treatment.
+    await expect(page.locator('[data-block]').nth(0)).toHaveClass(/ring-red-400/);
+    await expect(page.locator('[data-block]').nth(0)).not.toHaveClass(/opacity-\[0\.72\]/);
+
+    // Downstream block is dimmed and shows the blocked placeholder instead of its own error.
+    await expect(page.locator('[data-block]').nth(1)).toHaveClass(/opacity-\[0\.72\]/);
+    await expect(blockOutput(page, 1)).toContainText('blocked — upstream error');
+    await expect(blockOutput(page, 1)).toContainText('Blocked');
 });
