@@ -109,6 +109,60 @@ describe('circular dependency', () => {
     });
 });
 
+describe('error flags', () => {
+    test('true for a block whose code throws, false for a healthy block', async () => {
+        const blocks = reactive([
+            { id: '1', name: 'a', code: '1 + 1' },
+            { id: '2', name: 'b', code: 'throw new Error("boom")' }
+        ]);
+        const { getEvaluation, errorFlags } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getEvaluation('b').error).toBeTruthy();
+        expect(errorFlags.a).toBe(false);
+        expect(errorFlags.b).toBe(true);
+    });
+
+    test('flips when an upstream block starts/stops erroring', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1 + 1' }]);
+        const { getEvaluation, errorFlags } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(2);
+        expect(errorFlags.a).toBe(false);
+
+        blocks[0].code = 'throw new Error("boom")';
+        await nextTick();
+        expect(getEvaluation('a').error).toBeTruthy();
+        expect(errorFlags.a).toBe(true);
+
+        blocks[0].code = '3 + 3';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(6);
+        expect(errorFlags.a).toBe(false);
+    });
+
+    test('removed when a block is deleted', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, errorFlags } = createRegistry(blocks);
+        getEvaluation('a');
+        expect('a' in errorFlags).toBe(true);
+        blocks.splice(0, 1);
+        await nextTick();
+        expect('a' in errorFlags).toBe(false);
+    });
+
+    test('old name cleared and new name flagged on rename', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, errorFlags } = createRegistry(blocks);
+        getEvaluation('a');
+        expect('a' in errorFlags).toBe(true);
+
+        blocks[0].name = 'z';
+        await nextTick();
+        getEvaluation('z');
+        expect('a' in errorFlags).toBe(false);
+        expect(errorFlags.z).toBe(false);
+    });
+});
+
 describe('dispose', () => {
     test('getEvaluation returns error for all blocks after dispose', async () => {
         const blocks = reactive([

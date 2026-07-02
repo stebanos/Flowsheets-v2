@@ -9,10 +9,11 @@ import { buildTemplateExpression, detectStringMode, evaluateInContext } from '@/
  * Create an evaluator registry for a set of blocks.
  * @param {import('vue').Ref<object[]>|object[]} blocks - reactive blocks array
  * @param {import('vue').ComputedRef<object>} dependsOn - computed dep map
- * @returns {{ getEvaluation: Function, dispose: Function }}
+ * @returns {{ getEvaluation: Function, errorFlags: object, dispose: Function }}
  */
 export function useEvaluatorRegistry(blocks, dependsOn) {
     const results = reactive({});
+    const errorFlags = reactive({});
     const evaluatorMap = new Map(); // Map<blockId, { scope: EffectScope, evaluator: ComputedRef }>
     const idToName = new Map();     // Map<blockId, blockName>
     const nameToId = reactive({});  // reactive: blockName → blockId; enables getEvaluation reactivity
@@ -43,6 +44,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                 );
                 lastCache = out.cache;
                 results[block.name] = out.value;
+                errorFlags[block.name] = !!out.error;
                 return { value: out.value, error: out.error };
             }
 
@@ -66,6 +68,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
 
             lastCache = null;
             results[block.name] = resultArr;
+            errorFlags[block.name] = !!firstError;
             return { value: resultArr, error: firstError };
         });
     }
@@ -87,6 +90,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                 const name = idToName.get(id);
                 if (name) {
                     delete results[name];
+                    delete errorFlags[name];
                     delete nameToId[name];
                 }
                 idToName.delete(id);
@@ -109,6 +113,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                         (newName, oldName) => {
                             if (oldName && oldName !== newName) {
                                 delete results[oldName];
+                                delete errorFlags[oldName];
                                 delete nameToId[oldName];
                             }
                             idToName.set(id, newName);
@@ -136,7 +141,8 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         evaluatorMap.clear();
         idToName.clear();
         for (const key of Object.keys(nameToId)) { delete nameToId[key]; }
+        for (const key of Object.keys(errorFlags)) { delete errorFlags[key]; }
     }
 
-    return { getEvaluation, dispose };
+    return { getEvaluation, errorFlags, dispose };
 }
