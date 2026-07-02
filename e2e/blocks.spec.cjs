@@ -165,15 +165,9 @@ test('E7 — circular dependency shows error', async ({ page }) => {
     await typeCode(page, nameB, 0);
     await typeCode(page, nameA, 1);
 
-    // Error message is "Circular dependency: a → b → a". With blast-radius status,
-    // the blast-radius cycle guard resolves one cycle member as the error root
-    // (shows "Circular") and the other as blocked by it (shows the blocked
-    // placeholder instead of its own duplicate error) — "blocked wins over own
-    // error" is intentional (see _doc/plans/error-blast-radius.md). At least one
-    // block must surface the actual "Circular dependency" message.
-    const outputs = await page.locator('.block-output').allTextContents();
-    expect(outputs.some(t => t.includes('Circular'))).toBe(true);
-    expect(outputs.some(t => t.includes('blocked — upstream error'))).toBe(true);
+    // Error message is "Circular dependency: a → b → a"
+    await expect(blockOutput(page, 0)).toContainText('Circular');
+    await expect(blockOutput(page, 1)).toContainText('Circular');
 });
 
 // ── E8 — Delete a block ───────────────────────────────────────────────────────

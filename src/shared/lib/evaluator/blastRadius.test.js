@@ -64,13 +64,39 @@ describe('computeBlockStatuses', () => {
         });
     });
 
-    it('does not infinite-loop on a cycle and returns deterministic statuses', () => {
+    it('marks both members of a 2-node cycle as error', () => {
+        const dependsOn = { a: ['b'], b: ['a'] };
+        const errorFlags = { a: true, b: true };
+        expect(computeBlockStatuses(dependsOn, errorFlags)).toEqual({
+            a: 'error',
+            b: 'error'
+        });
+    });
+
+    it('marks all members of a 3-node cycle as error', () => {
+        const dependsOn = { a: ['b'], b: ['c'], c: ['a'] };
+        const errorFlags = { a: true, b: true, c: true };
+        expect(computeBlockStatuses(dependsOn, errorFlags)).toEqual({
+            a: 'error',
+            b: 'error',
+            c: 'error'
+        });
+    });
+
+    it('marks a non-cyclic block depending on a cycle member as blocked', () => {
+        const dependsOn = { a: ['b'], b: ['a'], d: ['a'] };
+        const errorFlags = { a: true, b: true };
+        const result = computeBlockStatuses(dependsOn, errorFlags);
+        expect(result.a).toBe('error');
+        expect(result.b).toBe('error');
+        expect(result.d).toBe('blocked');
+    });
+
+    it('terminates and returns deterministic statuses for a cycle', () => {
         const dependsOn = { a: ['b'], b: ['a'] };
         const errorFlags = { a: true, b: true };
         const result = computeBlockStatuses(dependsOn, errorFlags);
         expect(Object.keys(result).sort()).toEqual(['a', 'b']);
-        expect(['ok', 'error', 'blocked']).toContain(result.a);
-        expect(['ok', 'error', 'blocked']).toContain(result.b);
         expect(computeBlockStatuses(dependsOn, errorFlags)).toEqual(result);
     });
 
