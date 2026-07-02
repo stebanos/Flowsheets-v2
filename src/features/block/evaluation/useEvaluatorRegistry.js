@@ -1,5 +1,5 @@
 import { computed, effectScope, reactive, watch } from 'vue';
-import { buildTemplateExpression, detectStringMode, evaluateInContext } from '@/shared/lib/evaluator';
+import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext } from '@/shared/lib/evaluator';
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -9,11 +9,12 @@ import { buildTemplateExpression, detectStringMode, evaluateInContext } from '@/
  * Create an evaluator registry for a set of blocks.
  * @param {import('vue').Ref<object[]>|object[]} blocks - reactive blocks array
  * @param {import('vue').ComputedRef<object>} dependsOn - computed dep map
- * @returns {{ getEvaluation: Function, errorFlags: object, dispose: Function }}
+ * @returns {{ getEvaluation: Function, getStatus: Function, errorFlags: object, dispose: Function }}
  */
 export function useEvaluatorRegistry(blocks, dependsOn) {
     const results = reactive({});
     const errorFlags = reactive({});
+    const statuses = computed(() => computeBlockStatuses(dependsOn.value, errorFlags));
     const evaluatorMap = new Map(); // Map<blockId, { scope: EffectScope, evaluator: ComputedRef }>
     const idToName = new Map();     // Map<blockId, blockName>
     const nameToId = reactive({});  // reactive: blockName → blockId; enables getEvaluation reactivity
@@ -136,6 +137,10 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         return entry ? entry.evaluator.value : { value: null, error: `no block named "${name}"` };
     }
 
+    function getStatus(name) {
+        return statuses.value[name] ?? 'ok';
+    }
+
     function dispose() {
         for (const { scope } of evaluatorMap.values()) { scope.stop(); }
         evaluatorMap.clear();
@@ -144,5 +149,5 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         for (const key of Object.keys(errorFlags)) { delete errorFlags[key]; }
     }
 
-    return { getEvaluation, errorFlags, dispose };
+    return { getEvaluation, getStatus, errorFlags, dispose };
 }

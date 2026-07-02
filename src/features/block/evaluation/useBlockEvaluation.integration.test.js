@@ -24,7 +24,7 @@ async function prime(...names) {
     await nextTick();
 }
 
-let getEvaluation, dispose;
+let getEvaluation, getStatus, dispose;
 let addBlock, removeBlock, updateBlock, blocks;
 
 beforeEach(() => {
@@ -38,6 +38,7 @@ beforeEach(() => {
         return useEvaluatorRegistry(blocks, dependsOn);
     });
     getEvaluation = wired.getEvaluation;
+    getStatus = wired.getStatus;
     dispose = wired.dispose;
 });
 
@@ -244,5 +245,72 @@ describe('S8 — inputModes each/all', () => {
         // With all mode, nums is [10, 20] — nums * 2 is NaN for an array,
         // but nums.length would be 2. Just verify it's no longer iterating.
         expect(Array.isArray(getEvaluation('result').value)).toBe(false);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// S9 — error blast radius: getStatus through the real pipeline
+// ---------------------------------------------------------------------------
+
+describe('S9 — error blast radius', () => {
+    test('healthy chain reports all blocks ok', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'a + 1');
+        addTestBlock('3', 'c', 'b + 1');
+        await nextTick();
+        await prime('a', 'b', 'c');
+
+        expect(getStatus('a')).toBe('ok');
+        expect(getStatus('b')).toBe('ok');
+        expect(getStatus('c')).toBe('ok');
+    });
+
+    test('upstream error marks itself error and downstream dependents blocked', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'a + 1');
+        addTestBlock('3', 'c', 'b + 1');
+        await nextTick();
+        await prime('a', 'b', 'c');
+        expect(getStatus('a')).toBe('ok');
+
+        updateBlock('1', { code: 'nonexistent.rate' });
+        await nextTick();
+        await prime('a', 'b', 'c');
+
+        expect(getStatus('a')).toBe('error');
+        expect(getStatus('b')).toBe('blocked');
+        expect(getStatus('c')).toBe('blocked');
+    });
+
+    test('block whose own code errors with no broken upstream reports error', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'nonexistent.rate');
+        await nextTick();
+        await prime('a', 'b');
+
+        expect(getStatus('a')).toBe('ok');
+        expect(getStatus('b')).toBe('error');
+    });
+
+    test('fixing the upstream error flips downstream blocks back to ok', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'a + 1');
+        addTestBlock('3', 'c', 'b + 1');
+        await nextTick();
+
+        updateBlock('1', { code: 'nonexistent.rate' });
+        await nextTick();
+        await prime('a', 'b', 'c');
+        expect(getStatus('a')).toBe('error');
+        expect(getStatus('b')).toBe('blocked');
+        expect(getStatus('c')).toBe('blocked');
+
+        updateBlock('1', { code: '1' });
+        await nextTick();
+        await prime('a', 'b', 'c');
+
+        expect(getStatus('a')).toBe('ok');
+        expect(getStatus('b')).toBe('ok');
+        expect(getStatus('c')).toBe('ok');
     });
 });

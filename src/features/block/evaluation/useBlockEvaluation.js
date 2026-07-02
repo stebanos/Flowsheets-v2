@@ -13,6 +13,7 @@ export function useBlockEvaluation(dependsOn) {
     }
 
     return {
-        getEvaluation: registry.getEvaluation
+        getEvaluation: registry.getEvaluation,
+        getStatus: registry.getStatus
     };
 }
