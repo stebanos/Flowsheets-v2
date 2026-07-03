@@ -8,6 +8,7 @@ import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
+import { useDataImport } from '@/features/block/import';
 import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
@@ -122,8 +123,29 @@ const canvasContextMenuItems = [
                 body: ''
             });
         }
+    },
+    {
+        label: 'Import data…',
+        command: () => {
+            importTargetPos.value = { x: contextMenuPos.value.x, y: contextMenuPos.value.y };
+            dataInputEl.value?.click();
+        }
     }
 ];
+
+// CSV / JSON data import
+const { importDataFile, pendingLargeImport, confirmLargeImport, cancelLargeImport } = useDataImport({ createBlock, cellWidth, unitY });
+const dataInputEl = ref(null);
+const importTargetPos = ref({ x: 0, y: 0 });
+const dataImportError = ref(null);
+
+async function onDataInputChange(e) {
+    const file = e.target.files[0];
+    if (!file) { return; }
+    e.target.value = '';
+    const result = await importDataFile(file, importTargetPos.value);
+    if (result.error) { dataImportError.value = result.error; }
+}
 
 // keyboard nav
 const { registerCanvas, focusedBlockName } = useFocusedBlock();
@@ -184,9 +206,25 @@ function onEditViz(vizName) {
     activeVizName.value = vizName;
 }
 
+function _isDataFile(name) {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.csv')) { return true; }
+    return lower.endsWith('.json') && !lower.endsWith('.flowsheet.json') && !lower.endsWith('.flowbundle.json');
+}
+
 async function onDrop(e) {
-    const file = [...(e.dataTransfer?.files ?? [])].find(f => f.name.endsWith('.flowsheet.json'));
-    if (file) { await prepareImport(file); }
+    const files = [...(e.dataTransfer?.files ?? [])];
+
+    const sheetFile = files.find(f => f.name.endsWith('.flowsheet.json'));
+    if (sheetFile) { await prepareImport(sheetFile); return; }
+
+    const dataFile = files.find(f => _isDataFile(f.name));
+    if (dataFile) {
+        const { left, top } = canvasEl.value.getBoundingClientRect();
+        const pos = { x: e.clientX - left - panX.value, y: e.clientY - top - panY.value };
+        const result = await importDataFile(dataFile, pos);
+        if (result.error) { dataImportError.value = result.error; }
+    }
 }
 
 function onCreate(event) {
@@ -367,5 +405,48 @@ const statusColor = computed(() => {
             </template>
         </p-drawer>
         <p-context-menu ref="canvasContextMenu" :model="canvasContextMenuItems" />
+
+        <!-- Hidden data-import file input -->
+        <input
+            ref="dataInputEl"
+            type="file"
+            accept=".csv,.json"
+            class="hidden"
+            @change="onDataInputChange"
+        />
+
+        <!-- Data import error dialog -->
+        <p-dialog
+            v-if="dataImportError"
+            :visible="true"
+            modal
+            :closable="false"
+            header="Import failed"
+            class="w-md"
+        >
+            <p class="text-sm text-red-500">{{ dataImportError }}</p>
+            <template #footer>
+                <p-button label="Close" @click="dataImportError = null" />
+            </template>
+        </p-dialog>
+
+        <!-- Large-file import confirmation -->
+        <p-dialog
+            v-if="pendingLargeImport"
+            :visible="true"
+            modal
+            :closable="false"
+            header="Large file"
+            class="w-md"
+        >
+            <p class="text-sm text-gray-600">
+                This file is large ({{ (pendingLargeImport.byteLength / (1024 * 1024)).toFixed(1) }} MB).
+                Embedding it may slow the sheet. Import anyway?
+            </p>
+            <template #footer>
+                <p-button label="Cancel" severity="secondary" text @click="cancelLargeImport" />
+                <p-button label="Import" @click="confirmLargeImport" />
+            </template>
+        </p-dialog>
     </div>
 </template>
