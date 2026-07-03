@@ -28,6 +28,8 @@ Visit http://localhost:5173.
 
 **Add notes** — right-click empty canvas to drop a sticky note; drag it by its header and give it an optional title to annotate the sheet.
 
+**Import data** — right-click the canvas and choose *Import data…*, or drag a `.csv` / `.json` file onto it. The file becomes a block holding the parsed value (CSV rows turn into an array of objects, with numbers, booleans, and blanks coerced), ready to reference and visualize like anything else.
+
 **Visualizations** — by default, arrays render as a scrollable list and other values as text. Click the chart icon on a block to switch to HTML (rendered in a sandboxed iframe), JSON (pretty-printed), text diff (line-level diff against another block), data table (arrays of objects or arrays rendered as a scrollable table), bar chart (numbers or labeled pairs), sparkline (a compact trend line), timeline (a time series over `[date, value]` pairs), or a custom JS component authored in the sidebar.
 
 **Work across sheets** — a workbook holds many sheets. Use the left sidebar to create, rename, and delete them, or the tab strip to switch between the ones you have open. Each sheet has its own canvas, blocks, and history.
