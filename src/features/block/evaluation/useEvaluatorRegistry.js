@@ -1,5 +1,10 @@
-import { computed, effectScope, reactive, watch } from 'vue';
+import { computed, effectScope, reactive, toRaw, watch } from 'vue';
 import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext } from '@/shared/lib/evaluator';
+
+function outputsEqual(a, b) {
+    if (a === b) { return true; }
+    try { return JSON.stringify(toRaw(a)) === JSON.stringify(toRaw(b)); } catch { return false; }
+}
 
 // ---------------------------------------------------------------------------
 // Registry factory
@@ -14,6 +19,7 @@ import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evalua
 export function useEvaluatorRegistry(blocks, dependsOn) {
     const results = reactive({});
     const errorFlags = reactive({});
+    const previous = reactive({});  // blockId → { value } — one previous value per block, changed-only
     const statuses = computed(() => computeBlockStatuses(dependsOn.value, errorFlags));
     const evaluatorMap = new Map(); // Map<blockId, { scope: EffectScope, evaluator: ComputedRef }>
     const idToName = new Map();     // Map<blockId, blockName>
@@ -21,6 +27,16 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
 
     function createBlockEvaluator(block) {
         let lastCache = null;
+        let hasValue = false;
+        let lastGood;
+
+        function record(newValue) {
+            if (hasValue && !outputsEqual(lastGood, newValue)) {
+                previous[block.id] = { value: lastGood };
+            }
+            lastGood = newValue;
+            hasValue = true;
+        }
 
         return computed(() => {
             const myDeps = dependsOn.value[block.name] || [];
@@ -44,6 +60,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     lastCache
                 );
                 lastCache = out.cache;
+                if (!out.error) { record(out.value); }
                 results[block.name] = out.value;
                 errorFlags[block.name] = !!out.error;
                 return { value: out.value, error: out.error };
@@ -68,6 +85,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             }
 
             lastCache = null;
+            if (!firstError) { record(resultArr); }
             results[block.name] = resultArr;
             errorFlags[block.name] = !!firstError;
             return { value: resultArr, error: firstError };
@@ -94,6 +112,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     delete errorFlags[name];
                     delete nameToId[name];
                 }
+                delete previous[id];
                 idToName.delete(id);
             }
 
@@ -141,13 +160,20 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         return statuses.value[name] ?? 'ok';
     }
 
+    function getPrevious(name) {
+        const id = nameToId[name]; // reactive read — Vue tracks this dependency
+        if (!id) { return null; }
+        return previous[id] ?? null;
+    }
+
     function dispose() {
         for (const { scope } of evaluatorMap.values()) { scope.stop(); }
         evaluatorMap.clear();
         idToName.clear();
         for (const key of Object.keys(nameToId)) { delete nameToId[key]; }
         for (const key of Object.keys(errorFlags)) { delete errorFlags[key]; }
+        for (const key of Object.keys(previous)) { delete previous[key]; }
     }
 
-    return { getEvaluation, getStatus, errorFlags, dispose };
+    return { getEvaluation, getStatus, getPrevious, errorFlags, dispose };
 }

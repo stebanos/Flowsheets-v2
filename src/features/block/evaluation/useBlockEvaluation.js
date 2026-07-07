@@ -14,6 +14,7 @@ export function useBlockEvaluation(dependsOn) {
 
     return {
         getEvaluation: registry.getEvaluation,
-        getStatus: registry.getStatus
+        getStatus: registry.getStatus,
+        getPrevious: registry.getPrevious
     };
 }

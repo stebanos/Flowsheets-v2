@@ -9,6 +9,7 @@ import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
 import { useBlockNavigation, useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
 import { useVizMenu, VizMenu } from '@/features/block/visualize';
+import OutputHistoryPopover from './OutputHistoryPopover.vue';
 import { useBlockDimensions } from './useBlockDimensions';
 import { useBlockExtract } from './useBlockExtract';
 import { useBlockOutput } from './useBlockOutput';
@@ -137,6 +138,18 @@ const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.val
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 const status = computed(() => props.context.getStatus(props.block.name));
+const previousEval = computed(() => props.context.getPrevious?.(props.block.name) ?? null);
+
+const outputHistoryVisible = ref(false);
+let outputHoverTimer = null;
+function onOutputMouseEnter() {
+    if (!previousEval.value) { return; }
+    outputHoverTimer = setTimeout(() => { outputHistoryVisible.value = true; }, 400);
+}
+function onOutputMouseLeave() {
+    clearTimeout(outputHoverTimer);
+    outputHistoryVisible.value = false;
+}
 
 const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, outputHeight } =
     useBlockOutput(props.block, { cellHeight, blockEval });
@@ -153,6 +166,7 @@ const {
 
 onBeforeUnmount(() => {
     unregister(props.block.name);
+    clearTimeout(outputHoverTimer);
 });
 
 const blockPositionStyle = computed(() => ({
@@ -360,7 +374,9 @@ watch(
         <div class="block-output w-full border-t border-gray-300 bg-white relative flex flex-col"
             :style="{ height: snappedOutputHeight + 'px' }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
-            @animationend="flashType = null">
+            @animationend="flashType = null"
+            @mouseenter="onOutputMouseEnter"
+            @mouseleave="onOutputMouseLeave">
             <div class="flex-1 min-h-0 relative"
                  :style="{ overflowY: outputOverflowY }">
                 <div v-if="status === 'blocked'"
@@ -378,6 +394,17 @@ watch(
                     :get-evaluation="context.getEvaluation"
                     class="h-full w-full"
                 />
+                <div v-if="previousEval" class="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-50 hover:opacity-100! text-gray-500 pointer-events-none transition-opacity">
+                    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3">
+                        <circle cx="8" cy="8" r="6" />
+                        <path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <output-history-popover
+                    v-if="outputHistoryVisible && previousEval"
+                    class="absolute top-0 right-0 z-20"
+                    :previous="previousEval.value"
+                    :current="blockEval?.value" />
             </div>
             <div v-if="status === 'blocked'"
                  class="w-full flex items-center px-2 border-t border-amber-100 bg-amber-50 text-amber-700 text-[10px] font-mono shrink-0"

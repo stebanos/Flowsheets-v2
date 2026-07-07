@@ -163,16 +163,98 @@ describe('error flags', () => {
     });
 });
 
+describe('previous value history', () => {
+    test('null on first evaluation', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(1);
+        expect(getPrevious('a')).toBeNull();
+    });
+
+    test('records the old value when the result changes', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(1);
+        blocks[0].code = '2';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getPrevious('a')).toEqual({ value: 1 });
+    });
+
+    test('does not clobber previous on a re-evaluation with an identical result', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(1);
+        blocks[0].code = '2';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getPrevious('a')).toEqual({ value: 1 });
+
+        // Code changes (forces recompute) but the resulting value is unchanged — must not overwrite previous
+        blocks[0].code = '1 + 1';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getPrevious('a')).toEqual({ value: 1 });
+    });
+
+    test('skips recording on error, keeps last good value for the next diff', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        expect(getEvaluation('a').value).toBe(1);
+        blocks[0].code = 'throw new Error("boom")';
+        await nextTick();
+        expect(getEvaluation('a').error).toBeTruthy();
+        expect(getPrevious('a')).toBeNull();
+
+        blocks[0].code = '2';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getPrevious('a')).toEqual({ value: 1 });
+    });
+
+    test('cleared when a block is deleted', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        getEvaluation('a');
+        blocks[0].code = '2';
+        await nextTick();
+        expect(getEvaluation('a').value).toBe(2);
+        expect(getPrevious('a')).toEqual({ value: 1 });
+        blocks.splice(0, 1);
+        await nextTick();
+        expect(getPrevious('a')).toBeNull();
+    });
+
+    test('survives a rename (keyed by block id)', async () => {
+        const blocks = reactive([{ id: '1', name: 'a', code: '1' }]);
+        const { getEvaluation, getPrevious } = createRegistry(blocks);
+        getEvaluation('a');
+        blocks[0].code = '2';
+        await nextTick();
+        blocks[0].name = 'z';
+        await nextTick();
+        getEvaluation('z');
+        expect(getPrevious('z')).toEqual({ value: 1 });
+    });
+
+    test('unknown name returns null', () => {
+        const blocks = reactive([]);
+        const { getPrevious } = createRegistry(blocks);
+        expect(getPrevious('nope')).toBeNull();
+    });
+});
+
 describe('dispose', () => {
     test('getEvaluation returns error for all blocks after dispose', async () => {
         const blocks = reactive([
             { id: '1', name: 'a', code: '1' },
             { id: '2', name: 'b', code: '2' }
         ]);
-        const { getEvaluation, dispose } = createRegistry(blocks);
+        const { getEvaluation, getPrevious, dispose } = createRegistry(blocks);
         expect(getEvaluation('a').value).toBe(1);
         dispose();
         expect(getEvaluation('a').error).toMatch(/no block named/);
         expect(getEvaluation('b').error).toMatch(/no block named/);
+        expect(getPrevious('a')).toBeNull();
     });
 });
