@@ -24,8 +24,9 @@ const BLOCKED_GLOBALS = [
 function compileFn(code, depNames, isExpression) {
     const extra = BLOCKED_GLOBALS.filter(g => !depNames.includes(g));
     const params = [...depNames, ...extra];
+    // the expression sits on its own lines so a trailing `// comment` cannot swallow the `)`
     const body = isExpression
-        ? `'use strict'; return (${code})`
+        ? `'use strict'; return (\n${code}\n)`
         : `'use strict'; ${code}`;
     return new Function(...params, body);
 }

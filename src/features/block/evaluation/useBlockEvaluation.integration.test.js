@@ -360,6 +360,12 @@ describe('S10 — evaluation isolation', () => {
 // ---------------------------------------------------------------------------
 
 describe('S11 — comments and renames', () => {
+    test('a trailing line comment keeps the expression value', async () => {
+        addTestBlock('1', 'a', '1 + 1 // sum');
+        await prime('a');
+        expect(getEvaluation('a')).toEqual({ value: 2, error: null });
+    });
+
     test('renaming a dependency leaves member properties and prose alone', async () => {
         addTestBlock('1', 'a', '[1, 2]');
         addTestBlock('2', 'b', 'a.length + a[0]', { inputModes: { a: 'all' } });

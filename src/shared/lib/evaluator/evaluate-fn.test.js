@@ -36,6 +36,18 @@ describe('compileFn', () => {
 // callFn
 // ---------------------------------------------------------------------------
 
+describe('compileFn — trailing comments', () => {
+    test('expression followed by a line comment still returns its value', () => {
+        const fn = compileFn('a + 1 // add one', ['a'], true);
+        expect(fn(2)).toBe(3);
+    });
+
+    test('expression spanning lines with a trailing comment', () => {
+        const fn = compileFn('1 +\n2 // sum', [], true);
+        expect(fn()).toBe(3);
+    });
+});
+
 describe('callFn', () => {
     test('returns value and null error on success', () => {
         const fn = compileFn('a * 2', ['a'], true);
@@ -137,5 +149,14 @@ describe('evaluateBlock', () => {
     test('dep name shadows blocked global', () => {
         const result = evaluateBlock('typeof fetch', ['fetch'], [() => {}]);
         expect(result.value).toBe('function');
+    });
+});
+
+describe('evaluateBlock — trailing comments', () => {
+    test('a trailing line comment does not turn an expression into undefined', () => {
+        const result = evaluateBlock('1 + 1 // note', [], []);
+        expect(result.error).toBeNull();
+        expect(result.value).toBe(2);
+        expect(result.isExpression).toBe(true);
     });
 });
