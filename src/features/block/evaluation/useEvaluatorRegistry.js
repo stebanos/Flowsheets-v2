@@ -1,5 +1,5 @@
 import { computed, effectScope, reactive, shallowReactive, toRaw, watch } from 'vue';
-import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext } from '@/shared/lib/evaluator';
+import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext, findCycle } from '@/shared/lib/evaluator';
 
 function outputsEqual(a, b) {
     if (a === b) { return true; }
@@ -27,6 +27,15 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
     const idToName = new Map();     // Map<blockId, blockName>
     const nameToId = reactive({});  // reactive: blockName → blockId; enables getEvaluation reactivity
 
+    // Read a dependency through its evaluator so it is computed on demand. results[name]
+    // is only populated once an evaluator has run; reading it directly let a dependent
+    // that rendered before its (new or renamed) dependency see undefined.
+    function pull(name) {
+        const id = nameToId[name]; // reactive read — a block added or renamed to this name re-triggers
+        const entry = id ? evaluatorMap.get(id) : null;
+        return entry ? entry.evaluator.value.value : undefined;
+    }
+
     function createBlockEvaluator(block) {
         let lastCache = null;
         let hasValue = false;
@@ -41,13 +50,23 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
         }
 
         return computed(() => {
+            // before pulling any dependency: pulling inside a cycle would recurse through the computeds
+            const cycle = findCycle(block.name, dependsOn.value);
+            if (cycle) {
+                const error = `Circular dependency: ${cycle.join(' \u2192 ')}`;
+                lastCache = null;
+                results[block.name] = null;
+                errorFlags[block.name] = true;
+                return { value: null, error };
+            }
+
             const myDeps = dependsOn.value[block.name] || [];
             const modes = block.inputModes || {};
 
             // Deps in "each" mode whose current value is an array
             const iterDeps = myDeps.filter(dep => {
                 const mode = modes[dep] ?? 'each';
-                return mode === 'each' && Array.isArray(results[dep]);
+                return mode === 'each' && Array.isArray(pull(dep));
             });
 
             if (iterDeps.length === 0) {
@@ -58,7 +77,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
                     code,
                     block.name,
                     dependsOn.value,
-                    n => results[n],
+                    pull,
                     lastCache
                 );
                 lastCache = out.cache;
@@ -69,7 +88,7 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             }
 
             // Iterate — zip to longest, filling short arrays with undefined
-            const len = Math.max(...iterDeps.map(dep => results[dep].length));
+            const len = Math.max(...iterDeps.map(dep => pull(dep).length));
             const resultArr = [];
             let firstError = null;
             const iterCode = detectStringMode(block.code || '')
@@ -79,7 +98,8 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             for (let i = 0; i < len; i++) {
                 const getVal = (n) => {
                     const mode = modes[n] ?? 'each';
-                    return mode === 'each' && Array.isArray(results[n]) ? results[n][i] : results[n];
+                    const v = pull(n);
+                    return mode === 'each' && Array.isArray(v) ? v[i] : v;
                 };
                 // code and dep names are the same for every element, so the compiled fn is reused
                 const out = evaluateInContext(iterCode, block.name, dependsOn.value, getVal, lastCache);

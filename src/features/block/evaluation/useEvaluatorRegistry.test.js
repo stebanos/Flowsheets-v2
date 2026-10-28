@@ -281,3 +281,23 @@ describe('each mode compilation', () => {
         }
     });
 });
+
+describe('demand-driven dependencies', () => {
+    test('a dependent evaluates its dependency on demand without priming', () => {
+        const blocks = reactive([
+            { id: '1', name: 'a', code: '1' },
+            { id: '2', name: 'b', code: 'a + 1' }
+        ]);
+        const { getEvaluation } = createRegistry(blocks, { a: [], b: ['a'] });
+        expect(getEvaluation('b')).toEqual({ value: 2, error: null });
+    });
+
+    test('each mode iterates an unprimed array dependency', () => {
+        const blocks = reactive([
+            { id: '1', name: 'nums', code: '[1, 2]' },
+            { id: '2', name: 'doubled', code: 'nums * 2' }
+        ]);
+        const { getEvaluation } = createRegistry(blocks, { nums: [], doubled: ['nums'] });
+        expect(getEvaluation('doubled').value).toEqual([2, 4]);
+    });
+});

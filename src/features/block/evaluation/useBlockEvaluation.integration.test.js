@@ -15,16 +15,15 @@ function withSetup(fn) {
     return result;
 }
 
-// Evaluator computeds are lazy — results[name] is only populated once the evaluator
-// is accessed. In the real app Block.vue calls getEvaluation for every block on each
-// render, priming the chain. In tests, we must do this explicitly for dependencies
-// before asserting a downstream block's value.
+// Dependents pull their dependencies' evaluators on demand, so priming is not required
+// for correctness. It is kept where a test wants a dependency evaluated up front, e.g.
+// to assert on history or to mirror the render order of the real app.
 async function prime(...names) {
     names.forEach(n => getEvaluation(n));
     await nextTick();
 }
 
-let getEvaluation, getStatus, dispose;
+let getEvaluation, getStatus, getPrevious, dispose;
 let addBlock, removeBlock, updateBlock, blocks;
 
 beforeEach(() => {
@@ -39,6 +38,7 @@ beforeEach(() => {
     });
     getEvaluation = wired.getEvaluation;
     getStatus = wired.getStatus;
+    getPrevious = wired.getPrevious;
     dispose = wired.dispose;
 });
 
@@ -427,5 +427,29 @@ describe('S12 — raw values', () => {
         globalThis.__fsObj = getEvaluation('obj').value;
         expect(getEvaluation('same')).toEqual({ value: true, error: null });
         delete globalThis.__fsObj;
+    });
+});
+
+// ---------------------------------------------------------------------------
+// S13 — rename does not leak a transient value into the dependent or its history
+// ---------------------------------------------------------------------------
+
+describe('S13 — rename and evaluation history', () => {
+    test('a dependent read before the renamed block keeps its value and records no history', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'a + 1');
+        await nextTick();
+        await prime('a');
+        expect(getEvaluation('b')).toEqual({ value: 2, error: null });
+
+        updateBlock('1', { name: 'x' });
+        updateBlock('2', { code: renameIdentifier('a + 1', 'a', 'x') });
+        await nextTick();
+
+        // the dependent is read first, as happens when it renders before the renamed block
+        expect(getEvaluation('b')).toEqual({ value: 2, error: null });
+        expect(getEvaluation('x')).toEqual({ value: 1, error: null });
+        expect(getEvaluation('b')).toEqual({ value: 2, error: null });
+        expect(getPrevious('b')).toBeNull();
     });
 });
