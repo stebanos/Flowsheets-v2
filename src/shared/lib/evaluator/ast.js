@@ -1,5 +1,8 @@
 import { parse } from 'acorn';
 
+// block code is compiled as a function body, so a top-level `return` is legal
+const PARSE_OPTIONS = { ecmaVersion: 'latest', sourceType: 'module', allowReturnOutsideFunction: true };
+
 /**
  * Return a Set of identifier names that appear as *free* references in `code`:
  * names not bound by any enclosing declaration, parameter, import, catch clause,
@@ -19,7 +22,7 @@ import { parse } from 'acorn';
 export function extractFreeIdentifiers(code) {
     let ast;
     try {
-        ast = parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+        ast = parse(code, PARSE_OPTIONS);
     } catch (_e) {
         return new Set();
     }
@@ -38,7 +41,7 @@ export function extractFreeIdentifiers(code) {
 export function findFreeReferences(code, name) {
     let ast;
     try {
-        ast = parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+        ast = parse(code, PARSE_OPTIONS);
     } catch (_e) {
         return null;
     }

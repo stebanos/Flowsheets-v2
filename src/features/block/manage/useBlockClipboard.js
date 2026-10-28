@@ -1,6 +1,7 @@
+import { renameIdentifiers } from '@/shared/lib/evaluator';
+import { generateUniqueId } from '@/shared/utils';
 import { useBlockStore, generateUniqueNameFromName } from '@/entities/block';
 import { useHistory } from '@/features/sheet/history';
-import { generateUniqueId } from '@/shared/utils';
 
 export function useBlockClipboard() {
     const { blocks: storeBlocks, addBlock, removeBlock } = useBlockStore();
@@ -78,16 +79,12 @@ export function useBlockClipboard() {
         beginGroup();
         for (const b of pastedBlocks) {
             const newName = nameMap.get(b.name);
-            let code = b.code || '';
-            for (const [oldName, mappedName] of nameMap) {
-                const re = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-                code = code.replace(re, mappedName);
-            }
             addBlock({
                 ...b,
                 id: generateUniqueId(storeBlocks.map(bl => bl.id)),
                 name: newName,
-                code,
+                code: renameIdentifiers(b.code || '', nameMap),
+                inputModes: _remapModes(b.inputModes, nameMap),
                 x: b.x + offsetX,
                 y: b.y + offsetY
             });
@@ -117,16 +114,12 @@ export function useBlockClipboard() {
         beginGroup();
         for (const b of selected) {
             const newName = nameMap.get(b.name);
-            let code = b.code || '';
-            for (const [oldName, mappedName] of nameMap) {
-                const re = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-                code = code.replace(re, mappedName);
-            }
             addBlock({
                 ...b,
                 id: generateUniqueId(storeBlocks.map(bl => bl.id)),
                 name: newName,
-                code,
+                code: renameIdentifiers(b.code || '', nameMap),
+                inputModes: _remapModes(b.inputModes, nameMap),
                 x: Math.floor((b.x + 50) / cellWidth.value) * cellWidth.value,
                 y: Math.floor((b.y + 50) / unitY.value) * unitY.value
             });
@@ -138,4 +131,13 @@ export function useBlockClipboard() {
     }
 
     return { copySelected, cutSelected, pasteBlocks, duplicateSelected };
+}
+
+function _remapModes(inputModes, nameMap) {
+    if (!inputModes) { return inputModes; }
+    const out = {};
+    for (const [name, mode] of Object.entries(inputModes)) {
+        out[nameMap.get(name) ?? name] = mode;
+    }
+    return out;
 }

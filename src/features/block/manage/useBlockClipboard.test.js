@@ -197,6 +197,63 @@ describe('pasteBlocks', () => {
         expect(secondCall.code).toBe('a2 * b2');
     });
 
+    it('remaps chained names simultaneously (a→a2 while a2→a3)', async () => {
+        mockBlocks.push({ id: 'e1', name: 'a', x: 0, y: 0, code: '' });
+        const payload = {
+            type: 'flowsheets/blocks',
+            blocks: [
+                { id: 'x', name: 'a', x: 0, y: 0, code: '1' },
+                { id: 'y', name: 'a2', x: 50, y: 0, code: 'a + a2' }
+            ]
+        };
+        mockReadText.mockResolvedValue(JSON.stringify(payload));
+        const newNames = await pasteBlocks({ canvasX: 0, canvasY: 0, ...makeCanvas() });
+        expect(newNames).toEqual(['a2', 'a22']);
+        expect(mockAddBlock.mock.calls[1][0].code).toBe('a2 + a22');
+    });
+
+    it('does not remap shadowed locals, strings or comments', async () => {
+        mockBlocks.push({ id: 'e1', name: 'a', x: 0, y: 0, code: '' });
+        const payload = {
+            type: 'flowsheets/blocks',
+            blocks: [
+                { id: 'x', name: 'a', x: 0, y: 0, code: '1' },
+                { id: 'y', name: 'b', x: 50, y: 0, code: 'const a = "a"; // a\nreturn a' }
+            ]
+        };
+        mockReadText.mockResolvedValue(JSON.stringify(payload));
+        await pasteBlocks({ canvasX: 0, canvasY: 0, ...makeCanvas() });
+        expect(mockAddBlock.mock.calls[1][0].code).toBe('const a = "a"; // a\nreturn a');
+    });
+
+    it('remaps $-prefixed names', async () => {
+        mockBlocks.push({ id: 'e1', name: '$a', x: 0, y: 0, code: '' });
+        const payload = {
+            type: 'flowsheets/blocks',
+            blocks: [
+                { id: 'x', name: '$a', x: 0, y: 0, code: '1' },
+                { id: 'y', name: 'b', x: 50, y: 0, code: '$a + 1' }
+            ]
+        };
+        mockReadText.mockResolvedValue(JSON.stringify(payload));
+        await pasteBlocks({ canvasX: 0, canvasY: 0, ...makeCanvas() });
+        expect(mockAddBlock.mock.calls[1][0].code).toBe('$a2 + 1');
+    });
+
+    it('carries inputModes over to the remapped names', async () => {
+        mockBlocks.push({ id: 'e1', name: 'a', x: 0, y: 0, code: '' });
+        const payload = {
+            type: 'flowsheets/blocks',
+            blocks: [
+                { id: 'x', name: 'a', x: 0, y: 0, code: '[1, 2]' },
+                { id: 'y', name: 'b', x: 50, y: 0, code: 'a + ext', inputModes: { a: 'all', ext: 'each' } }
+            ]
+        };
+        mockReadText.mockResolvedValue(JSON.stringify(payload));
+        await pasteBlocks({ canvasX: 0, canvasY: 0, ...makeCanvas() });
+        expect(mockAddBlock.mock.calls[1][0].inputModes).toEqual({ ext: 'each', a2: 'all' });
+    });
+
     it('leaves external block references untouched', async () => {
         const payload = {
             type: 'flowsheets/blocks',
@@ -273,6 +330,37 @@ describe('duplicateSelected', () => {
         const secondCall = mockAddBlock.mock.calls[1][0];
         expect(firstCall.code).toBe('a2 + 1');
         expect(secondCall.code).toBe('a2 * b2');
+    });
+
+    it('remaps chained names simultaneously (a→a2 while a2→a3)', () => {
+        const blocks = [
+            { id: '1', name: 'a', x: 0, y: 0, code: '1' },
+            { id: '2', name: 'a2', x: 0, y: 0, code: 'a + a2' }
+        ];
+        mockBlocks.push(...blocks);
+        const newNames = duplicateSelected(blocks, ['a', 'a2'], dims());
+        expect(newNames).toEqual(['a3', 'a22']);
+        expect(mockAddBlock.mock.calls[1][0].code).toBe('a3 + a22');
+    });
+
+    it('does not remap shadowed locals or strings', () => {
+        const blocks = [
+            { id: '1', name: 'a', x: 0, y: 0, code: '1' },
+            { id: '2', name: 'b', x: 0, y: 0, code: 'const a = "a"; return a' }
+        ];
+        mockBlocks.push(...blocks);
+        duplicateSelected(blocks, ['a', 'b'], dims());
+        expect(mockAddBlock.mock.calls[1][0].code).toBe('const a = "a"; return a');
+    });
+
+    it('carries inputModes over to the remapped names', () => {
+        const blocks = [
+            { id: '1', name: 'a', x: 0, y: 0, code: '[1, 2]' },
+            { id: '2', name: 'b', x: 0, y: 0, code: 'a + ext', inputModes: { a: 'all', ext: 'each' } }
+        ];
+        mockBlocks.push(...blocks);
+        duplicateSelected(blocks, ['a', 'b'], dims());
+        expect(mockAddBlock.mock.calls[1][0].inputModes).toEqual({ ext: 'each', a2: 'all' });
     });
 
     it('returns new block names', () => {

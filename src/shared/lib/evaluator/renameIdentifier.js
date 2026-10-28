@@ -16,26 +16,48 @@ function escapeRegExp(s) {
  * comments.
  */
 export function renameIdentifier(code, oldName, newName) {
+    return renameIdentifiers(code, { [oldName]: newName });
+}
+
+/**
+ * Apply several renames at once. `map` is `{ oldName: newName }` (or a Map); every
+ * replacement is resolved against the original code, so chained mappings such as
+ * `{ a: 'a2', a2: 'a3' }` never cascade.
+ */
+export function renameIdentifiers(code, map) {
     if (!code || typeof code !== 'string') { return code; }
+    const entries = map instanceof Map ? [...map] : Object.entries(map ?? {});
+    const pairs = entries.filter(([from, to]) => from !== to);
+    if (!pairs.length) { return code; }
 
     if (detectStringMode(code)) {
         const wrapped = '`' + code.replace(/`/g, '\\`') + '`';
-        const refs = findFreeReferences(wrapped, oldName);
-        if (refs === null) { return _renameByScan(code, oldName, newName); }
-        return _splice(wrapped, refs, oldName, newName).slice(1, -1).replace(/\\`/g, '`');
+        const refs = _collectRefs(wrapped, pairs);
+        if (refs === null) { return _renameByScan(code, pairs); }
+        return _splice(wrapped, refs).slice(1, -1).replace(/\\`/g, '`');
     }
 
-    const refs = findFreeReferences(code, oldName);
-    if (refs === null) { return _renameByScan(code, oldName, newName); }
-    return _splice(code, refs, oldName, newName);
+    const refs = _collectRefs(code, pairs);
+    if (refs === null) { return _renameByScan(code, pairs); }
+    return _splice(code, refs);
 }
 
-function _splice(code, refs, oldName, newName) {
+function _collectRefs(code, pairs) {
+    const all = [];
+    for (const [from, to] of pairs) {
+        const refs = findFreeReferences(code, from);
+        if (refs === null) { return null; }
+        for (const ref of refs) { all.push({ ...ref, from, to }); }
+    }
+    return all;
+}
+
+function _splice(code, refs) {
     let out = '';
     let last = 0;
     for (const ref of [...refs].sort((a, b) => a.start - b.start)) {
         out += code.slice(last, ref.start);
-        out += ref.shorthand ? `${oldName}: ${newName}` : newName;
+        out += ref.shorthand ? `${ref.from}: ${ref.to}` : ref.to;
         last = ref.end;
     }
     return out + code.slice(last);
@@ -43,7 +65,7 @@ function _splice(code, refs, oldName, newName) {
 
 // ── fallback: lexical scan for code that does not parse ─────────────────────
 
-function _renameByScan(code, oldName, newName) {
+function _renameByScan(code, pairs) {
     const len = code.length;
     const skip = new Uint8Array(len); // 1 = skip (inside string/comment/template raw), 0 = ok
 
@@ -188,7 +210,9 @@ function _renameByScan(code, oldName, newName) {
     }
 
     // identifier boundaries — `$` is an identifier character, so \b would miss `$a`
-    const idRegex = new RegExp('(?<![\\w$])' + escapeRegExp(oldName) + '(?![\\w$])', 'g');
+    const lookup = new Map(pairs);
+    const alternation = pairs.map(([from]) => escapeRegExp(from)).join('|');
+    const idRegex = new RegExp('(?<![\\w$])(?:' + alternation + ')(?![\\w$])', 'g');
     let out = '';
     let lastIndex = 0;
     let m;
@@ -207,7 +231,7 @@ function _renameByScan(code, oldName, newName) {
             continue;
         }
 
-        out += code.slice(lastIndex, from) + newName;
+        out += code.slice(lastIndex, from) + lookup.get(m[0]);
         lastIndex = to;
     }
     if (lastIndex < code.length) {

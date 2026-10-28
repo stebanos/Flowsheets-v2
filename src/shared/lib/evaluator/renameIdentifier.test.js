@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, test } from 'vitest';
-import { renameIdentifier } from './renameIdentifier';
+import { renameIdentifier, renameIdentifiers } from './renameIdentifier';
 
 describe('basic rename', () => {
     test('renames identifier', () => {
@@ -131,5 +131,36 @@ describe('unparseable code', () => {
         expect(renameIdentifier('a + ', 'a', 'x')).toBe('x + ');
         expect(renameIdentifier('a$ + (', 'a', 'x')).toBe('a$ + (');
         expect(renameIdentifier('$a + (', '$a', 'b')).toBe('b + (');
+    });
+});
+
+describe('renameIdentifiers (simultaneous)', () => {
+    test('applies every mapping in one pass — chained names do not cascade', () => {
+        expect(renameIdentifiers('a + a2', { a: 'a2', a2: 'a3' })).toBe('a2 + a3');
+    });
+
+    test('swaps two names', () => {
+        expect(renameIdentifiers('a + b', { a: 'b', b: 'a' })).toBe('b + a');
+    });
+
+    test('respects scope, strings and comments for each name', () => {
+        const code = 'const b = 1; // a\n"a" + a + b';
+        expect(renameIdentifiers(code, { a: 'x', b: 'y' })).toBe('const b = 1; // a\n"a" + x + b');
+    });
+
+    test('handles $ names and shorthand properties', () => {
+        expect(renameIdentifiers('({ a, $b })', { a: 'x', $b: 'y' })).toBe('({ a: x, $b: y })');
+    });
+
+    test('string mode remaps interpolations only', () => {
+        expect(renameIdentifiers('a is ${a + a2}', { a: 'a2', a2: 'a3' })).toBe('a is ${a2 + a3}');
+    });
+
+    test('unparseable code falls back to a simultaneous scan', () => {
+        expect(renameIdentifiers('a + a2 +', { a: 'a2', a2: 'a3' })).toBe('a2 + a3 +');
+    });
+
+    test('empty map returns code unchanged', () => {
+        expect(renameIdentifiers('a + b', {})).toBe('a + b');
     });
 });

@@ -154,6 +154,10 @@ describe('extractFreeIdentifiers', () => {
     // -------------------------------------------------------------------------
 
     describe('parse errors', () => {
+        test('top-level return parses (block code is a function body)', () => {
+            expect(free('const x = a; return x + b')).toEqual(['a', 'b']);
+        });
+
         test('returns empty set on syntax error', () => {
             expect(free('if (')).toEqual([]);
             expect(free('???')).toEqual([]);
