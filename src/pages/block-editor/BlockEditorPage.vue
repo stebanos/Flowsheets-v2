@@ -33,7 +33,7 @@ const { createBlock } = useBlockManager();
 const { copySelected, cutSelected, pasteBlocks, duplicateSelected } = useBlockClipboard();
 const { deleteBlock } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
-const { cellWidth, cellHeight, unitY, setCellDimensions } = useCellDimensions();
+const { cellWidth, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
 
 // viz sidebar
@@ -381,7 +381,7 @@ const statusColor = computed(() => {
                         :class="isPanning ? 'cursor-grabbing select-none' : 'cursor-grab'"
                         @mousedown="onCanvasMousedown"
                     />
-                    <block-grid data-block-grid :data-cell-width="cellWidth" :data-cell-height="cellHeight" :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
+                    <block-grid data-block-grid :pan-x="panX" :pan-y="panY" @dblclick="onCreate" />
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
                         <canvas-note v-for="note in notes" :key="`note-${note.id}`" class="pointer-events-auto" :note />
                         <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />

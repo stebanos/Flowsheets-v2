@@ -9,22 +9,22 @@ const props = defineProps({
 
 const { cellWidth, cellHeight } = useCellDimensions();
 
-const bgPosition = computed(() => {
-    const x = ((props.panX % cellWidth.value) + cellWidth.value) % cellWidth.value;
-    const y = ((props.panY % cellHeight.value) + cellHeight.value) % cellHeight.value;
-    return `${x}px ${y}px`;
+const gridStyle = computed(() => {
+    const w = cellWidth.value;
+    const h = cellHeight.value;
+    const x = ((props.panX % w) + w) % w;
+    const y = ((props.panY % h) + h) % h;
+    return {
+        backgroundImage: [
+            'linear-gradient(to right, #e6e6e6 1px, transparent 1px)',
+            'linear-gradient(to bottom, #e6e6e6 1px, transparent 1px)'
+        ].join(', '),
+        backgroundSize: `${w}px ${h}px`,
+        backgroundPosition: `${x}px ${y}px`
+    };
 });
 </script>
 
 <template>
-    <div class="relative h-full w-full grid-pattern bg-repeat" :style="{ backgroundPosition: bgPosition }"></div>
+    <div class="relative h-full w-full bg-repeat" :style="gridStyle"></div>
 </template>
-
-<style scoped>
-.grid-pattern {
-    background-image:
-        linear-gradient(to right, #e6e6e6 1px, transparent 1px attr(data-cell-width px)),
-        linear-gradient(to bottom, #e6e6e6 1px, transparent 1px attr(data-cell-height px));
-    background-size: attr(data-cell-width px) attr(data-cell-height px);
-}
-</style>
