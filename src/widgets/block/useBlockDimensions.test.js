@@ -1,6 +1,7 @@
 import { createApp, nextTick, ref } from 'vue';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { useBlockStore } from '@/entities/block';
+import { useHistory } from '@/features/sheet/history';
 import { useBlockDimensions } from './useBlockDimensions';
 
 function withSetup(composable) {
@@ -10,7 +11,8 @@ function withSetup(composable) {
     return result;
 }
 
-const { blocks, addBlock } = useBlockStore();
+const { blocks, addBlock, updateBlock } = useBlockStore();
+const { suppress } = useHistory();
 
 beforeEach(() => { blocks.splice(0); });
 
@@ -87,5 +89,33 @@ describe('useBlockDimensions', () => {
         await nextTick();
 
         expect(block.width).toBe(200);
+    });
+
+    test('editorHeight follows the store when the block is restored (undo/redo)', async () => {
+        addBlock({ id: 'b1', name: 'a', width: 200, height: 160, editorHeight: 80, outputHeight: 120 });
+        const block = blocks[0];
+        const { editorHeight, snappedBlockHeight } = withSetup(() => useBlockDimensions(block, makeDeps()));
+
+        editorHeight.value = 160;
+        updateBlock('b1', { editorHeight: 160 }); // what the resize handle does on mouseup
+        await nextTick();
+        suppress(() => updateBlock('b1', { editorHeight: 80 })); // snapshot restore
+        await nextTick();
+
+        expect(editorHeight.value).toBe(80);
+        expect(snappedBlockHeight.value).toBe(160); // 40 + 80 + 0 + 40
+    });
+
+    test('editorWidth follows the store when the block is restored (undo/redo)', async () => {
+        addBlock({ id: 'b1', name: 'a', width: 200, height: 160, editorHeight: 80, outputHeight: 120 });
+        const block = blocks[0];
+        const { editorWidth } = withSetup(() => useBlockDimensions(block, makeDeps()));
+
+        editorWidth.value = 300;
+        await nextTick();
+        suppress(() => updateBlock('b1', { width: 200 }));
+        await nextTick();
+
+        expect(editorWidth.value).toBe(200);
     });
 });

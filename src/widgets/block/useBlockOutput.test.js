@@ -1,4 +1,4 @@
-import { createApp, ref } from 'vue';
+import { createApp, nextTick, reactive, ref } from 'vue';
 import { describe, expect, test } from 'vitest';
 import { useBlockOutput } from './useBlockOutput';
 
@@ -63,5 +63,20 @@ describe('useBlockOutput', () => {
         );
 
         expect(outputOverflowY.value).toBe('auto');
+    });
+
+    test('outputHeight follows the block when it is restored (undo/redo)', async () => {
+        const block = reactive({ visualizationType: null, outputHeight: 120 });
+        const { outputHeight } = withSetup(() =>
+            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+        );
+
+        outputHeight.value = 200;
+        block.outputHeight = 200; // what the resize handle does on mouseup
+        await nextTick();
+        block.outputHeight = 120; // snapshot restore
+        await nextTick();
+
+        expect(outputHeight.value).toBe(120);
     });
 });

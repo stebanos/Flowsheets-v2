@@ -155,6 +155,7 @@ const { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, 
     useBlockOutput(props.block, { cellHeight, blockEval });
 
 const editorCollapsed = ref(props.block.editorCollapsed ?? false);
+watch(() => props.block.editorCollapsed, v => { editorCollapsed.value = v ?? false; });
 
 const {
     snappedEditorHeight,

@@ -20,5 +20,9 @@ export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappe
     watch(snappedBlockHeight, h => suppress(() => updateBlock(block.id, { height: h })), { immediate: true });
     watch(snappedEditorWidth, w => suppress(() => updateBlock(block.id, { width: w })), { immediate: true });
 
+    // the store is the source of truth: follow it so undo/redo and snapshot restores show up
+    watch(() => block.editorHeight, h => { if (h != null) { editorHeight.value = h; } });
+    watch(() => block.width, w => { if (w != null) { editorWidth.value = w; } });
+
     return { snappedEditorHeight, snappedEditorWidth, snappedBlockHeight, editorHeight, editorWidth };
 }

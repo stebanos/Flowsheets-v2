@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 function formatValue(v) {
     if (v === undefined) { return 'undefined'; }
@@ -18,6 +18,9 @@ export function useBlockOutput(block, { cellHeight, blockEval }) {
     const outputOverflowY = computed(() =>
         (block.visualizationType ?? 'default') !== 'default' ? 'hidden' : 'auto'
     );
+
+    // the store is the source of truth: follow it so undo/redo and snapshot restores show up
+    watch(() => block.outputHeight, h => { if (h != null) { outputHeight.value = h; } });
 
     return { outputValue, isList, outputItems, outputOverflowY, snappedOutputHeight, outputHeight };
 }
