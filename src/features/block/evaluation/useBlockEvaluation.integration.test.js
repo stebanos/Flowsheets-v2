@@ -387,3 +387,45 @@ describe('S11 — comments and renames', () => {
         expect(getEvaluation('c')).toEqual({ value: 'a says 2', error: null });
     });
 });
+
+// ---------------------------------------------------------------------------
+// S12 — user code receives raw values, not reactive proxies
+// ---------------------------------------------------------------------------
+
+describe('S12 — raw values', () => {
+    const klass = 'class P { #v; constructor(v) { this.#v = v; } get v() { return this.#v; } }';
+
+    test('an object with private fields survives a direct dependency', async () => {
+        addTestBlock('1', 'obj', `${klass}; return new P(7)`);
+        addTestBlock('2', 'val', 'obj.v');
+        await nextTick();
+        await prime('obj');
+        expect(getEvaluation('val')).toEqual({ value: 7, error: null });
+    });
+
+    test('an object with private fields survives each mode', async () => {
+        addTestBlock('1', 'objs', `${klass}; return [new P(1), new P(2)]`);
+        addTestBlock('2', 'vals', 'objs.v');
+        await nextTick();
+        await prime('objs');
+        expect(getEvaluation('vals')).toEqual({ value: [1, 2], error: null });
+    });
+
+    test('an object with private fields survives all mode', async () => {
+        addTestBlock('1', 'objs', `${klass}; return [new P(1), new P(2)]`);
+        addTestBlock('2', 'sum', 'objs.map(o => o.v).reduce((a, b) => a + b, 0)', { inputModes: { objs: 'all' } });
+        await nextTick();
+        await prime('objs');
+        expect(getEvaluation('sum')).toEqual({ value: 3, error: null });
+    });
+
+    test('a dependency value keeps its identity', async () => {
+        addTestBlock('1', 'obj', '({ k: 1 })');
+        addTestBlock('2', 'same', 'obj === globalThis.__fsObj');
+        await nextTick();
+        await prime('obj');
+        globalThis.__fsObj = getEvaluation('obj').value;
+        expect(getEvaluation('same')).toEqual({ value: true, error: null });
+        delete globalThis.__fsObj;
+    });
+});

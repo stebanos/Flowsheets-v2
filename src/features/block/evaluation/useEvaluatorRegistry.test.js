@@ -1,5 +1,5 @@
 import { computed, createApp, nextTick, reactive } from 'vue';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { useEvaluatorRegistry } from './useEvaluatorRegistry';
 
 function withSetup(fn) {
@@ -256,5 +256,28 @@ describe('dispose', () => {
         expect(getEvaluation('a').error).toMatch(/no block named/);
         expect(getEvaluation('b').error).toMatch(/no block named/);
         expect(getPrevious('a')).toBeNull();
+    });
+});
+
+describe('each mode compilation', () => {
+    test('compiles the block code once per evaluation, not once per element', async () => {
+        const blocks = reactive([
+            { id: '1', name: 'nums', code: '[1, 2, 3, 4]' },
+            { id: '2', name: 'doubled', code: 'nums * 2' }
+        ]);
+        const { getEvaluation } = createRegistry(blocks, { nums: [], doubled: ['nums'] });
+        getEvaluation('nums');
+        await nextTick();
+
+        const RealFunction = globalThis.Function;
+        const spy = vi.spyOn(globalThis, 'Function').mockImplementation(function (...args) {
+            return new RealFunction(...args);
+        });
+        try {
+            expect(getEvaluation('doubled').value).toEqual([2, 4, 6, 8]);
+            expect(spy).toHaveBeenCalledTimes(1);
+        } finally {
+            spy.mockRestore();
+        }
     });
 });

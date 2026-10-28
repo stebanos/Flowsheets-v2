@@ -1,4 +1,4 @@
-import { computed, effectScope, reactive, toRaw, watch } from 'vue';
+import { computed, effectScope, reactive, shallowReactive, toRaw, watch } from 'vue';
 import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext } from '@/shared/lib/evaluator';
 
 function outputsEqual(a, b) {
@@ -17,7 +17,9 @@ function outputsEqual(a, b) {
  * @returns {{ getEvaluation: Function, getStatus: Function, errorFlags: object, dispose: Function }}
  */
 export function useEvaluatorRegistry(blocks, dependsOn) {
-    const results = reactive({});
+    // shallow: per-name tracking only, so user code receives the stored values untouched
+    // (a deep proxy breaks private fields and identity checks in dependents)
+    const results = shallowReactive({});
     const errorFlags = reactive({});
     const previous = reactive({});  // blockId → { value } — one previous value per block, changed-only
     const statuses = computed(() => computeBlockStatuses(dependsOn.value, errorFlags));
@@ -70,21 +72,22 @@ export function useEvaluatorRegistry(blocks, dependsOn) {
             const len = Math.max(...iterDeps.map(dep => results[dep].length));
             const resultArr = [];
             let firstError = null;
+            const iterCode = detectStringMode(block.code || '')
+                ? buildTemplateExpression(block.code || '')
+                : (block.code || '');
 
             for (let i = 0; i < len; i++) {
                 const getVal = (n) => {
                     const mode = modes[n] ?? 'each';
                     return mode === 'each' && Array.isArray(results[n]) ? results[n][i] : results[n];
                 };
-                const iterCode = detectStringMode(block.code || '')
-                    ? buildTemplateExpression(block.code || '')
-                    : (block.code || '');
-                const out = evaluateInContext(iterCode, block.name, dependsOn.value, getVal, null);
+                // code and dep names are the same for every element, so the compiled fn is reused
+                const out = evaluateInContext(iterCode, block.name, dependsOn.value, getVal, lastCache);
+                lastCache = out.cache;
                 resultArr.push(out.error ? undefined : out.value);
                 if (out.error && !firstError) { firstError = out.error; }
             }
 
-            lastCache = null;
             if (!firstError) { record(resultArr); }
             results[block.name] = resultArr;
             errorFlags[block.name] = !!firstError;
