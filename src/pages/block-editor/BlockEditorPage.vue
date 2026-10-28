@@ -13,6 +13,7 @@ import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/b
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
+import { useFocusedNote } from '@/features/note';
 import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons } from './components';
@@ -95,7 +96,7 @@ function _onKeydown(e) {
     if (cmd && e.shiftKey && e.key === 'Z') { history.redo(); e.preventDefault(); return; }
     if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
     if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && selectedNames.value.size > 0) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && focusedNoteId.value === null && selectedNames.value.size > 0) {
         const toDelete = blocks.filter(b => selectedNames.value.has(b.name));
         clearSelection();
         for (const b of toDelete) { deleteBlock(b); }
@@ -149,6 +150,7 @@ async function onDataInputChange(e) {
 
 // keyboard nav
 const { registerCanvas, focusedBlockName } = useFocusedBlock();
+const { focusedNoteId } = useFocusedNote();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 

@@ -62,8 +62,10 @@ watch(isFocused, (val) => {
 });
 
 watch(() => props.block.name, (newName, oldName) => {
+    const wasFocused = oldName && focusedBlockName.value === oldName;
     if (oldName) { unregister(oldName); }
     register(newName, () => wrapperEl.value?.focus(), () => codeEditorRef.value?.focus());
+    if (wasFocused) { selectBlock(newName); }
 }, { immediate: true });
 
 function onFocusIn() {

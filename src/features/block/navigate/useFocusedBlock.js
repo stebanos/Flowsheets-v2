@@ -13,6 +13,9 @@ export function useFocusedBlock() {
 
     function unregister(name) {
         registry.delete(name);
+        // the block is gone (removed, cut, sheet switched): a stale name would keep
+        // the canvas-level Escape/Delete handlers disabled
+        if (focusedBlockName.value === name) { focusedBlockName.value = null; }
     }
 
     function registerCanvas(el, announcerEl) {

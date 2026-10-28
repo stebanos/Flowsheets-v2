@@ -28,6 +28,23 @@ describe('useFocusedBlock', () => {
     });
 
     describe('unregister', () => {
+        it('clears focusedBlockName when the focused block is unregistered', () => {
+            const { register, unregister, selectBlock, focusedBlockName } = useFocusedBlock();
+            register('a', vi.fn(), vi.fn());
+            selectBlock('a');
+            unregister('a');
+            expect(focusedBlockName.value).toBeNull();
+        });
+
+        it('leaves focusedBlockName alone when another block is unregistered', () => {
+            const { register, unregister, selectBlock, focusedBlockName } = useFocusedBlock();
+            register('a', vi.fn(), vi.fn());
+            register('b', vi.fn(), vi.fn());
+            selectBlock('a');
+            unregister('b');
+            expect(focusedBlockName.value).toBe('a');
+        });
+
         it('prevents focusWrapper from being called after removal', () => {
             const { register, unregister, focusBlockWrapper } = useFocusedBlock();
             const focusWrapper = vi.fn();
