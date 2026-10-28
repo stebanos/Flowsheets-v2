@@ -2,7 +2,7 @@ import { ref, toValue } from 'vue';
 import { deserializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useVizLibrary } from '@/entities/viz';
 
-export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet }) {
+export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, registerSheet, switchSheet }) {
     const bundleImportState = ref({ pending: false, entries: [] });
 
     async function prepareBundleImport(file) {
@@ -78,7 +78,9 @@ export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, se
                 const serialized = serializeSheet(remappedBlocks, entry.vizes ?? {}, targetName, null, entry.notes ?? []);
                 await writeSheetData(targetId, targetName, { blocks: serialized.blocks, customVizes: serialized.customVizes, notes: serialized.notes ?? [] });
                 stagedIds.push(targetId);
-                setActiveSheet(targetId, targetName);
+                // catalogue only — the stores still hold the current sheet, so the
+                // active id must not move until switchSheet loads the root sheet
+                registerSheet(targetId, targetName);
             }
 
             bundleImportState.value = { pending: false, entries: [] };

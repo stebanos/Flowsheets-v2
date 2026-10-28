@@ -53,6 +53,14 @@ function renameSheet(id, name) {
 function setActiveSheet(id, name) {
     activeSheetId.value = id;
     if (id === null) { return; }
+    registerSheet(id, name);
+}
+
+/**
+ * Upserts a sheet into the catalogue without changing the active sheet.
+ * Use when the sheet's data is persisted but not loaded into the stores.
+ */
+function registerSheet(id, name) {
     const existing = sheets.find(s => s.id === id);
     const resolvedName = name ?? 'Untitled';
     if (existing) {
@@ -81,6 +89,7 @@ export function useSheetStore() {
         deleteSheet,
         renameSheet,
         setActiveSheet,
+        registerSheet,
         renameActiveSheet
     };
 }

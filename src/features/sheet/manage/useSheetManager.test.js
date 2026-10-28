@@ -19,6 +19,7 @@ vi.mock('@/entities/sheet', () => ({
 const mockSheetStorage = {
     openSheetIds: reactive([]),
     initNewSheet: vi.fn(),
+    flushSave: vi.fn(),
     closeSheet: vi.fn(),
     persistDeleteSheet: vi.fn(),
     persistRenameSheet: vi.fn(),
@@ -60,6 +61,16 @@ describe('useSheetManager', () => {
             expect(mockSheetStore.createSheet).toHaveBeenCalledWith('My Sheet');
             expect(mockSheetStorage.initNewSheet).toHaveBeenCalledWith(newId, 'My Sheet');
             expect(result).toBe(newId);
+        });
+
+        it('flushes the current sheet\'s pending save before the store switches the active id', () => {
+            const order = [];
+            mockSheetStorage.flushSave.mockImplementation(() => order.push('flush'));
+            mockSheetStore.createSheet.mockImplementation(() => { order.push('create'); return 'sheet:local/new-9'; });
+
+            useSheetManager().createSheet('X');
+
+            expect(order).toEqual(['flush', 'create']);
         });
 
         it('defaults to Untitled when name is blank', () => {

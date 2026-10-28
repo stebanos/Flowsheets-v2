@@ -17,6 +17,26 @@ function makeFakeStorage() {
 
 let fakeStorage;
 
+// Real storage (OPFS) reads asynchronously; the localStorage strategy reads synchronously
+// at call time. Tests that depend on a save timer firing *before* the read completes
+// switch this on so the strategy reads on a later microtask.
+const readControl = vi.hoisted(() => ({ defer: false }));
+vi.mock('./useLSStrategy', async (importOriginal) => {
+    const mod = await importOriginal();
+    return {
+        useLSStrategy: () => {
+            const strategy = mod.useLSStrategy();
+            const original = strategy.readSheet;
+            async function deferredRead(id) {
+                await Promise.resolve();
+                return original(id);
+            }
+            strategy.readSheet = (id) => (readControl.defer ? deferredRead(id) : original(id));
+            return strategy;
+        }
+    };
+});
+
 // ── module reset helpers ──────────────────────────────────────────────────────
 // Each test needs fresh singleton state.  We use vi.resetModules() + dynamic
 // import to get a pristine module on every test.
@@ -45,6 +65,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    readControl.defer = false;
     vi.unstubAllGlobals();
     vi.useRealTimers();
 });
@@ -523,5 +544,231 @@ describe('auto-save debounce', () => {
 
         const sheetWrites = setItemSpy.mock.calls.filter(([k]) => k === KEY_SHEET(id));
         expect(sheetWrites.length).toBe(1);
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BLOCK = (id, name = 'z', code = '0') => ({
+    id, name, code, x: 0, y: 0, inputModes: {}, visualizationType: 'default', vizOptions: {},
+    userMinWidth: null, userMinEditorHeight: null
+});
+
+function seedSheets(ids, { open = [ids[0]], active = ids[0] } = {}) {
+    fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify(ids.map((id, i) => (
+        { id, name: `Sheet ${i + 1}`, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }
+    ))));
+    fakeStorage.setItem(KEY_ACTIVE_ID, active);
+    fakeStorage.setItem(KEY_OPEN_IDS, JSON.stringify(open));
+    for (const [i, id] of ids.entries()) {
+        fakeStorage.setItem(KEY_SHEET(id), JSON.stringify({ blocks: [BLOCK(`b${i + 1}`)], customVizes: {} }));
+    }
+}
+
+function storedBlockIds(id) {
+    return (JSON.parse(fakeStorage.getItem(KEY_SHEET(id))).blocks ?? []).map(b => b.id);
+}
+
+describe('shared state across instances', () => {
+    const ids = ['sheet:local/s1', 'sheet:local/s2', 'sheet:local/s3'];
+
+    it('auto-save uses getPan from the configured instance even when an argument-less instance came first', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+
+        useSheetStorage(); // e.g. useSheetManager — installs the watcher
+        const { loadFromStorage } = useSheetStorage({ getPan: () => ({ panX: 40, panY: 50 }) });
+        await loadFromStorage();
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        const stored = JSON.parse(fakeStorage.getItem(KEY_SHEET(ids[0])));
+        expect(stored.view).toEqual({ panX: 40, panY: 50 });
+    });
+
+    it('switchSheet through an argument-less instance still restores pan via the configured handler', async () => {
+        const { useSheetStorage } = await freshImports();
+        seedSheets(ids);
+        fakeStorage.setItem(KEY_SHEET(ids[1]), JSON.stringify({ blocks: [], customVizes: {}, view: { panX: 7, panY: 8 } }));
+
+        const onPanLoaded = vi.fn();
+        const { loadFromStorage } = useSheetStorage({ onPanLoaded });
+        await loadFromStorage();
+        onPanLoaded.mockClear();
+
+        await useSheetStorage().switchSheet(ids[1]); // e.g. SheetTabs
+
+        expect(onPanLoaded).toHaveBeenCalledWith(expect.objectContaining({ panX: 7, panY: 8 }));
+    });
+
+    it('a pending save never writes stale blocks under the new id when the switch comes from another instance', async () => {
+        readControl.defer = true;
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+
+        const page = useSheetStorage({ getPan: () => ({ panX: 0, panY: 0 }) });
+        await page.loadFromStorage();
+        const tabs = useSheetStorage();
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick(); // watcher scheduled a save for sheet 1
+
+        const switchPromise = tabs.switchSheet(ids[1]);
+        vi.advanceTimersByTime(500);
+        await switchPromise;
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(storedBlockIds(ids[0])).toContain('extra');
+        expect(storedBlockIds(ids[1])).toEqual(['b2']);
+    });
+
+    it('exposes flushSave which writes immediately and cancels the pending timer', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+
+        storage.flushSave();
+        expect(storedBlockIds(ids[0])).toContain('extra');
+
+        const setItemSpy = vi.spyOn(fakeStorage, 'setItem');
+        vi.advanceTimersByTime(500);
+        await nextTick();
+        expect(setItemSpy.mock.calls.filter(([k]) => k === KEY_SHEET(ids[0]))).toHaveLength(0);
+    });
+});
+
+describe('switchSheet — rapid double switch', () => {
+    const ids = ['sheet:local/s1', 'sheet:local/s2', 'sheet:local/s3'];
+
+    it('does not write the first sheet\'s blocks into the intermediate sheet', async () => {
+        readControl.defer = true;
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+
+        const p2 = storage.switchSheet(ids[1]);
+        const p3 = storage.switchSheet(ids[2]);
+        await Promise.all([p2, p3]);
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(storedBlockIds(ids[0])).toContain('extra');
+        expect(storedBlockIds(ids[1])).toEqual(['b2']);
+        expect(storedBlockIds(ids[2])).toEqual(['b3']);
+        expect(useBlockStore().blocks.map(b => b.id)).toEqual(['b3']);
+    });
+
+    it('keeps auto-save working after the superseded switch resolves', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+
+        await Promise.all([storage.switchSheet(ids[1]), storage.switchSheet(ids[2])]);
+
+        useBlockStore().addBlock(BLOCK('late'));
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(storedBlockIds(ids[2])).toContain('late');
+    });
+});
+
+describe('closeSheet — last open tab', () => {
+    it('switches to another catalogue sheet when the closed sheet was active and the only open tab', async () => {
+        const { useSheetStorage, useSheetStore, useBlockStore } = await freshImports();
+        const ids = ['sheet:local/s1', 'sheet:local/s2'];
+        seedSheets(ids);
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+
+        storage.closeSheet(ids[0]);
+        await vi.runAllTimersAsync();
+
+        expect(useSheetStore().activeSheetId.value).toBe(ids[1]);
+        expect(storage.openSheetIds).toEqual([ids[1]]);
+        expect(useBlockStore().blocks.map(b => b.id)).toEqual(['b2']);
+        expect(storedBlockIds(ids[1])).toEqual(['b2']);
+    });
+});
+
+describe('unreadable sheet data', () => {
+    const ids = ['sheet:local/s1', 'sheet:local/s2'];
+
+    it('does not overwrite a corrupt sheet file and reports an error', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+        fakeStorage.setItem(KEY_SHEET(ids[0]), 'not json');
+
+        const { loadFromStorage, localStatus, localError } = useSheetStorage();
+        await loadFromStorage();
+
+        expect(localStatus.value).toBe('error');
+        expect(localError.value).toBeTruthy();
+        expect(useBlockStore().blocks).toHaveLength(0);
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(fakeStorage.getItem(KEY_SHEET(ids[0]))).toBe('not json');
+    });
+
+    it('does not leave auto-save disabled after a migration failure', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+        const raw = JSON.stringify({ version: '99.0.0', blocks: [] });
+        fakeStorage.setItem(KEY_SHEET(ids[0]), raw);
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+        expect(storage.localStatus.value).toBe('error');
+
+        await storage.switchSheet(ids[1]);
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(storedBlockIds(ids[1])).toContain('extra');
+        expect(fakeStorage.getItem(KEY_SHEET(ids[0]))).toBe(raw);
+    });
+
+    it('does not overwrite a corrupt sheet reached via switchSheet', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        seedSheets(ids);
+        fakeStorage.setItem(KEY_SHEET(ids[1]), 'not json');
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+        await storage.switchSheet(ids[1]);
+
+        expect(storage.localStatus.value).toBe('error');
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+
+        expect(fakeStorage.getItem(KEY_SHEET(ids[1]))).toBe('not json');
     });
 });

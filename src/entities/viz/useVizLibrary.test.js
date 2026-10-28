@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── OPFS mock ─────────────────────────────────────────────────────────────────
 
+const _notFound = () => Object.assign(new Error('not found'), { name: 'NotFoundError' });
+
 function makeOPFSMock() {
     let stored = null;
 
@@ -12,13 +14,13 @@ function makeOPFSMock() {
 
     const existingHandle = {
         getFile: vi.fn(async () => ({
-            text: async () => stored ?? (() => { throw new Error('not found'); })()
+            text: async () => stored ?? (() => { throw _notFound(); })()
         })),
         createWritable: vi.fn(async () => writable)
     };
 
     const missingHandle = {
-        getFile: vi.fn(async () => { throw new Error('not found'); }),
+        getFile: vi.fn(async () => { throw _notFound(); }),
         createWritable: vi.fn(async () => writable)
     };
 
@@ -27,7 +29,7 @@ function makeOPFSMock() {
         _writable: writable,
         getFileHandle: vi.fn(async (name, opts) => {
             if (opts?.create) { return existingHandle; }
-            if (stored === null) { throw new Error('not found'); }
+            if (stored === null) { throw _notFound(); }
             return existingHandle;
         })
     };
@@ -211,5 +213,70 @@ describe('getHash', () => {
         const h1 = await getHash({ template: 't', script: 's', style: 'st' });
         const h2 = await getHash({ style: 'st', script: 's', template: 't' });
         expect(h1).toBe(h2);
+    });
+});
+
+describe('loadLibrary — failure handling', () => {
+    function makeRoot({ text, error } = {}) {
+        const writable = { write: vi.fn(async () => {}), close: vi.fn(async () => {}) };
+        const handle = {
+            getFile: vi.fn(async () => {
+                if (error) { throw error; }
+                return { text: async () => text };
+            }),
+            createWritable: vi.fn(async () => writable)
+        };
+        return { root: { getFileHandle: vi.fn(async () => handle) }, writable };
+    }
+
+    it('treats a missing file as an empty library', async () => {
+        const notFound = Object.assign(new Error('missing'), { name: 'NotFoundError' });
+        const { root } = makeRoot({ error: notFound });
+        vi.stubGlobal('navigator', { storage: { getDirectory: async () => root } });
+
+        const { useVizLibrary } = await freshImports();
+        const { library, loadLibrary, loadError } = useVizLibrary();
+        library['stale'] = { hash: null, source: null };
+
+        await loadLibrary();
+
+        expect(Object.keys(library)).toHaveLength(0);
+        expect(loadError.value).toBeNull();
+    });
+
+    it('keeps the in-memory library and blocks writes when the file cannot be parsed', async () => {
+        const { root, writable } = makeRoot({ text: 'not json' });
+        vi.stubGlobal('navigator', { storage: { getDirectory: async () => root } });
+
+        const { useVizLibrary } = await freshImports();
+        const { library, loadLibrary, loadError, createLibraryEntry } = useVizLibrary();
+        library['keep'] = { hash: null, source: null };
+
+        await loadLibrary();
+        expect(library['keep']).toBeTruthy();
+        expect(loadError.value).toBeTruthy();
+
+        createLibraryEntry('New');
+        await vi.runAllTimersAsync();
+        expect(writable.write).not.toHaveBeenCalled();
+    });
+
+    it('clears the error and resumes writes after a successful reload', async () => {
+        const bad = makeRoot({ text: 'not json' });
+        vi.stubGlobal('navigator', { storage: { getDirectory: async () => bad.root } });
+
+        const { useVizLibrary } = await freshImports();
+        const { loadLibrary, loadError, createLibraryEntry } = useVizLibrary();
+        await loadLibrary();
+        expect(loadError.value).toBeTruthy();
+
+        const good = makeRoot({ text: '{}' });
+        vi.stubGlobal('navigator', { storage: { getDirectory: async () => good.root } });
+        await loadLibrary();
+        expect(loadError.value).toBeNull();
+
+        createLibraryEntry('New');
+        await vi.runAllTimersAsync();
+        expect(good.writable.write).toHaveBeenCalled();
     });
 });

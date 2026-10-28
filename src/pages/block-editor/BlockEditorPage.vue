@@ -38,7 +38,7 @@ setCellDimensions(150, 24);
 // viz sidebar
 const { isOpen: sidebarOpen, open: openSidebar, toggle: toggleSidebar } = useSidebar();
 const { activeVizName, customVizes, loadVizes } = useCustomViz();
-const { library, loadLibrary } = useVizLibrary();
+const { library, loadLibrary, loadError: vizLoadError } = useVizLibrary();
 
 // sheet sidebar
 const { isOpen: sheetSidebarOpen, toggle: toggleSheetSidebar } = useSidebar();
@@ -169,7 +169,7 @@ watch([panX, panY], scheduleSave);
 watch(activeSheetName, () => clearSelection());
 
 // track active sheet for per-sheet history stacks
-watch(activeSheetId, (id) => { if (id) { history.setActiveSheet(id); } }, { immediate: true });
+watch(activeSheetId, (id) => { if (id) { history.setActiveSheet(id); } }, { immediate: true, flush: 'sync' });
 
 // lifecycle
 onMounted(async () => {
@@ -322,11 +322,12 @@ const statusText = computed(() => {
     if (deletedNotice.value) { return `"${deletedNotice.value}" deleted`; }
     if (localStatus.value === 'saving') { return 'Saving...'; }
     if (localStatus.value === 'error') { return localError.value ?? 'Save error'; }
+    if (vizLoadError.value) { return vizLoadError.value; }
     return 'Auto-saved';
 });
 
 const statusColor = computed(() => {
-    if (localStatus.value === 'error') { return 'text-red-400'; }
+    if (localStatus.value === 'error' || vizLoadError.value) { return 'text-red-400'; }
     return 'text-gray-400';
 });
 </script>

@@ -19,8 +19,10 @@ export function useLSStrategy() {
         return _readJson(KEY_CATALOGUE, []);
     }
 
+    // Throws on corrupt data so the caller can refuse to overwrite it.
     async function readSheet(id) {
-        return _readJson(KEY_SHEET(id), { blocks: [], customVizes: [] });
+        const raw = localStorage.getItem(KEY_SHEET(id));
+        return raw ? JSON.parse(raw) : { blocks: [], customVizes: [] };
     }
 
     async function writeSheet(id, name, data) {

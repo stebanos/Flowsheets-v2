@@ -246,3 +246,24 @@ describe('setActiveSheet', () => {
         expect(sheets).toHaveLength(1);
     });
 });
+
+// ---------------------------------------------------------------------------
+// registerSheet
+// ---------------------------------------------------------------------------
+describe('registerSheet', () => {
+    test('adds an unknown sheet without changing activeSheetId', () => {
+        const { createSheet, registerSheet, sheets, activeSheetId } = useSheetStore();
+        const current = createSheet('Current');
+        registerSheet('sheet:local/other', 'Other');
+        expect(sheets.map(s => s.id)).toEqual([current, 'sheet:local/other']);
+        expect(activeSheetId.value).toBe(current);
+    });
+
+    test('updates the name of an existing sheet', () => {
+        const { registerSheet, sheets } = useSheetStore();
+        registerSheet('sheet:local/a', 'Old');
+        registerSheet('sheet:local/a', 'New');
+        expect(sheets).toHaveLength(1);
+        expect(sheets[0].name).toBe('New');
+    });
+});

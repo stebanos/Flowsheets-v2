@@ -18,10 +18,22 @@ const localError     = ref(null);    // string | null
 const openSheetIds   = reactive([]);
 const isFirstBoot    = ref(false);   // true only when storage was completely empty on this load
 const _pendingDelete = new Set();    // ids whose writes must be suppressed until deleted
+const _unreadable    = new Set();    // ids whose stored data failed to load — never overwrite them
 
-let initialised  = false;
-let bootPromise  = null;
+// Handlers supplied by the page. Every useSheetStorage() caller shares them so that
+// auto-save, switchSheet and closeSheet behave identically whichever instance runs them.
+const _handlers = {
+    getCustomVizes: () => ({}),
+    onVizesLoaded:  () => {},
+    getPan:         () => ({ panX: 0, panY: 0 }),
+    onPanLoaded:    () => {}
+};
+
+let initialised     = false;
+let bootPromise     = null;
 let pendingSwitchId = null;
+let loading         = false;  // true while stores hold data that does not belong to activeSheetId
+let saveTimer       = null;
 
 
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
@@ -63,29 +75,29 @@ function _persistOpenIds() {
 
 // ── composable ───────────────────────────────────────────────────────────────
 
-export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLoaded } = {}) {
-    const _customVizGetter = getCustomVizes ?? (() => ({}));
-    const _onVizesLoaded   = onVizesLoaded   ?? (() => {});
-    const _panGetter       = getPan           ?? (() => ({ panX: 0, panY: 0 }));
-    const _onPanLoaded     = onPanLoaded      ?? (() => {});
+export function useSheetStorage(handlers = {}) {
+    for (const [key, fn] of Object.entries(handlers)) {
+        if (fn && key in _handlers) { _handlers[key] = fn; }
+    }
     const { notes: _storeNotes, replaceNotes } = useNoteStore();
 
     const { blocks, replaceBlocks } = useBlockStore();
-    const { activeSheetId, activeSheetName, setActiveSheet } = useSheetStore();
-
-    let loading = false;
-    let saveTimer = null;
+    const { activeSheetId, activeSheetName, setActiveSheet, registerSheet, sheets } = useSheetStore();
 
     // ── save ──────────────────────────────────────────────────────────────────
 
+    function _saveBlocked() {
+        const id = activeSheetId.value;
+        return loading || !id || _pendingDelete.has(id) || _unreadable.has(id);
+    }
+
     async function _saveCurrentSheet() {
-        if (!activeSheetId.value) { return; }
+        if (_saveBlocked()) { return; }
         const id   = activeSheetId.value;
-        if (_pendingDelete.has(id)) { return; }
         const name = activeSheetName.value;
         try {
-            const view = _panGetter();
-            const serialized = serializeSheet(blocks, _customVizGetter(), name, view, _storeNotes);
+            const view = _handlers.getPan();
+            const serialized = serializeSheet(blocks, _handlers.getCustomVizes(), name, view, _storeNotes);
             if (_pendingDelete.has(id)) { return; }
             await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view, notes: serialized.notes });
             localStatus.value = 'idle';
@@ -98,7 +110,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
     }
 
     function _scheduleSave() {
-        if (loading) { return; }
+        if (_saveBlocked()) { return; }
         if (saveTimer !== null) { clearTimeout(saveTimer); }
         localStatus.value = 'saving';
         saveTimer = setTimeout(() => {
@@ -107,24 +119,45 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         }, 500);
     }
 
+    function flushSave() {
+        if (saveTimer !== null) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+        _saveCurrentSheet();
+    }
+
     // ── load sheet data into stores ───────────────────────────────────────────
 
-    async function _loadSheetIntoStores(id) {
-        const raw  = await strategy.readSheet(id);
-        const envelope = {
-            version:     raw.version     ?? 1,
-            blocks:      raw.blocks      ?? [],
-            customVizes: raw.customVizes ?? {},
-            view:        raw.view        ?? {},
-            notes:       raw.notes       ?? []
-        };
-        const data = await migrate(envelope);
-        const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(data);
+    // Reads + migrates + deserializes. A failure marks the id unreadable so auto-save
+    // can never replace the stored data with the empty sheet shown in its place.
+    async function _readSheet(id) {
+        try {
+            const raw = await strategy.readSheet(id);
+            const envelope = {
+                version:     raw.version     ?? 1,
+                blocks:      raw.blocks      ?? [],
+                customVizes: raw.customVizes ?? {},
+                view:        raw.view        ?? {},
+                notes:       raw.notes       ?? []
+            };
+            const data = await migrate(envelope);
+            _unreadable.delete(id);
+            return deserializeSheet(data);
+        } catch (err) {
+            _unreadable.add(id);
+            localStatus.value = 'error';
+            localError.value  = `This sheet could not be loaded (${err.message}). Auto-save is paused for it so its stored data is not overwritten.`;
+            return { blocks: [], vizes: {}, view: { panX: 0, panY: 0 }, notes: [] };
+        }
+    }
+
+    function _applyToStores({ blocks: loadedBlocks, vizes, view, notes: loadedNotes }) {
         const { suppress } = useHistory();
         suppress(() => {
             replaceBlocks(loadedBlocks);
-            _onVizesLoaded(vizes);
-            _onPanLoaded(view);
+            _handlers.onVizesLoaded(vizes);
+            _handlers.onPanLoaded(view);
             replaceNotes(loadedNotes);
         });
     }
@@ -133,7 +166,14 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
 
     async function _boot() {
         loading = true;
+        try {
+            await _bootInner();
+        } finally {
+            loading = false;
+        }
+    }
 
+    async function _bootInner() {
         let catalogue = await strategy.loadCatalogue();
 
         if (catalogue.length === 0) {
@@ -148,7 +188,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         }
 
         for (const entry of catalogue) {
-            setActiveSheet(entry.id, entry.name);
+            registerSheet(entry.id, entry.name);
         }
 
         let activeId = localStorage.getItem(KEY_ACTIVE_ID);
@@ -165,9 +205,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         const activeEntry = catalogue.find(s => s.id === activeId);
         setActiveSheet(activeId, activeEntry?.name ?? 'Untitled');
 
-        await _loadSheetIntoStores(activeId);
-
-        loading = false;
+        _applyToStores(await _readSheet(activeId));
     }
 
     function loadFromStorage() {
@@ -179,17 +217,15 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
 
     // ── switchSheet ───────────────────────────────────────────────────────────
 
+    // The only place the active sheet id may change while stores hold data:
+    // the outgoing sheet is flushed first, then `loading` blocks every save until
+    // the incoming sheet's data has replaced the stores.
     async function switchSheet(id) {
         if (id === activeSheetId.value) { return; }
-        const { sheets: allSheets } = useSheetStore();
-        const target = allSheets.find(s => s.id === id);
+        const target = sheets.find(s => s.id === id);
         if (!target) { return; }
 
-        if (saveTimer !== null) {
-            clearTimeout(saveTimer);
-            saveTimer = null;
-        }
-        _saveCurrentSheet();
+        flushSave();
 
         loading = true;
         setActiveSheet(id, target.name);
@@ -197,42 +233,19 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         _addToOpenIds(id);
 
         pendingSwitchId = id;
-        const data = await strategy.readSheet(id);
-        if (pendingSwitchId !== id) {
-            loading = false;
-            return;
-        }
+        const loaded = await _readSheet(id);
+        // superseded by a newer switch, which now owns `loading`
+        if (pendingSwitchId !== id) { return; }
         pendingSwitchId = null;
 
-        const envelope = {
-            version:     data.version     ?? 1,
-            blocks:      data.blocks      ?? [],
-            customVizes: data.customVizes ?? {},
-            view:        data.view        ?? {},
-            notes:       data.notes       ?? []
-        };
-        const migrated = await migrate(envelope);
-        const { blocks: loadedBlocks, vizes, view, notes: loadedNotes } = deserializeSheet(migrated);
-        const { suppress } = useHistory();
-        suppress(() => {
-            replaceBlocks(loadedBlocks);
-            _onVizesLoaded(vizes);
-            _onPanLoaded(view);
-            replaceNotes(loadedNotes);
-        });
+        _applyToStores(loaded);
         loading = false;
     }
 
     // ── initNewSheet ──────────────────────────────────────────────────────────
 
     function initNewSheet(id, name) {
-        const { suppress } = useHistory();
-        suppress(() => {
-            replaceBlocks([]);
-            _onVizesLoaded({});
-            _onPanLoaded({ panX: 0, panY: 0 });
-            replaceNotes([]);
-        });
+        _applyToStores({ blocks: [], vizes: {}, view: { panX: 0, panY: 0 }, notes: [] });
         localStorage.setItem(KEY_ACTIVE_ID, id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
@@ -265,10 +278,13 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
 
         if (activeSheetId.value !== id) { return; }
 
-        if (openSheetIds.length === 0) { return; }
-
-        const nearestIdx = Math.min(idx, openSheetIds.length - 1);
-        switchSheet(openSheetIds[nearestIdx]);
+        // Prefer the nearest remaining tab; with no tabs left, fall back to any other
+        // catalogue sheet so the active id never moves without its data being loaded.
+        const nextId = openSheetIds.length > 0
+            ? openSheetIds[Math.min(idx, openSheetIds.length - 1)]
+            : sheets.find(s => s.id !== id)?.id;
+        if (nextId === undefined) { return; }
+        switchSheet(nextId);
     }
 
     // ── thin delegates for external callers ───────────────────────────────────
@@ -310,6 +326,7 @@ export function useSheetStorage({ getCustomVizes, onVizesLoaded, getPan, onPanLo
         writeSheetData,
         markPendingDelete,
         unmarkPendingDelete,
-        scheduleSave: _scheduleSave
+        scheduleSave: _scheduleSave,
+        flushSave
     };
 }

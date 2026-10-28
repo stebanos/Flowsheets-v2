@@ -64,16 +64,20 @@ async function _getSheetDir() {
     return root.getDirectoryHandle('sheets', { create: true });
 }
 
+// A missing file is an empty sheet; any other failure (corrupt JSON, I/O error)
+// propagates so the caller can refuse to overwrite the stored data.
 async function _readSheetFile(id) {
+    const dir = await _getSheetDir();
+    let handle;
     try {
-        const dir    = await _getSheetDir();
-        const handle = await dir.getFileHandle(_safeFilename(id));
-        const file   = await handle.getFile();
-        const text   = await file.text();
-        return JSON.parse(text);
-    } catch {
-        return { blocks: [], customVizes: [] };
+        handle = await dir.getFileHandle(_safeFilename(id));
+    } catch (err) {
+        if (err?.name === 'NotFoundError') { return { blocks: [], customVizes: [] }; }
+        throw err;
     }
+    const file = await handle.getFile();
+    const text = await file.text();
+    return JSON.parse(text);
 }
 
 async function _writeSheetFile(id, data) {

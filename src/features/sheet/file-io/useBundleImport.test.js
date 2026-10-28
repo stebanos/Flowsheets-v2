@@ -44,7 +44,7 @@ function makeDeps(overrides = {}) {
         sheets: ref([]),
         writeSheetData: vi.fn().mockResolvedValue(undefined),
         persistDeleteSheet: vi.fn().mockResolvedValue(undefined),
-        setActiveSheet: vi.fn(),
+        registerSheet: vi.fn(),
         switchSheet: vi.fn(),
         ...overrides
     };
@@ -141,12 +141,26 @@ describe('confirmBundleImport — happy path', () => {
         expect(deps.writeSheetData).toHaveBeenCalledTimes(1);
     });
 
-    test('calls setActiveSheet for each imported sheet', async () => {
+    test('registers each imported sheet in the catalogue without activating it', async () => {
         const deps = makeDeps();
         const { prepareBundleImport, confirmBundleImport } = useBundleImport(deps);
         await prepareBundleImport(mockFile(twoSheetBundle));
         await confirmBundleImport();
-        expect(deps.setActiveSheet).toHaveBeenCalledTimes(2);
+        expect(deps.registerSheet).toHaveBeenCalledTimes(2);
+        expect(deps.registerSheet).toHaveBeenCalledWith('sheet:local/s1', 'Sheet 1');
+        expect(deps.registerSheet).toHaveBeenCalledWith('sheet:local/s2', 'Sheet 2');
+        expect(deps.setActiveSheet).toBeUndefined();
+    });
+
+    test('only switchSheet changes the active sheet during a bundle import', async () => {
+        const deps = makeDeps();
+        const order = [];
+        deps.registerSheet.mockImplementation(() => order.push('register'));
+        deps.switchSheet.mockImplementation(() => order.push('switch'));
+        const { prepareBundleImport, confirmBundleImport } = useBundleImport(deps);
+        await prepareBundleImport(mockFile(twoSheetBundle));
+        await confirmBundleImport();
+        expect(order).toEqual(['register', 'register', 'switch']);
     });
 
     test('calls switchSheet with rootSheetId after import', async () => {

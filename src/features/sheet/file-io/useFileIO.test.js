@@ -12,9 +12,22 @@ const mockReplaceBlocks = vi.fn();
 const mockRenameActiveSheet = vi.fn();
 const mockCreateSheet = vi.fn(() => 'sheet:local/new');
 const mockInitNewSheet = vi.fn();
+const mockFlushSave = vi.fn();
+const callOrder = [];
+let suppressDepth = 0;
+const mockSuppress = vi.fn((fn) => { suppressDepth++; try { fn(); } finally { suppressDepth--; } });
+const mockReplaceNotes = vi.fn(() => callOrder.push(['replaceNotes', suppressDepth]));
 
 vi.mock('@/entities/block', () => ({
     useBlockStore: () => ({ blocks: mockBlocks, replaceBlocks: mockReplaceBlocks })
+}));
+
+vi.mock('@/entities/note', () => ({
+    useNoteStore: () => ({ notes: reactive([]), replaceNotes: mockReplaceNotes })
+}));
+
+vi.mock('@/features/sheet/history', () => ({
+    useHistory: () => ({ suppress: mockSuppress })
 }));
 
 vi.mock('@/features/block/visualize', () => ({
@@ -44,7 +57,8 @@ vi.mock('@/features/sheet/storage', () => ({
         writeSheetData: vi.fn(),
         switchSheet: vi.fn(),
         initNewSheet: mockInitNewSheet,
-        persistDeleteSheet: vi.fn()
+        persistDeleteSheet: vi.fn(),
+        flushSave: mockFlushSave
     })
 }));
 
@@ -323,6 +337,32 @@ describe('confirmImport', () => {
         await confirmImport();
         const calledBlocks = mockReplaceBlocks.mock.calls[0][0];
         expect(calledBlocks[0].id).not.toBe('old-id');
+    });
+});
+
+describe('confirmImport — sheet switch hygiene', () => {
+    beforeEach(() => {
+        callOrder.splice(0);
+        mockReplaceBlocks.mockImplementation(() => callOrder.push(['replaceBlocks', suppressDepth]));
+        mockCreateSheet.mockImplementation(() => { callOrder.push(['createSheet', suppressDepth]); return 'sheet:local/new'; });
+        mockFlushSave.mockImplementation(() => callOrder.push(['flushSave', suppressDepth]));
+    });
+
+    test('flushes the previous sheet\'s pending save before creating the new sheet', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson()));
+        await confirmImport();
+        const names = callOrder.map(([n]) => n);
+        expect(names.indexOf('flushSave')).toBeGreaterThanOrEqual(0);
+        expect(names.indexOf('flushSave')).toBeLessThan(names.indexOf('createSheet'));
+    });
+
+    test('loads imported blocks and notes with history suppressed', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson()));
+        await confirmImport();
+        expect(callOrder).toContainEqual(['replaceBlocks', 1]);
+        expect(callOrder).toContainEqual(['replaceNotes', 1]);
     });
 });
 

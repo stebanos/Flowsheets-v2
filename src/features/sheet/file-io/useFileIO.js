@@ -10,6 +10,7 @@ import { getHash } from '@/shared/lib/hash';
 if (import.meta.hot) { import.meta.hot.decline(); }
 
 import { useCustomViz } from '@/features/block/visualize';
+import { useHistory } from '@/features/sheet/history';
 import { useSheetStorage } from '@/features/sheet/storage';
 import { useBundleImport } from './useBundleImport';
 
@@ -40,8 +41,9 @@ export function useFileIO() {
     const { blocks, replaceBlocks } = useBlockStore();
     const { notes, replaceNotes } = useNoteStore();
     const { customVizes, loadVizes } = useCustomViz();
-    const { activeSheetName, sheets, activeSheetId, setActiveSheet, createSheet: createSheetInStore } = useSheetStore();
-    const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet } = useSheetStorage();
+    const { activeSheetName, sheets, activeSheetId, registerSheet, createSheet: createSheetInStore } = useSheetStore();
+    const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet, flushSave } = useSheetStorage();
+    const { suppress } = useHistory();
 
     function _buildSuggestedName() {
         const raw = activeSheetName.value ?? 'untitled';
@@ -223,10 +225,14 @@ export function useFileIO() {
 
         finalBlocks = finalBlocks.map(b => ({ ...b, id: crypto.randomUUID() }));
 
+        flushSave(); // the store is about to move the active id away from the current sheet
         const newId = createSheetInStore(name);
         initNewSheet(newId, name);
-        replaceBlocks(finalBlocks);
-        replaceNotes(data.notes ?? []);
+        // the imported content is the new sheet's baseline, not an undoable edit
+        suppress(() => {
+            replaceBlocks(finalBlocks);
+            replaceNotes(data.notes ?? []);
+        });
         loadVizes(library);
 
         pendingImport.value = null;
@@ -274,7 +280,7 @@ export function useFileIO() {
         return matching;
     }
 
-    const bundleImport = useBundleImport({ sheets, writeSheetData, persistDeleteSheet, setActiveSheet, switchSheet });
+    const bundleImport = useBundleImport({ sheets, writeSheetData, persistDeleteSheet, registerSheet, switchSheet });
 
     return {
         pendingImport,
