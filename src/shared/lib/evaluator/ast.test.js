@@ -161,23 +161,99 @@ describe('extractFreeIdentifiers', () => {
     });
 
     // -------------------------------------------------------------------------
-    // Known limitations (documented in source)
+    // Scope analysis — bindings are resolved against the real lexical scope
     // -------------------------------------------------------------------------
 
-    describe('known limitations', () => {
-        test('sibling const declaration does NOT shadow later use (ancestor-only check)', () => {
-            // `const a = 1; a + 1` — the second `a` is a sibling in the statement list,
-            // not a descendant of the VariableDeclarator, so the ancestor walk misses it.
-            // In Flowsheets blocks this is rarely an issue (blocks are usually single expressions).
-            expect(free('const a = 1; a + 1')).toEqual(['a']);
+    describe('scope analysis', () => {
+        test('sibling const declaration binds later uses in the same scope', () => {
+            expect(free('const a = 1; a + 1')).toEqual([]);
         });
 
-        test('destructured function param is NOT shadowed (not yet handled)', () => {
-            // `({ x }) => x` — x is destructured from param, ideally not free,
-            // but the current implementation does not handle ObjectPattern/ArrayPattern.
-            // This test documents the current behaviour, not the ideal behaviour.
-            const ids = free('(({ x }) => x)()');
-            expect(ids).toContain('x');
+        test('let declared then assigned is not free', () => {
+            expect(free('let a; a = 2; a')).toEqual([]);
+        });
+
+        test('use before let declaration is still the local binding', () => {
+            expect(free('a; let a = 1')).toEqual([]);
+        });
+
+        test('var is hoisted to the enclosing function scope', () => {
+            expect(free('a; var a = 1')).toEqual([]);
+            expect(free('{ var v = 1 } v')).toEqual([]);
+            expect(free('if (c) { var w = 1 } w')).toEqual(['c']);
+        });
+
+        test('function declarations are hoisted', () => {
+            expect(free('function f() { return a; } function a() {}')).toEqual([]);
+        });
+
+        test('let in a nested block is not visible outside it', () => {
+            expect(free('if (x) { let a = 1; } a')).toEqual(['a', 'x']);
+        });
+
+        test('nested functions see outer bindings', () => {
+            expect(free('const a = 1; (() => a)()')).toEqual([]);
+            expect(free('function f(p) { return q; }')).toEqual(['q']);
+        });
+
+        test('for loop heads bind their own scope', () => {
+            expect(free('for (let i = 0; i < n; i++) { i }')).toEqual(['n']);
+            expect(free('for (const k of list) k')).toEqual(['list']);
+            expect(free('for (const k in obj) k')).toEqual(['obj']);
+            expect(free('for (var j = 0; j < 1; j++) {} j')).toEqual([]);
+        });
+
+        test('destructuring declarations bind names; defaults and sources stay free', () => {
+            expect(free('const { x, y: z = w } = obj; x + z')).toEqual(['obj', 'w']);
+            expect(free('const [p, , ...rest] = arr; p + rest')).toEqual(['arr']);
+            expect(free('const { [key]: val } = obj; val')).toEqual(['key', 'obj']);
+        });
+
+        test('destructured and defaulted function params are bound', () => {
+            expect(free('(({ x }, [y, ...rest]) => x + y + rest)()')).toEqual([]);
+            expect(free('((a = b) => a)()')).toEqual(['b']);
+        });
+
+        test('function and class expressions bind their own name inside', () => {
+            expect(free('(function g() { return g; })()')).toEqual([]);
+            expect(free('(class D { m() { return D; } })')).toEqual([]);
+            expect(free('class C { m() { return C; } } new C()')).toEqual([]);
+        });
+
+        test('class members: computed keys and values are free, plain keys are not', () => {
+            expect(free('class K { [kk] = vv; static { st } #p = pv; m() { return mm; } }')).toEqual(['kk', 'mm', 'pv', 'st', 'vv']);
+        });
+
+        test('catch clause patterns are bound', () => {
+            expect(free('try { f() } catch ({ message }) { message }')).toEqual(['f']);
+        });
+
+        test('switch cases share one block scope', () => {
+            expect(free('switch (v) { case 1: let q = 2; q; default: q }')).toEqual(['v']);
+        });
+
+        test('assignment targets are references, not bindings', () => {
+            expect(free('a.b = c')).toEqual(['a', 'c']);
+            expect(free('[p, q] = arr')).toEqual(['arr', 'p', 'q']);
+            expect(free('({ k: m } = src)')).toEqual(['m', 'src']);
+        });
+
+        test('labels and meta properties are not identifiers', () => {
+            expect(free('lbl: for (;;) { break lbl; }')).toEqual([]);
+            expect(free('(function () { return new.target; })()')).toEqual([]);
+            expect(free('import.meta.url')).toEqual([]);
+        });
+
+        test('object literal methods and computed keys', () => {
+            expect(free('obj = { [k]: v, m() { return s; }, get g() { return t; } }')).toEqual(['k', 'obj', 's', 't', 'v']);
+        });
+
+        test('export default function body resolves normally', () => {
+            expect(free('export default function () { return a; }')).toEqual(['a']);
+        });
+
+        test('template literal expressions are free', () => {
+            expect(free('`${a} and ${b.c}`')).toEqual(['a', 'b']);
         });
     });
 

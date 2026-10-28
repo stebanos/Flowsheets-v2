@@ -75,3 +75,49 @@ describe('dependsOn', () => {
         expect(dependsOn.value['a']).toContain('b');
     });
 });
+
+describe('stability — unchanged entries keep their identity', () => {
+    test('identifiersByBlock keeps the same array when a block\'s identifiers did not change', async () => {
+        addBlock({ id: '1', name: 'a', code: '1' });
+        addBlock({ id: '2', name: 'b', code: 'a + 1' });
+        const { identifiersByBlock } = withSetup(() => useBlockDependencies({ debounceMs: 0 }));
+        const before = identifiersByBlock['b'];
+        updateBlock('1', { code: '2' });
+        await nextTick();
+        expect(identifiersByBlock['b']).toBe(before);
+    });
+
+    test('dependsOn keeps the same map and the same per-block arrays for unrelated blocks', async () => {
+        addBlock({ id: '1', name: 'a', code: '1' });
+        addBlock({ id: '2', name: 'b', code: 'a + 1' });
+        addBlock({ id: '3', name: 'c', code: '3' });
+        const { dependsOn } = withSetup(() => useBlockDependencies({ debounceMs: 0 }));
+        const mapBefore = dependsOn.value;
+        const bBefore = dependsOn.value['b'];
+        updateBlock('3', { code: 'a * 2' });
+        await nextTick();
+        expect(dependsOn.value).toBe(mapBefore);
+        expect(dependsOn.value['b']).toBe(bBefore);
+        expect(dependsOn.value['c']).toEqual(['a']);
+    });
+
+    test('dependsOn follows a rename of a dependency', async () => {
+        addBlock({ id: '1', name: 'a', code: 'b + 1' });
+        addBlock({ id: '2', name: 'b', code: '2' });
+        const { dependsOn } = withSetup(() => useBlockDependencies({ debounceMs: 0 }));
+        updateBlock('2', { name: 'c' });
+        updateBlock('1', { code: 'c + 1' });
+        await nextTick();
+        expect(dependsOn.value['a']).toEqual(['c']);
+        expect('b' in dependsOn.value).toBe(false);
+    });
+});
+
+describe('local declarations', () => {
+    test('a local const shadowing a block name is not a dependency', () => {
+        addBlock({ id: '1', name: 'a', code: '1' });
+        addBlock({ id: '2', name: 'b', code: 'const a = 5; a * 2' });
+        const { dependsOn } = withSetup(() => useBlockDependencies({ debounceMs: 0 }));
+        expect(dependsOn.value['b']).toEqual([]);
+    });
+});

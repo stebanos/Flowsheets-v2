@@ -314,3 +314,43 @@ describe('S9 — error blast radius', () => {
         expect(getStatus('c')).toBe('ok');
     });
 });
+
+// ---------------------------------------------------------------------------
+// S10 — evaluation isolation
+// ---------------------------------------------------------------------------
+
+describe('S10 — evaluation isolation', () => {
+    test('editing one block does not re-run unrelated blocks', async () => {
+        globalThis.__fsRuns = 0;
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'counter', 'globalThis.__fsRuns = globalThis.__fsRuns + 1');
+        addTestBlock('3', 'c', 'a + 1');
+        await prime('a', 'counter', 'c');
+        expect(getEvaluation('counter').value).toBe(1);
+
+        updateBlock('1', { code: '2' });
+        await prime('a', 'counter', 'c');
+
+        expect(getEvaluation('c').value).toBe(3);
+        expect(getEvaluation('counter').value).toBe(1);
+        expect(globalThis.__fsRuns).toBe(1);
+        delete globalThis.__fsRuns;
+    });
+
+    test('a block may declare a local with the same name as another block', async () => {
+        addTestBlock('1', 'a', '1');
+        addTestBlock('2', 'b', 'const a = 5; return a * 2');
+        await prime('a', 'b');
+        expect(getEvaluation('b')).toEqual({ value: 10, error: null });
+    });
+
+    test('mutual local declarations do not form a phantom cycle', async () => {
+        addTestBlock('1', 'a', 'const b = 1; return b');
+        addTestBlock('2', 'b', 'const a = 2; return a');
+        await prime('a', 'b');
+        expect(getEvaluation('a')).toEqual({ value: 1, error: null });
+        expect(getEvaluation('b')).toEqual({ value: 2, error: null });
+        expect(getStatus('a')).toBe('ok');
+        expect(getStatus('b')).toBe('ok');
+    });
+});
