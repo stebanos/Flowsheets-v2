@@ -354,3 +354,30 @@ describe('S10 — evaluation isolation', () => {
         expect(getStatus('b')).toBe('ok');
     });
 });
+
+// ---------------------------------------------------------------------------
+// S11 — comments and renames
+// ---------------------------------------------------------------------------
+
+describe('S11 — comments and renames', () => {
+    test('renaming a dependency leaves member properties and prose alone', async () => {
+        addTestBlock('1', 'a', '[1, 2]');
+        addTestBlock('2', 'b', 'a.length + a[0]', { inputModes: { a: 'all' } });
+        addTestBlock('3', 'c', 'a says ${a.length}', { inputModes: { a: 'all' } });
+        await nextTick(); // evaluators are registered on the next tick
+        await prime('a', 'b', 'c');
+        expect(getEvaluation('b')).toEqual({ value: 3, error: null });
+
+        // what useBlockName.saveName() does: rename, rewrite code, carry the inputModes key
+        updateBlock('1', { name: 'list' });
+        updateBlock('2', { code: renameIdentifier(blocks[1].code, 'a', 'list'), inputModes: { list: 'all' } });
+        updateBlock('3', { code: renameIdentifier(blocks[2].code, 'a', 'list'), inputModes: { list: 'all' } });
+        await nextTick();
+        await prime('list', 'b', 'c');
+
+        expect(blocks[1].code).toBe('list.length + list[0]');
+        expect(blocks[2].code).toBe('a says ${list.length}');
+        expect(getEvaluation('b')).toEqual({ value: 3, error: null });
+        expect(getEvaluation('c')).toEqual({ value: 'a says 2', error: null });
+    });
+});

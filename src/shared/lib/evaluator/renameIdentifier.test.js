@@ -65,3 +65,71 @@ describe('edge cases', () => {
         expect(renameIdentifier(42, 'a', 'x')).toBe(42);
     });
 });
+
+describe('syntax awareness', () => {
+    test('non-computed member property is not renamed', () => {
+        expect(renameIdentifier('obj.a + a', 'a', 'x')).toBe('obj.a + x');
+    });
+
+    test('object literal key is not renamed', () => {
+        expect(renameIdentifier('({ a: 1 }).a + a', 'a', 'x')).toBe('({ a: 1 }).a + x');
+    });
+
+    test('shorthand property is expanded so the key survives', () => {
+        expect(renameIdentifier('f({ a, b })', 'a', 'x')).toBe('f({ a: x, b })');
+    });
+
+    test('identifiers containing $ are matched exactly', () => {
+        expect(renameIdentifier('$a + 1', '$a', 'b')).toBe('b + 1');
+        expect(renameIdentifier('a$ + a', 'a', 'x')).toBe('a$ + x');
+        expect(renameIdentifier('$a + a', 'a', 'x')).toBe('$a + x');
+    });
+
+    test('regex literal body is not renamed', () => {
+        expect(renameIdentifier('/a/.test(a)', 'a', 'x')).toBe('/a/.test(x)');
+    });
+
+    test('labels are not renamed', () => {
+        expect(renameIdentifier('a: for (;;) { break a; }', 'a', 'x')).toBe('a: for (;;) { break a; }');
+    });
+});
+
+describe('scope awareness', () => {
+    test('local declaration shadowing the name is left alone', () => {
+        expect(renameIdentifier('const a = 1; a + 2', 'a', 'x')).toBe('const a = 1; a + 2');
+    });
+
+    test('parameter shadowing inside a function, free use outside', () => {
+        expect(renameIdentifier('(a => a + 1)(a)', 'a', 'x')).toBe('(a => a + 1)(x)');
+    });
+
+    test('nested function referencing the outer free name', () => {
+        expect(renameIdentifier('[1, 2].map(n => n * a)', 'a', 'x')).toBe('[1, 2].map(n => n * x)');
+    });
+});
+
+describe('string mode (template body)', () => {
+    test('prose is untouched, interpolations are renamed', () => {
+        expect(renameIdentifier('Hello a, value ${a} and a', 'a', 'x')).toBe('Hello a, value ${x} and a');
+    });
+
+    test('an apostrophe in prose does not hide later interpolations', () => {
+        expect(renameIdentifier("it's ${a}", 'a', 'x')).toBe("it's ${x}");
+    });
+
+    test('backticks in prose survive the round trip', () => {
+        expect(renameIdentifier('say `hi` ${a} \\` ${a}', 'a', 'x')).toBe('say `hi` ${x} \\` ${x}');
+    });
+
+    test('member access inside an interpolation keeps its property', () => {
+        expect(renameIdentifier('${a.a} ${o.a}', 'a', 'x')).toBe('${x.a} ${o.a}');
+    });
+});
+
+describe('unparseable code', () => {
+    test('falls back to a word-boundary rename', () => {
+        expect(renameIdentifier('a + ', 'a', 'x')).toBe('x + ');
+        expect(renameIdentifier('a$ + (', 'a', 'x')).toBe('a$ + (');
+        expect(renameIdentifier('$a + (', '$a', 'b')).toBe('b + (');
+    });
+});

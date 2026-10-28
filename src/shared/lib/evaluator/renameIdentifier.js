@@ -1,9 +1,49 @@
+import { findFreeReferences } from './ast';
+import { detectStringMode } from './string-template';
+
 function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Rewrite every free reference to `oldName` in `code` as `newName`.
+ *
+ * Resolution is AST-based (see `findFreeReferences`): declarations that shadow the
+ * name, member properties, object keys, labels, strings, comments and regex bodies
+ * are left alone, and a shorthand property `{ a }` becomes `{ a: b }`. String-mode
+ * code (a template body) is parsed as a template literal, so prose is never touched.
+ * Code that does not parse falls back to a word-boundary scan that skips strings and
+ * comments.
+ */
 export function renameIdentifier(code, oldName, newName) {
     if (!code || typeof code !== 'string') { return code; }
+
+    if (detectStringMode(code)) {
+        const wrapped = '`' + code.replace(/`/g, '\\`') + '`';
+        const refs = findFreeReferences(wrapped, oldName);
+        if (refs === null) { return _renameByScan(code, oldName, newName); }
+        return _splice(wrapped, refs, oldName, newName).slice(1, -1).replace(/\\`/g, '`');
+    }
+
+    const refs = findFreeReferences(code, oldName);
+    if (refs === null) { return _renameByScan(code, oldName, newName); }
+    return _splice(code, refs, oldName, newName);
+}
+
+function _splice(code, refs, oldName, newName) {
+    let out = '';
+    let last = 0;
+    for (const ref of [...refs].sort((a, b) => a.start - b.start)) {
+        out += code.slice(last, ref.start);
+        out += ref.shorthand ? `${oldName}: ${newName}` : newName;
+        last = ref.end;
+    }
+    return out + code.slice(last);
+}
+
+// ── fallback: lexical scan for code that does not parse ─────────────────────
+
+function _renameByScan(code, oldName, newName) {
     const len = code.length;
     const skip = new Uint8Array(len); // 1 = skip (inside string/comment/template raw), 0 = ok
 
@@ -147,7 +187,8 @@ export function renameIdentifier(code, oldName, newName) {
         i++;
     }
 
-    const idRegex = new RegExp('\\b' + escapeRegExp(oldName) + '\\b', 'g');
+    // identifier boundaries — `$` is an identifier character, so \b would miss `$a`
+    const idRegex = new RegExp('(?<![\\w$])' + escapeRegExp(oldName) + '(?![\\w$])', 'g');
     let out = '';
     let lastIndex = 0;
     let m;

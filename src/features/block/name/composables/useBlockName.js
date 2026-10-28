@@ -42,6 +42,10 @@ export function useBlockName(name, nameInput, blocks, identifiersByBlock) {
                 if (ids.includes(oldName)) {
                     updates.code = renameIdentifier(b.code || '', oldName, newName);
                 }
+                if (b.inputModes && Object.prototype.hasOwnProperty.call(b.inputModes, oldName)) {
+                    const { [oldName]: mode, ...rest } = b.inputModes;
+                    updates.inputModes = { ...rest, [newName]: mode };
+                }
                 if (b.vizOptions?.compareBlock === oldName) {
                     updates.vizOptions = { ...b.vizOptions, compareBlock: newName };
                 }

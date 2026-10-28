@@ -24,11 +24,34 @@ export function extractFreeIdentifiers(code) {
         return new Set();
     }
 
-    const found = new Set();
+    const ctx = { found: new Set(), refs: null };
+    _resolve(ast, ctx);
+    return ctx.found;
+}
+
+/**
+ * Locate every free reference to `name` in `code`, with source positions.
+ * A shorthand property (`{ a }`) is flagged so a rewrite can expand it to `{ a: b }`.
+ *
+ * @returns {Array<{ start: number, end: number, shorthand: boolean }>|null} null on parse errors
+ */
+export function findFreeReferences(code, name) {
+    let ast;
+    try {
+        ast = parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+    } catch (_e) {
+        return null;
+    }
+
+    const ctx = { found: new Set(), refs: [] };
+    _resolve(ast, ctx);
+    return ctx.refs.filter(r => r.name === name).map(({ start, end, shorthand }) => ({ start, end, shorthand }));
+}
+
+function _resolve(ast, ctx) {
     const program = _makeScope(null, true);
     _hoist(ast.body, program, program);
-    _visitAll(ast.body, program, found);
-    return found;
+    _visitAll(ast.body, program, ctx);
 }
 
 // ── scopes ──────────────────────────────────────────────────────────────────
@@ -152,15 +175,21 @@ function _collect(node, block, fn, top) {
 
 const SKIP_KEYS = new Set(['type', 'start', 'end', 'loc', 'range']);
 
-function _visitAll(nodes, scope, found) {
-    for (const n of nodes) { _visit(n, scope, found); }
+function _visitAll(nodes, scope, ctx) {
+    for (const n of nodes) { _visit(n, scope, ctx); }
 }
 
-function _visit(node, scope, found) {
+function _reference(node, scope, ctx, shorthand) {
+    if (_isBound(scope, node.name)) { return; }
+    ctx.found.add(node.name);
+    if (ctx.refs) { ctx.refs.push({ name: node.name, start: node.start, end: node.end, shorthand }); }
+}
+
+function _visit(node, scope, ctx) {
     if (!node || typeof node.type !== 'string') { return; }
     switch (node.type) {
     case 'Identifier':
-        if (!_isBound(scope, node.name)) { found.add(node.name); }
+        _reference(node, scope, ctx, false);
         return;
 
         // never references
@@ -179,106 +208,116 @@ function _visit(node, scope, found) {
         return;
 
     case 'LabeledStatement':
-        _visit(node.body, scope, found);
+        _visit(node.body, scope, ctx);
         return;
     case 'ExportNamedDeclaration':  // bare specifiers name local bindings — nothing free
     case 'ExportDefaultDeclaration':
-        _visit(node.declaration, scope, found);
+        _visit(node.declaration, scope, ctx);
         return;
 
     case 'MemberExpression':
-        _visit(node.object, scope, found);
-        if (node.computed) { _visit(node.property, scope, found); }
+        _visit(node.object, scope, ctx);
+        if (node.computed) { _visit(node.property, scope, ctx); }
         return;
     case 'Property':
+        if (node.shorthand) {
+            // `{ a }` or, as an assignment target, `{ a = 1 }`
+            const target = node.value.type === 'AssignmentPattern' ? node.value.left : node.value;
+            if (target.type === 'Identifier') { _reference(target, scope, ctx, true); }
+            if (node.value.type === 'AssignmentPattern') { _visit(node.value.right, scope, ctx); }
+            return;
+        }
+        if (node.computed) { _visit(node.key, scope, ctx); }
+        _visit(node.value, scope, ctx);
+        return;
     case 'MethodDefinition':
     case 'PropertyDefinition':
     case 'AccessorProperty':
-        if (node.computed) { _visit(node.key, scope, found); }
-        _visit(node.value, scope, found);
+        if (node.computed) { _visit(node.key, scope, ctx); }
+        _visit(node.value, scope, ctx);
         return;
 
     case 'VariableDeclaration':
         for (const d of node.declarations) {
-            _visitPattern(d.id, scope, found);
-            _visit(d.init, scope, found);
+            _visitPattern(d.id, scope, ctx);
+            _visit(d.init, scope, ctx);
         }
         return;
 
     case 'FunctionDeclaration':
     case 'FunctionExpression':
     case 'ArrowFunctionExpression':
-        _visitFunction(node, scope, found);
+        _visitFunction(node, scope, ctx);
         return;
     case 'ClassDeclaration':
     case 'ClassExpression':
-        _visitClass(node, scope, found);
+        _visitClass(node, scope, ctx);
         return;
 
     case 'BlockStatement': {
         const inner = _makeScope(scope, false);
         _hoist(node.body, inner, _functionScopeOf(scope));
-        _visitAll(node.body, inner, found);
+        _visitAll(node.body, inner, ctx);
         return;
     }
     case 'StaticBlock': {
         const inner = _makeScope(scope, true);
         _hoist(node.body, inner, inner);
-        _visitAll(node.body, inner, found);
+        _visitAll(node.body, inner, ctx);
         return;
     }
     case 'SwitchStatement': {
-        _visit(node.discriminant, scope, found);
+        _visit(node.discriminant, scope, ctx);
         const inner = _makeScope(scope, false);
         _hoist(node.cases.flatMap(c => c.consequent), inner, _functionScopeOf(scope));
         for (const c of node.cases) {
-            _visit(c.test, inner, found);
-            _visitAll(c.consequent, inner, found);
+            _visit(c.test, inner, ctx);
+            _visitAll(c.consequent, inner, ctx);
         }
         return;
     }
     case 'ForStatement': {
         const inner = _loopScope(node.init, scope);
-        _visit(node.init, inner, found);
-        _visit(node.test, inner, found);
-        _visit(node.update, inner, found);
-        _visit(node.body, inner, found);
+        _visit(node.init, inner, ctx);
+        _visit(node.test, inner, ctx);
+        _visit(node.update, inner, ctx);
+        _visit(node.body, inner, ctx);
         return;
     }
     case 'ForInStatement':
     case 'ForOfStatement': {
         const inner = _loopScope(node.left, scope);
-        _visit(node.left, inner, found);
-        _visit(node.right, inner, found);
-        _visit(node.body, inner, found);
+        _visit(node.left, inner, ctx);
+        _visit(node.right, inner, ctx);
+        _visit(node.body, inner, ctx);
         return;
     }
     case 'CatchClause': {
         const inner = _makeScope(scope, false);
         _bindAll(inner, _patternNames(node.param));
-        _visitPattern(node.param, inner, found);
-        _visit(node.body, inner, found);
+        _visitPattern(node.param, inner, ctx);
+        _visit(node.body, inner, ctx);
         return;
     }
     default:
-        _visitChildren(node, scope, found);
+        _visitChildren(node, scope, ctx);
     }
 }
 
-function _visitChildren(node, scope, found) {
+function _visitChildren(node, scope, ctx) {
     for (const key of Object.keys(node)) {
         if (SKIP_KEYS.has(key)) { continue; }
         const child = node[key];
         if (Array.isArray(child)) {
-            for (const c of child) { _visit(c, scope, found); }
+            for (const c of child) { _visit(c, scope, ctx); }
         } else if (child && typeof child.type === 'string') {
-            _visit(child, scope, found);
+            _visit(child, scope, ctx);
         }
     }
 }
 
 /** Expressions inside a binding pattern: defaults and computed keys. */
-function _visitPattern(p, scope, found) {
+function _visitPattern(p, scope, ctx) {
     if (!p) { return; }
     switch (p.type) {
     case 'Identifier':
@@ -286,25 +325,25 @@ function _visitPattern(p, scope, found) {
     case 'ObjectPattern':
         for (const prop of p.properties) {
             if (prop.type === 'RestElement') {
-                _visitPattern(prop.argument, scope, found);
+                _visitPattern(prop.argument, scope, ctx);
             } else {
-                if (prop.computed) { _visit(prop.key, scope, found); }
-                _visitPattern(prop.value, scope, found);
+                if (prop.computed) { _visit(prop.key, scope, ctx); }
+                _visitPattern(prop.value, scope, ctx);
             }
         }
         return;
     case 'ArrayPattern':
-        for (const el of p.elements) { _visitPattern(el, scope, found); }
+        for (const el of p.elements) { _visitPattern(el, scope, ctx); }
         return;
     case 'AssignmentPattern':
-        _visitPattern(p.left, scope, found);
-        _visit(p.right, scope, found);
+        _visitPattern(p.left, scope, ctx);
+        _visit(p.right, scope, ctx);
         return;
     case 'RestElement':
-        _visitPattern(p.argument, scope, found);
+        _visitPattern(p.argument, scope, ctx);
         return;
     default:
-        _visit(p, scope, found);
+        _visit(p, scope, ctx);
     }
 }
 
@@ -315,7 +354,7 @@ function _loopScope(head, scope) {
     return inner;
 }
 
-function _visitFunction(node, scope, found) {
+function _visitFunction(node, scope, ctx) {
     const inner = _makeScope(scope, true);
     // a declaration's name is hoisted into the enclosing scope; an expression's is local
     if (node.type === 'FunctionExpression' && node.id) { inner.names.add(node.id.name); }
@@ -323,17 +362,17 @@ function _visitFunction(node, scope, found) {
     for (const p of node.params) { _bindAll(inner, _patternNames(p)); }
     const isBlock = node.body.type === 'BlockStatement';
     if (isBlock) { _hoist(node.body.body, inner, inner); }
-    for (const p of node.params) { _visitPattern(p, inner, found); }
+    for (const p of node.params) { _visitPattern(p, inner, ctx); }
     if (isBlock) {
-        _visitAll(node.body.body, inner, found);
+        _visitAll(node.body.body, inner, ctx);
     } else {
-        _visit(node.body, inner, found);
+        _visit(node.body, inner, ctx);
     }
 }
 
-function _visitClass(node, scope, found) {
+function _visitClass(node, scope, ctx) {
     const inner = _makeScope(scope, false);
     if (node.type === 'ClassExpression' && node.id) { inner.names.add(node.id.name); }
-    _visit(node.superClass, inner, found);
-    for (const member of node.body.body) { _visit(member, inner, found); }
+    _visit(node.superClass, inner, ctx);
+    for (const member of node.body.body) { _visit(member, inner, ctx); }
 }

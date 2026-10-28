@@ -126,6 +126,22 @@ describe('saveName — cascade rename', () => {
         expect(mockUpdateBlock).not.toHaveBeenCalled();
     });
 
+    test('renames the inputModes key of a dependent so its mode survives', () => {
+        const name = makeName('a');
+        const blocks = [
+            { id: '1', name: 'a', code: '' },
+            { id: '2', name: 'b', code: 'a.length', inputModes: { a: 'all', c: 'each' } }
+        ];
+        const identifiersByBlock = { b: ['a'] };
+        const { editName, saveName } = useBlockName(name, makeNameInput(), blocks, identifiersByBlock);
+        editName.value = 'renamed';
+        saveName();
+        expect(mockUpdateBlock).toHaveBeenCalledWith('2', expect.objectContaining({
+            code: 'renamed.length',
+            inputModes: { renamed: 'all', c: 'each' }
+        }));
+    });
+
     test('updates vizOptions.compareBlock when it references the renamed block', () => {
         const name = makeName('a');
         const blocks = [
