@@ -10,7 +10,8 @@ const PERSISTED_BLOCK_FIELDS = [
     'inputModes',
     'visualizationType',
     'vizOptions',
-    'editorCollapsed'
+    'editorCollapsed',
+    'param'
 ];
 
 /**
@@ -89,6 +90,7 @@ export function deserializeSheet(json) {
         visualizationType: block.visualizationType ?? 'default',
         vizOptions: block.vizOptions ?? {},
         editorCollapsed: block.editorCollapsed ?? false,
+        param: block.param ?? null,
         userMinWidth: undefined,
         userMinEditorHeight: undefined,
         userMinOutputHeight: undefined

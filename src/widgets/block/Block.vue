@@ -8,6 +8,7 @@ import { useCellDimensions } from '@/features/block/grid';
 import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
 import { useBlockNavigation, useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
+import { ParamConfigPopover, ParamWidgetBar } from '@/features/block/parameter';
 import { useVizMenu, VizMenu } from '@/features/block/visualize';
 import OutputHistoryPopover from './OutputHistoryPopover.vue';
 import { useBlockDimensions } from './useBlockDimensions';
@@ -119,9 +120,16 @@ const { deleteBlock } = useDeleteBlock();
 const { isDragging, startDrag } = useDrag(snapX, snapY);
 
 const blockMenuRef = ref(null);
-const blockMenuItems = [
+const paramConfigOpen = ref(false);
+const blockMenuItems = computed(() => [
+    ...(props.block.param
+        ? [
+            { label: 'Edit parameter…', command: () => { paramConfigOpen.value = true; } },
+            { label: 'Remove parameter', command: () => onRemoveParam() }
+        ]
+        : [{ label: 'Make parameter…', command: () => { paramConfigOpen.value = true; } }]),
     { label: 'Delete block', command: () => onDeleteBlock() }
-];
+]);
 
 function onBlockMenuClick(event) {
     event.stopPropagation();
@@ -137,6 +145,7 @@ const blockDeps = computed(() => {
 });
 const hasInputs = computed(() => blockDeps.value.length > 0);
 const snappedInputsPanelHeight = computed(() => panelOpen.value && hasInputs.value ? blockDeps.value.length * cellHeight.value : 0);
+const snappedParamBarHeight = computed(() => props.block.param ? cellHeight.value : 0);
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
 const status = computed(() => props.context.getStatus(props.block.name));
@@ -165,7 +174,7 @@ const {
     snappedBlockHeight,
     editorHeight,
     editorWidth
-} = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight, editorCollapsed });
+} = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedParamBarHeight, snappedOutputHeight, editorCollapsed });
 
 onBeforeUnmount(() => {
     unregister(props.block.name);
@@ -178,6 +187,9 @@ const blockPositionStyle = computed(() => ({
     width: `${snappedEditorWidth.value - 1}px`,
     height: `${snappedBlockHeight.value - 1}px`
 }));
+
+// undefined = no usable value (error or missing) — the widget bar shows its "no value" state
+const paramValue = computed(() => blockEval.value?.error ? undefined : blockEval.value?.value);
 
 const formattedResult = computed(() => {
     const evaluation = blockEval.value;
@@ -242,6 +254,10 @@ function onNameMousedown(event) {
             .map(b => ({ id: b.id, startX: b.x, startY: b.y }))
         : [];
     startDrag(props.block, event, coparticipants);
+}
+
+function onRemoveParam() {
+    updateBlock(props.block.id, { param: null, editorCollapsed: false });
 }
 
 function onDeleteBlock() {
@@ -344,7 +360,17 @@ watch(
                 </button>
                 <p-menu ref="blockMenuRef" :model="blockMenuItems" popup />
             </div>
+            <!-- Param config anchor: the popup menu closes on command, so the popover anchors here -->
+            <param-config-popover v-if="paramConfigOpen"
+                class="absolute top-full right-0 z-30"
+                :block="block"
+                :has-dependencies="hasInputs"
+                @close="paramConfigOpen = false" />
         </div>
+        <param-widget-bar v-if="block.param"
+            :block="block"
+            :value="paramValue"
+            :style="{ height: cellHeight + 'px' }" />
         <div v-if="!editorCollapsed" class="block-code w-full relative" :class="{ 'is-string': detectStringMode(block.code) }" :style="{ height: snappedEditorHeight + 'px' }">
             <code-editor ref="codeEditorRef" class="block-code-editor h-full w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"

@@ -21,7 +21,8 @@ export function useBlockManager() {
             inputModes: {},
             visualizationType: 'default',
             vizOptions: {},
-            editorCollapsed: false
+            editorCollapsed: false,
+            param: null
         });
 
         return resolvedName;

@@ -267,6 +267,40 @@ describe('round-trip', () => {
     });
 });
 
+describe('param persistence', () => {
+    it('serializeSheet includes param', () => {
+        const param = { widget: 'slider', min: 0, max: 1, step: 0.01 };
+        const result = serializeSheet([makeBlock({ param })], {}, 'Sheet');
+        expect(result.blocks[0].param).toEqual(param);
+    });
+
+    it('param round-trips through serializeSheet / deserializeSheet', () => {
+        const param = { widget: 'options', options: ['red', 'green'] };
+        const serialized = serializeSheet([makeBlock({ param })], {}, 'Sheet');
+        const { blocks } = deserializeSheet(serialized);
+        expect(blocks[0].param).toEqual(param);
+    });
+
+    it('param: null round-trips as null', () => {
+        const serialized = serializeSheet([makeBlock({ param: null })], {}, 'Sheet');
+        const { blocks } = deserializeSheet(serialized);
+        expect(blocks[0].param).toBeNull();
+    });
+
+    it('missing param deserializes to null', () => {
+        const json = { version: '1.2.0', name: 'Sheet', blocks: [{ id: 'b1', name: 'foo', x: 0, y: 0, code: '1' }] };
+        const { blocks } = deserializeSheet(json);
+        expect(blocks[0].param).toBeNull();
+    });
+
+    it('param survives a bundle round-trip', () => {
+        const param = { widget: 'toggle' };
+        const bundle = serializeBundle([{ id: 's1', name: 'S', blocks: [makeBlock({ param })], vizes: {} }], 's1');
+        const { sheets } = deserializeBundle(bundle);
+        expect(sheets[0].blocks[0].param).toEqual(param);
+    });
+});
+
 describe('serializeVizes / deserializeVizes round-trip', () => {
     it('serializes with version: 1 and strips draft', () => {
         const vizes = {

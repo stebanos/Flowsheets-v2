@@ -74,6 +74,16 @@ describe('useBlockDimensions', () => {
         expect(snappedBlockHeight.value).toBe(160);
     });
 
+    test('snappedBlockHeight includes the param bar height', () => {
+        addBlock({ id: 'b1', name: 'a', width: 200, height: 160, editorHeight: 80, outputHeight: 120 });
+        const block = blocks[0];
+        const deps = makeDeps({ snappedOutputHeight: ref(120), editorCollapsed: ref(true), snappedParamBarHeight: ref(40) });
+        const { snappedBlockHeight } = withSetup(() => useBlockDimensions(block, deps));
+
+        // cellHeight(40) + paramBar(40) + 0 + inputsPanel(0) + outputHeight(120) = 200
+        expect(snappedBlockHeight.value).toBe(200);
+    });
+
     test('falls back to 2*cellHeight when block.editorHeight is missing', () => {
         addBlock({ id: 'b1', name: 'a', width: 200, height: 160 });
         const block = blocks[0];

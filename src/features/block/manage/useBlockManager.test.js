@@ -86,6 +86,12 @@ describe('createBlock — block shape', () => {
         expect(block).toHaveProperty('vizOptions');
     });
 
+    test('param defaults to null', () => {
+        const { createBlock } = useBlockManager();
+        createBlock({ x: 0, y: 0 }, null, '1 + 1', cellWidth, unitY);
+        expect(blocks[0].param).toBeNull();
+    });
+
     test('x and y are snapped to grid (multiples of cell dimensions)', () => {
         const { createBlock } = useBlockManager();
         createBlock({ x: 17, y: 22 }, null, '1 + 1', cellWidth, unitY);

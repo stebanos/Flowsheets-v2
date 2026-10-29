@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
 import { useHistory } from '@/features/sheet/history';
 
-export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedOutputHeight, editorCollapsed = ref(false) }) {
+export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedParamBarHeight = ref(0), snappedOutputHeight, editorCollapsed = ref(false) }) {
     const { updateBlock } = useBlockStore();
     const { suppress } = useHistory();
 
@@ -13,7 +13,7 @@ export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappe
     const snappedEditorHeight = computed(() => editorCollapsed.value ? 0 : editorHeight.value);
     const snappedEditorWidth = computed(() => editorWidth.value);
     const snappedBlockHeight = computed(() =>
-        cellHeight.value + snappedEditorHeight.value + snappedInputsPanelHeight.value + snappedOutputHeight.value
+        cellHeight.value + snappedParamBarHeight.value + snappedEditorHeight.value + snappedInputsPanelHeight.value + snappedOutputHeight.value
     );
 
     // height/width are derived display values, not user actions — run suppressed

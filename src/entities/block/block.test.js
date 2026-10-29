@@ -43,6 +43,10 @@ describe('createBlock — defaults', () => {
     test('editorCollapsed defaults to false', () => {
         expect(createBlock(BASE).editorCollapsed).toBe(false);
     });
+
+    test('param defaults to null', () => {
+        expect(createBlock(BASE).param).toBeNull();
+    });
 });
 
 describe('createBlock — explicit values override defaults', () => {
@@ -54,7 +58,8 @@ describe('createBlock — explicit values override defaults', () => {
             vizOptions: { customVizName: 'myViz' },
             inputModes: { b: 'each' },
             editorHeight: 48,
-            outputHeight: 72
+            outputHeight: 72,
+            param: { widget: 'slider', min: 0, max: 1, step: 0.1 }
         });
         expect(b.code).toBe('x + 1');
         expect(b.visualizationType).toBe('html');
@@ -62,5 +67,6 @@ describe('createBlock — explicit values override defaults', () => {
         expect(b.inputModes).toEqual({ b: 'each' });
         expect(b.editorHeight).toBe(48);
         expect(b.outputHeight).toBe(72);
+        expect(b.param).toEqual({ widget: 'slider', min: 0, max: 1, step: 0.1 });
     });
 });
