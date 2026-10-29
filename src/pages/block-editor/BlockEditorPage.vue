@@ -6,6 +6,7 @@ import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
+import { useConnectDrag } from '@/features/block/connect';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useDataImport } from '@/features/block/import';
@@ -58,12 +59,51 @@ const { canUndo, canRedo } = history;
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
 const { selectedNames, selectAll, setSelection, clearSelection } = useBlockSelection();
 
+// drag-to-connect (reference drag)
+const { active: connectActive, from: connectFrom, to: connectTo, cancel: cancelConnect, drop: dropConnect, insertInto, updatePointer } = useConnectDrag();
+
+const connectWirePath = computed(() => {
+    const { x: x1, y: y1 } = connectFrom.value;
+    const { x: x2, y: y2 } = connectTo.value;
+    const dx = Math.max(Math.abs(x2 - x1) / 2, 30);
+    return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+});
+
+function _onConnectMove(e) {
+    const { left, top } = canvasEl.value.getBoundingClientRect();
+    updatePointer({ x: e.clientX - left - panX.value, y: e.clientY - top - panY.value });
+}
+
+async function _onConnectUp() {
+    const result = dropConnect();
+    if (!result) { return; }
+    history.beginGroup();
+    try {
+        await insertInto(result.targetId, result.sourceName);
+    } finally {
+        history.endGroup();
+    }
+}
+
+watch(connectActive, (isActive) => {
+    if (isActive) {
+        window.addEventListener('mousemove', _onConnectMove);
+        window.addEventListener('mouseup', _onConnectUp);
+        return;
+    }
+    window.removeEventListener('mousemove', _onConnectMove);
+    window.removeEventListener('mouseup', _onConnectUp);
+});
+
 const isSpaceHeld = ref(false);
 const canvasMousePos = ref(null);
 
 function _onKeydown(e) {
     const tag = document.activeElement?.tagName?.toLowerCase();
     const inInput = tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable;
+
+    // above the inInput return: focus may still sit in a (contentEditable) CodeMirror editor mid-drag
+    if (e.key === 'Escape' && connectActive.value) { cancelConnect(); e.preventDefault(); return; }
 
     if (e.code !== 'Space' && inInput) { return; }
 
@@ -200,6 +240,8 @@ onMounted(async () => {
 onUnmounted(() => {
     window.removeEventListener('keydown', _onKeydown);
     window.removeEventListener('keyup', _onKeyup);
+    window.removeEventListener('mousemove', _onConnectMove);
+    window.removeEventListener('mouseup', _onConnectUp);
 });
 
 // handlers
@@ -385,6 +427,10 @@ const statusColor = computed(() => {
                     <div class="absolute inset-0 pointer-events-none" :style="{ transform: `translate(${panX}px, ${panY}px)` }">
                         <canvas-note v-for="note in notes" :key="`note-${note.id}`" class="pointer-events-auto" :note />
                         <block v-for="block in blocks" :key="`block-${block.id}`" class="pointer-events-auto" :block :context :identifiersByBlock :hovered :setHovered :clearHovered @edit-viz="onEditViz" />
+                        <svg v-if="connectActive" class="connect-wire absolute top-0 left-0 overflow-visible pointer-events-none z-30" width="1" height="1">
+                            <path :d="connectWirePath" fill="none" stroke="black" stroke-width="2" stroke-dasharray="5 3" />
+                            <circle :cx="connectTo.x" :cy="connectTo.y" r="3" fill="black" />
+                        </svg>
                     </div>
                     <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
                     <div

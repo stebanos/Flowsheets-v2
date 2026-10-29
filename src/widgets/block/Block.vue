@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { useBlockStore } from '@/entities/block';
+import { insertReference, useConnectDrag } from '@/features/block/connect';
 import { useDrag } from '@/features/block/drag';
 import { CodeEditor } from '@/features/block/edit-code';
 import { useCellDimensions } from '@/features/block/grid';
@@ -176,8 +177,45 @@ const {
     editorWidth
 } = useBlockDimensions(props.block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedParamBarHeight, snappedOutputHeight, editorCollapsed });
 
+// drag-to-connect: this block as source (port dot / output grip) and as drop target
+const {
+    active: connectActive,
+    hoverTargetId,
+    sourceId: connectSourceId,
+    clearHoverTarget,
+    registerTarget,
+    setHoverTarget,
+    startConnect,
+    unregisterTarget
+} = useConnectDrag();
+const isConnectSource = computed(() => connectActive.value && connectSourceId.value === props.block.id);
+const isConnectTarget = computed(() => connectActive.value && hoverTargetId.value === props.block.id && !isConnectSource.value);
+const portCanvasPos = computed(() => ({
+    x: props.block.x + snappedEditorWidth.value,
+    y: props.block.y + snappedBlockHeight.value / 2
+}));
+
+function onConnectMousedown(e) {
+    if (e.button !== 0) { return; }
+    startConnect(props.block, portCanvasPos.value);
+}
+
+// Runs inside the page's history group: expand (if collapsed) + insert = one undo step
+async function insertReferenceFromDrop(name) {
+    if (editorCollapsed.value) {
+        updateBlock(props.block.id, { editorCollapsed: false });
+        await nextTick();
+    }
+    const policy = (code, cursor) => insertReference(code, name, cursor);
+    if (codeEditorRef.value?.editAtCursor(policy)) { return; }
+    updateBlock(props.block.id, { code: policy(props.block.code, null).code });
+}
+
+registerTarget(props.block.id, insertReferenceFromDrop);
+
 onBeforeUnmount(() => {
     unregister(props.block.name);
+    unregisterTarget(props.block.id);
     clearTimeout(outputHoverTimer);
 });
 
@@ -296,7 +334,8 @@ watch(
          :aria-label="isEditing ? `Block: ${block.name}, editing` : `Block: ${block.name}`"
          :style="blockPositionStyle"
          :class="[
-             isEditing ? 'ring-[1.5px] ring-amber-400 z-10'
+             isConnectTarget ? 'ring-2 ring-cyan-500 z-10'
+             : isEditing ? 'ring-[1.5px] ring-amber-400 z-10'
              : isSelected || isFocused ? 'ring-[1.5px] ring-cyan-400 z-10'
              : isHighlighted ? 'ring-[1.5px] ring-black z-10'
              : status === 'error' ? 'ring-[1.5px] ring-red-400'
@@ -308,7 +347,14 @@ watch(
          @focusin="onFocusIn"
          @focusout="onFocusOut"
          @keydown="onWrapperKeyDown"
-         @mousedown="onWrapperMousedown">
+         @mousedown="onWrapperMousedown"
+         @mouseenter="setHoverTarget(block.id)"
+         @mouseleave="clearHoverTarget(block.id)">
+        <!-- Drag-to-connect port: drag onto another block to insert a reference to this one -->
+        <div class="connect-port absolute top-1/2 -right-1.5 -translate-y-1/2 z-20 w-3 h-3 rounded-full bg-white border-2 border-black cursor-crosshair opacity-0 group-hover:opacity-100 transition-opacity group-[.resizing-local]:invisible"
+             :class="{ 'opacity-100!': isConnectSource }"
+             title="Drag onto a block to reference this one"
+             @mousedown.stop.prevent="onConnectMousedown" />
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
              :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
@@ -400,7 +446,7 @@ watch(
                 </div>
             </div>
         </div>
-        <div class="block-output w-full border-t border-gray-300 bg-white relative flex flex-col"
+        <div class="block-output group/output w-full border-t border-gray-300 bg-white relative flex flex-col"
             :style="{ height: snappedOutputHeight + 'px' }"
             :class="{ 'output-flash-ok': flashType === 'ok', 'output-flash-error': flashType === 'error', 'pointer-events-none': isResizingLocal }"
             @animationend="flashType = null"
@@ -427,6 +473,17 @@ watch(
                     <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.3">
                         <circle cx="8" cy="8" r="6" />
                         <path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="connect-grip absolute top-0.5 left-0.5 z-10 opacity-0 group-hover/output:opacity-50 hover:opacity-100! text-gray-500 cursor-crosshair transition-opacity"
+                     :class="{ 'opacity-100!': isConnectSource }"
+                     title="Drag onto a block to reference this output"
+                     @mousedown.stop.prevent="onConnectMousedown">
+                    <svg viewBox="0 0 12 12" width="12" height="12" fill="currentColor">
+                        <circle cx="3" cy="3" r="1.2" />
+                        <circle cx="9" cy="3" r="1.2" />
+                        <circle cx="3" cy="9" r="1.2" />
+                        <circle cx="9" cy="9" r="1.2" />
                     </svg>
                 </div>
                 <output-history-popover

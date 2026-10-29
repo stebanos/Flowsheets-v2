@@ -239,7 +239,24 @@ onBeforeUnmount(() => {
     detachHoverHandlers(editorView);
 });
 
+// transform(code, cursorOrNull) → { code, cursor }; cursor is null when the editor is
+// unfocused, so callers can fall back to a position of their choosing (e.g. end of doc)
+function editAtCursor(transform) {
+    const view = editorView.value;
+    if (!view) { return false; }
+    const doc = view.state.doc.toString();
+    const cursorPos = view.hasFocus ? view.state.selection.main.head : null;
+    const next = transform(doc, cursorPos);
+    view.dispatch({
+        changes: { from: 0, to: doc.length, insert: next.code },
+        selection: { anchor: next.cursor },
+        scrollIntoView: true
+    });
+    return true;
+}
+
 defineExpose({
+    editAtCursor,
     focus() { editorView.value?.focus(); }
 });
 </script>
