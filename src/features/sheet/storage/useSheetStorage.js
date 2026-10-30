@@ -2,8 +2,9 @@ import { reactive, ref, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
 import { useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
-import { deserializeSheet, migrate, serializeSheet, useSheetStore } from '@/entities/sheet';
+import { serializeSheet, useSheetStore } from '@/entities/sheet';
 import { readActiveId, readOpenIds, writeActiveId, writeOpenIds } from './pointerKeys';
+import { readSheetData as loadSheet } from './sheetLoader';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
 
@@ -54,10 +55,6 @@ const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
 function _opfsAvailable() {
     return typeof navigator !== 'undefined' &&
         typeof navigator.storage?.getDirectory === 'function';
-}
-
-function _isPlainObject(value) {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 // ── open-ids helpers ──────────────────────────────────────────────────────────
@@ -133,17 +130,9 @@ export function useSheetStorage(handlers = {}) {
     // can never replace the stored data with the empty sheet shown in its place.
     async function _readSheet(id) {
         try {
-            const raw = await strategy.readSheet(id);
-            const envelope = {
-                version:     raw.version     ?? 1,
-                blocks:      raw.blocks      ?? [],
-                customVizes: _isPlainObject(raw.customVizes) ? raw.customVizes : {},
-                view:        raw.view        ?? {},
-                notes:       raw.notes       ?? []
-            };
-            const data = await migrate(envelope);
+            const sheet = await loadSheet(strategy, id);
             _unreadable.delete(id);
-            return deserializeSheet(data);
+            return sheet;
         } catch (err) {
             _unreadable.add(id);
             localStatus.value = 'error';
