@@ -1,8 +1,6 @@
 import { reactive, ref } from 'vue';
 import { useVizLibrary } from './useVizLibrary';
 
-const { createLibraryEntry, deleteLibraryEntry, renameLibraryEntry } = useVizLibrary();
-
 const DEFAULT_TEMPLATE = `<div class="root">\n  {{ display }}\n</div>`;
 const DEFAULT_SCRIPT = `const { computed } = Vue;\nconst display = computed(() => props.value);\nreturn { display };`;
 const DEFAULT_STYLE = `.root { padding: .5rem; }`;
@@ -22,37 +20,6 @@ function makeEntry(draft) {
 const customVizes = reactive({});
 
 const activeVizName = ref(null);
-
-function createViz() {
-    let n = 1;
-    while (customVizes[`Viz ${n}`]) { n++; }
-    const name = `Viz ${n}`;
-    customVizes[name] = makeEntry(makeDefaultDraft());
-    activeVizName.value = name;
-    createLibraryEntry(name);
-}
-
-function deleteViz(name) {
-    if (!customVizes[name]) { return; }
-    const names = Object.keys(customVizes);
-    const idx = names.indexOf(name);
-    delete customVizes[name];
-    if (activeVizName.value === name) {
-        const remaining = Object.keys(customVizes);
-        activeVizName.value = remaining[Math.min(idx, remaining.length - 1)] ?? null;
-    }
-    deleteLibraryEntry(name);
-}
-
-function renameViz(oldName, newName) {
-    if (!customVizes[oldName] || customVizes[newName]) { return false; }
-    const entries = Object.entries(customVizes).map(([k, v]) => [k === oldName ? newName : k, v]);
-    for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
-    for (const [k, v] of entries) { customVizes[k] = v; }
-    if (activeVizName.value === oldName) { activeVizName.value = newName; }
-    renameLibraryEntry(oldName, newName);
-    return true;
-}
 
 function saveDraft(name, panelDrafts) {
     if (customVizes[name]) { customVizes[name].draft = { ...panelDrafts }; }
@@ -80,5 +47,38 @@ function resetVizes(vizMap) {
 }
 
 export function useCustomVizStore() {
+    const { createLibraryEntry, deleteLibraryEntry, renameLibraryEntry } = useVizLibrary();
+
+    function createViz() {
+        let n = 1;
+        while (customVizes[`Viz ${n}`]) { n++; }
+        const name = `Viz ${n}`;
+        customVizes[name] = makeEntry(makeDefaultDraft());
+        activeVizName.value = name;
+        createLibraryEntry(name);
+    }
+
+    function deleteViz(name) {
+        if (!customVizes[name]) { return; }
+        const names = Object.keys(customVizes);
+        const idx = names.indexOf(name);
+        delete customVizes[name];
+        if (activeVizName.value === name) {
+            const remaining = Object.keys(customVizes);
+            activeVizName.value = remaining[Math.min(idx, remaining.length - 1)] ?? null;
+        }
+        deleteLibraryEntry(name);
+    }
+
+    function renameViz(oldName, newName) {
+        if (!customVizes[oldName] || customVizes[newName]) { return false; }
+        const entries = Object.entries(customVizes).map(([k, v]) => [k === oldName ? newName : k, v]);
+        for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
+        for (const [k, v] of entries) { customVizes[k] = v; }
+        if (activeVizName.value === oldName) { activeVizName.value = newName; }
+        renameLibraryEntry(oldName, newName);
+        return true;
+    }
+
     return { activeVizName, customVizes, createViz, deleteViz, renameViz, resetVizes, revertDraft, saveDraft };
 }
