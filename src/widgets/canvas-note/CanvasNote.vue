@@ -1,9 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { useWindowDrag } from '@/shared/composables';
 import { useNoteStore } from '@/entities/note';
 import { useDrag } from '@/features/block/drag';
-import { useDeleteNote, useFocusedNote } from '@/features/note';
+import { useDeleteNote, useFocusedNote, useNoteResize } from '@/features/note';
 
 const props = defineProps({
     note: {
@@ -15,6 +14,7 @@ const props = defineProps({
 const { updateNote } = useNoteStore();
 const { deleteNote } = useDeleteNote();
 const { focusedNoteId, selectNote, clearNote } = useFocusedNote();
+const { startResize } = useNoteResize(props.note);
 
 const noteTitle = computed({
     get: () => props.note.title,
@@ -47,9 +47,6 @@ function onMenuButtonClick(event) {
     event.stopPropagation();
     menuRef.value.toggle(event);
 }
-
-const MIN_WIDTH = 120;
-const MIN_HEIGHT = 80;
 
 const isFocused = computed(() => focusedNoteId.value === props.note.id);
 
@@ -96,36 +93,6 @@ function onTitleClick() {
     setTimeout(() => titleInput.value?.focus(), 0);
 }
 
-const resizing = ref(false);
-const resizeDrag = useWindowDrag();
-let resizeStartX = 0;
-let resizeStartY = 0;
-let resizeStartWidth = 0;
-let resizeStartHeight = 0;
-
-function onResizeMousedown(event) {
-    if (event.button !== 0) { return; }
-    event.stopPropagation();
-    resizing.value = true;
-    resizeStartX = event.clientX;
-    resizeStartY = event.clientY;
-    resizeStartWidth = props.note.width;
-    resizeStartHeight = props.note.height;
-    resizeDrag.start(onResizeMousemove, onResizeMouseup);
-}
-
-function onResizeMousemove(event) {
-    const dx = event.clientX - resizeStartX;
-    const dy = event.clientY - resizeStartY;
-    updateNote(props.note.id, {
-        width: Math.max(MIN_WIDTH, resizeStartWidth + dx),
-        height: Math.max(MIN_HEIGHT, resizeStartHeight + dy)
-    });
-}
-
-function onResizeMouseup() {
-    resizing.value = false;
-}
 </script>
 
 <template>
@@ -170,7 +137,7 @@ function onResizeMouseup() {
                 <circle cx="6" cy="10" r="1.2" />
             </svg>
         </button>
-        <div class="canvas-note__resize" @mousedown.stop="onResizeMousedown" />
+        <div class="canvas-note__resize" @mousedown.stop="startResize" />
         <p-menu ref="menuRef" :model="menuItems" popup />
     </div>
 </template>
