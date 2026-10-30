@@ -6,7 +6,7 @@ import { initHistory, useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
 import { deserializeSheet, serializeSheet, useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
-import { useConnectDrag } from '@/features/block/connect';
+import { useConnectWire } from '@/features/block/connect';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useDataImport } from '@/features/block/import';
@@ -62,41 +62,6 @@ const { canUndo, canRedo } = history;
 // rubber-band selection
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
 const { selectedNames, selectAll, setSelection, clearSelection } = useBlockSelection();
-
-// drag-to-connect (reference drag)
-const { active: connectActive, from: connectFrom, to: connectTo, cancel: cancelConnect, drop: dropConnect, insertInto, updatePointer } = useConnectDrag();
-
-const connectWirePath = computed(() => {
-    const { x: x1, y: y1 } = connectFrom.value;
-    const { x: x2, y: y2 } = connectTo.value;
-    const dx = Math.max(Math.abs(x2 - x1) / 2, 30);
-    return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-});
-
-function _onConnectMove(e) {
-    updatePointer(toCanvasPoint(e));
-}
-
-async function _onConnectUp() {
-    const result = dropConnect();
-    if (!result) { return; }
-    history.beginGroup();
-    try {
-        await insertInto(result.targetId, result.sourceName);
-    } finally {
-        history.endGroup();
-    }
-}
-
-const connectWindowDrag = useWindowDrag();
-
-watch(connectActive, (isActive) => {
-    if (isActive) {
-        connectWindowDrag.start(_onConnectMove, _onConnectUp);
-        return;
-    }
-    connectWindowDrag.stop();
-});
 
 const isSpaceHeld = ref(false);
 const canvasMousePos = ref(null);
@@ -202,6 +167,9 @@ const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 const { toCanvasPoint } = useCanvasPoint(canvasEl);
 const { onWheel } = useCanvasWheelPan(canvasEl);
+
+// drag-to-connect (reference drag)
+const { active: connectActive, to: connectTo, wirePath: connectWirePath, cancel: cancelConnect } = useConnectWire({ toCanvasPoint });
 
 // the canvas unmounts in list mode — re-register on every (re)mount so focusCanvas() targets live elements
 watch(canvasEl, (el) => {
