@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar, useWindowDrag } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { initHistory, useHistory } from '@/entities/history';
-import { useNoteStore } from '@/entities/note';
+import { createNote, useNoteStore } from '@/entities/note';
 import { deserializeSheet, serializeSheet, useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 import { useConnectWire } from '@/features/block/connect';
@@ -70,15 +70,7 @@ const canvasContextMenuItems = [
     {
         label: 'Add note',
         command: () => {
-            addNote({
-                id: crypto.randomUUID(),
-                x: contextMenuPos.value.x,
-                y: contextMenuPos.value.y,
-                width: 200,
-                height: 150,
-                title: '',
-                body: ''
-            });
+            addNote(createNote({ x: contextMenuPos.value.x, y: contextMenuPos.value.y }));
         }
     },
     {
