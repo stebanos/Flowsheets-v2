@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar, useWindowDrag } from '@/shared/composables';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { initHistory, useHistory } from '@/entities/history';
@@ -10,15 +10,15 @@ import { useConnectWire } from '@/features/block/connect';
 import { useBlockEvaluation } from '@/features/block/evaluation';
 import { useCellDimensions } from '@/features/block/grid';
 import { useDataImport } from '@/features/block/import';
-import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
-import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
+import { useBlockManager } from '@/features/block/manage';
+import { useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useCanvasPoint, useCanvasWheelPan, useRubberBandSelection } from '@/features/canvas';
-import { useFocusedNote } from '@/features/note';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, ListView, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons, ViewModeToggle } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
+import { useEditorShortcuts } from './composables/useEditorShortcuts';
 
 // stores
 const { blocks, replaceBlocks } = useBlockStore();
@@ -31,8 +31,6 @@ const context = useBlockEvaluation(dependsOn);
 
 // block interaction
 const { createBlock } = useBlockManager();
-const { copySelected, cutSelected, pasteBlocks, duplicateSelected } = useBlockClipboard();
-const { deleteBlock } = useDeleteBlock();
 const { hovered, setHovered, clearHovered } = useHoveredState();
 const { cellWidth, unitY, setCellDimensions } = useCellDimensions();
 setCellDimensions(150, 24);
@@ -61,63 +59,9 @@ const { canUndo, canRedo } = history;
 
 // rubber-band selection
 const { isSelecting, rect, startRubberBand, updateRubberBand, finishRubberBand } = useRubberBandSelection();
-const { selectedNames, selectAll, setSelection, clearSelection } = useBlockSelection();
+const { setSelection, clearSelection } = useBlockSelection();
 
-const isSpaceHeld = ref(false);
 const canvasMousePos = ref(null);
-
-function _onKeydown(e) {
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    const inInput = tag === 'input' || tag === 'textarea' || tag === 'select' || document.activeElement?.isContentEditable;
-
-    // above the inInput return: focus may still sit in a (contentEditable) CodeMirror editor mid-drag
-    if (e.key === 'Escape' && connectActive.value) { cancelConnect(); e.preventDefault(); return; }
-
-    if (e.code !== 'Space' && inInput) { return; }
-
-    const cmd = e.metaKey || e.ctrlKey;
-
-    if (cmd && e.shiftKey && e.key === 'Z') { history.redo(); e.preventDefault(); return; }
-    if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
-
-    // everything below is canvas-scoped: in list mode the selection and canvas are not on screen
-    if (isListMode.value) { return; }
-
-    if (e.code === 'Space') {
-        if (e.repeat || inInput) { return; }
-        isSpaceHeld.value = true;
-        e.preventDefault();
-        return;
-    }
-
-    if (cmd && e.key === 'a') { selectAll(blocks); e.preventDefault(); return; }
-    if (cmd && e.key === 'c') { copySelected(blocks, [...selectedNames.value]); return; }
-    if (cmd && e.key === 'x') {
-        cutSelected(blocks, [...selectedNames.value]).then(ok => { if (ok) { clearSelection(); } });
-        return;
-    }
-    if (cmd && e.key === 'v') {
-        pasteBlocks({ canvasX: canvasMousePos.value?.x, canvasY: canvasMousePos.value?.y, canvasEl: canvasEl.value, panX, panY })
-            .then(newNames => { if (newNames) { setSelection(newNames); } });
-        return;
-    }
-    if (cmd && e.key === 'd') {
-        const newNames = duplicateSelected(blocks, [...selectedNames.value], { cellWidth, unitY });
-        if (newNames) { setSelection(newNames); }
-        e.preventDefault();
-        return;
-    }
-    if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && focusedNoteId.value === null && selectedNames.value.size > 0) {
-        const toDelete = blocks.filter(b => selectedNames.value.has(b.name));
-        clearSelection();
-        for (const b of toDelete) { deleteBlock(b); }
-    }
-}
-
-function _onKeyup(e) {
-    if (e.code === 'Space') { isSpaceHeld.value = false; }
-}
 
 // canvas context menu
 const canvasContextMenu = ref(null);
@@ -161,8 +105,7 @@ async function onDataInputChange(e) {
 }
 
 // keyboard nav
-const { registerCanvas, focusedBlockName } = useFocusedBlock();
-const { focusedNoteId } = useFocusedNote();
+const { registerCanvas } = useFocusedBlock();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 const { toCanvasPoint } = useCanvasPoint(canvasEl);
@@ -170,6 +113,9 @@ const { onWheel } = useCanvasWheelPan(canvasEl);
 
 // drag-to-connect (reference drag)
 const { active: connectActive, to: connectTo, wirePath: connectWirePath, cancel: cancelConnect } = useConnectWire({ toCanvasPoint });
+
+// keyboard shortcuts
+const { isSpaceHeld } = useEditorShortcuts({ isListMode, canvasEl, canvasMousePos, connect: { active: connectActive, cancel: cancelConnect } });
 
 // the canvas unmounts in list mode — re-register on every (re)mount so focusCanvas() targets live elements
 watch(canvasEl, (el) => {
@@ -200,8 +146,6 @@ watch(activeSheetId, (id) => { if (id) { history.setActiveSheet(id); } }, { imme
 
 // lifecycle
 onMounted(async () => {
-    window.addEventListener('keydown', _onKeydown);
-    window.addEventListener('keyup', _onKeyup);
     // wire history snapshot capture/restore + register store hooks
     await initHistory(
         () => serializeSheet(blocks, {}, activeSheetName.value, { panX: panX.value, panY: panY.value }, notes),
@@ -219,11 +163,6 @@ onMounted(async () => {
         createBlock({ x: 301, y: 73 }, 'greeting', '"Hello"', cellWidth, unitY);
         createBlock({ x: 601, y: 145 }, 'message', '`${greeting}, world!`', cellWidth, unitY);
     }
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', _onKeydown);
-    window.removeEventListener('keyup', _onKeyup);
 });
 
 // handlers
