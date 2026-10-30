@@ -4,6 +4,7 @@ import { useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
 import { serializeSheet, useSheetStore } from '@/entities/sheet';
 import { readActiveId, readOpenIds, writeActiveId, writeOpenIds } from './pointerKeys';
+import { createSaveScheduler } from './saveScheduler';
 import { readSheetData as loadSheet } from './sheetLoader';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
@@ -23,8 +24,8 @@ import { useOPFSStrategy } from './useOPFSStrategy';
 // can refuse to overwrite what is stored. Writers must never replace a corrupt catalogue.
 
 // ── module-level singletons ──────────────────────────────────────────────────
-// Async I/O pattern: exposes reactive status ('idle'|'saving'|'error') and error (string|null)
-const localStatus    = ref('idle');  // 'idle' | 'saving' | 'error'
+// Async I/O pattern: exposes reactive status ('idle'|'saving'|'error') and error (string|null).
+// The status ref lives on the save scheduler (created once, below) and is returned as `localStatus`.
 const localError     = ref(null);    // string | null
 const openSheetIds   = reactive([]);
 const isFirstBoot    = ref(false);   // true only when storage was completely empty on this load
@@ -44,7 +45,7 @@ let initialised     = false;
 let bootPromise     = null;
 let pendingSwitchId = null;
 let loading         = false;  // true while stores hold data that does not belong to activeSheetId
-let saveTimer       = null;
+let scheduler       = null;   // created on the first useSheetStorage() call; shared by every caller
 let catalogueUnreadable = false;  // the stored catalogue failed to load — never write anything
 
 
@@ -97,31 +98,13 @@ export function useSheetStorage(handlers = {}) {
             const serialized = serializeSheet(blocks, _handlers.getCustomVizes(), name, view, _storeNotes);
             if (_pendingDelete.has(id)) { return; }
             await strategy.writeSheet(id, name, { blocks: serialized.blocks, customVizes: serialized.customVizes, view: serialized.view, notes: serialized.notes });
-            localStatus.value = 'idle';
+            scheduler.status.value = 'idle';
         } catch (err) {
-            localStatus.value = 'error';
+            scheduler.status.value = 'error';
             localError.value  = err.name === 'QuotaExceededError'
                 ? 'Auto-save failed — your browser storage is full. Save your work as a file to avoid losing it.'
                 : err.message;
         }
-    }
-
-    function _scheduleSave() {
-        if (_saveBlocked()) { return; }
-        if (saveTimer !== null) { clearTimeout(saveTimer); }
-        localStatus.value = 'saving';
-        saveTimer = setTimeout(() => {
-            saveTimer = null;
-            _saveCurrentSheet();
-        }, 500);
-    }
-
-    function flushSave() {
-        if (saveTimer !== null) {
-            clearTimeout(saveTimer);
-            saveTimer = null;
-        }
-        _saveCurrentSheet();
     }
 
     // ── load sheet data into stores ───────────────────────────────────────────
@@ -135,7 +118,7 @@ export function useSheetStorage(handlers = {}) {
             return sheet;
         } catch (err) {
             _unreadable.add(id);
-            localStatus.value = 'error';
+            scheduler.status.value = 'error';
             localError.value  = `This sheet could not be loaded (${err.message}). Auto-save is paused for it so its stored data is not overwritten.`;
             return { blocks: [], vizes: {}, view: { panX: 0, panY: 0 }, notes: [] };
         }
@@ -170,7 +153,7 @@ export function useSheetStorage(handlers = {}) {
             // Not a first run — the catalogue exists but cannot be read. Creating a sheet here
             // would overwrite it and orphan every stored sheet, so stop and keep saves blocked.
             catalogueUnreadable = true;
-            localStatus.value = 'error';
+            scheduler.status.value = 'error';
             localError.value  = `Your sheets could not be loaded (${err.message}). Auto-save is paused so the stored data is not overwritten.`;
             return;
         }
@@ -224,7 +207,7 @@ export function useSheetStorage(handlers = {}) {
         const target = sheets.find(s => s.id === id);
         if (!target) { return; }
 
-        flushSave();
+        scheduler.flush();
 
         loading = true;
         setActiveSheet(id, target.name);
@@ -248,7 +231,7 @@ export function useSheetStorage(handlers = {}) {
         writeActiveId(id);
         _addToOpenIds(id);
         strategy.initSheet(id, name).catch((err) => {
-            localStatus.value = 'error';
+            scheduler.status.value = 'error';
             localError.value  = err.message;
         });
     }
@@ -296,13 +279,14 @@ export function useSheetStorage(handlers = {}) {
         return strategy.writeSheet(id, name, data);
     }
 
-    // ── auto-save watcher (initialised once per singleton) ───────────────────
+    // ── save scheduler + auto-save watcher (initialised once per singleton) ───
 
     if (!initialised) {
         initialised = true;
+        scheduler = createSaveScheduler({ save: _saveCurrentSheet, isBlocked: _saveBlocked });
         watch(
             [blocks, _storeNotes, activeSheetName],
-            () => { _scheduleSave(); },
+            () => { scheduler.schedule(); },
             { deep: true }
         );
     }
@@ -311,7 +295,7 @@ export function useSheetStorage(handlers = {}) {
     function unmarkPendingDelete(id) { _pendingDelete.delete(id); }
 
     return {
-        localStatus,
+        localStatus: scheduler.status,
         localError,
         openSheetIds,
         isFirstBoot,
@@ -325,7 +309,7 @@ export function useSheetStorage(handlers = {}) {
         writeSheetData,
         markPendingDelete,
         unmarkPendingDelete,
-        scheduleSave: _scheduleSave,
-        flushSave
+        scheduleSave: scheduler.schedule,
+        flushSave: scheduler.flush
     };
 }
