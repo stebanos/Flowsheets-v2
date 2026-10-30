@@ -13,7 +13,7 @@ import { useDataImport } from '@/features/block/import';
 import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
-import { useCanvasPan, useCanvasPoint, useRubberBandSelection } from '@/features/canvas';
+import { useCanvasPan, useCanvasPoint, useCanvasWheelPan, useRubberBandSelection } from '@/features/canvas';
 import { useFocusedNote } from '@/features/note';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, ListView, SheetSidebar, SheetTabs } from '@/widgets';
@@ -49,7 +49,7 @@ sheetSidebarOpen.value = JSON.parse(localStorage.getItem(SHEET_SIDEBAR_KEY) ?? '
 watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stringify(val)));
 
 // canvas pan
-const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
+const { panX, panY, isPanning, startPan, resetPan, setPan } = useCanvasPan();
 
 // view mode (per sheet, persisted in the sheet's view object)
 const viewMode = ref('canvas');
@@ -201,15 +201,12 @@ const { focusedNoteId } = useFocusedNote();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 const { toCanvasPoint } = useCanvasPoint(canvasEl);
+const { onWheel } = useCanvasWheelPan(canvasEl);
 
 // the canvas unmounts in list mode — re-register on every (re)mount so focusCanvas() targets live elements
 watch(canvasEl, (el) => {
     if (el) { registerCanvas(el, wrapAnnouncerEl.value); }
 }, { flush: 'post' });
-
-const SCROLL_RESUME_MS = 500;
-const LINE_PX = 40;
-let _lastScrollTime = 0;
 
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
@@ -311,46 +308,6 @@ function onCanvasMousedown(event) {
     }
 }
 
-function _findScrollableAncestor(el) {
-    while (el && el !== canvasEl.value) {
-        const oy = getComputedStyle(el).overflowY;
-        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) { return el; }
-        el = el.parentElement;
-    }
-    return null;
-}
-
-function onCanvasWheel(event) {
-    const now = Date.now();
-    const isMidScroll = (now - _lastScrollTime) < SCROLL_RESUME_MS;
-
-    if (!isMidScroll) {
-        const active = document.activeElement;
-        const tag = active?.tagName?.toLowerCase();
-        if (tag === 'input' || tag === 'textarea' || tag === 'select' || active?.isContentEditable) { return; }
-
-        const scrollable = _findScrollableAncestor(event.target);
-        if (scrollable) {
-            const canScrollDown = event.deltaY > 0 && scrollable.scrollTop < scrollable.scrollHeight - scrollable.clientHeight;
-            const canScrollUp = event.deltaY < 0 && scrollable.scrollTop > 0;
-            if (canScrollDown || canScrollUp) { return; }
-        }
-    }
-
-    event.preventDefault();
-    _lastScrollTime = now;
-
-    const factor = event.deltaMode === 1 ? LINE_PX : event.deltaMode === 2 ? window.innerHeight : 1;
-    const dx = event.deltaX * factor;
-    const dy = event.deltaY * factor;
-
-    if (event.shiftKey) {
-        panByDelta(-(dx || dy), 0);
-    } else {
-        panByDelta(-dx, -dy);
-    }
-}
-
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
 
@@ -418,7 +375,7 @@ const statusColor = computed(() => {
                     @drop.prevent="onDrop"
                     @mousedown="onCanvasMousedown"
                     @mousemove="onCanvasMousemove"
-                    @wheel.capture="onCanvasWheel"
+                    @wheel.capture="onWheel"
                     @contextmenu="onCanvasContextMenu"
                 >
                     <span ref="wrapAnnouncerEl" aria-live="polite" class="sr-only" />
