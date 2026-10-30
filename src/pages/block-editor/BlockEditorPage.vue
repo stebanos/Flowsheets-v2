@@ -1,11 +1,10 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar, useWindowDrag } from '@/shared/composables';
-import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { initHistory, useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
-import { useSheetStore } from '@/entities/sheet';
+import { deserializeSheet, serializeSheet, useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 import { useConnectDrag } from '@/features/block/connect';
 import { useBlockEvaluation } from '@/features/block/evaluation';

@@ -1,10 +1,9 @@
 import { ref } from 'vue';
 import { getHash } from '@/shared/lib/hash';
-import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
 import { useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
-import { useSheetStore } from '@/entities/sheet';
+import { deserializeSheet, migrate, serializeBundle, serializeSheet, useSheetStore } from '@/entities/sheet';
 import { useCustomVizStore, useVizLibrary } from '@/entities/viz';
 import { useSheetStorage } from '../storage/useSheetStorage';
 import { useBundleImport } from './useBundleImport';

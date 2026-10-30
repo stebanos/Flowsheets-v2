@@ -33,7 +33,8 @@ vi.mock('@/entities/history', () => ({
 const mockSheets = reactive([]);
 const mockActiveSheetId = ref(null);
 
-vi.mock('@/entities/sheet', () => ({
+vi.mock('@/entities/sheet', async (importOriginal) => ({
+    ...(await importOriginal()),
     useSheetStore: () => ({
         activeSheetName: ref('Test'),
         renameActiveSheet: mockRenameActiveSheet,

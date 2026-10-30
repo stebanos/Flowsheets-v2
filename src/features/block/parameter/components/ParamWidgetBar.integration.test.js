@@ -12,7 +12,7 @@ beforeEach(async () => {
     vi.resetModules();
     ({ useHistory } = await import('@/entities/history'));
     ({ useBlockStore } = await import('@/entities/block'));
-    ({ serializeSheet, deserializeSheet } = await import('@/shared/lib/persistence'));
+    ({ serializeSheet, deserializeSheet } = await import('@/entities/sheet'));
     blockModule = await import('@/entities/block/blockStore');
     ParamWidgetBar = (await import('./ParamWidgetBar.vue')).default;
 });

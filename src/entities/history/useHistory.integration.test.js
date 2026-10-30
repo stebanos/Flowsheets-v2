@@ -15,7 +15,7 @@ beforeEach(async () => {
     ({ useHistory } = await import('./useHistory'));
     ({ useBlockStore } = await import('@/entities/block'));
     ({ useNoteStore } = await import('@/entities/note'));
-    ({ serializeSheet, deserializeSheet } = await import('@/shared/lib/persistence'));
+    ({ serializeSheet, deserializeSheet } = await import('@/entities/sheet'));
 
     blockModule = await import('@/entities/block/blockStore');
     noteModule = await import('@/entities/note/noteStore');

@@ -1,5 +1,5 @@
 import { ref, toValue } from 'vue';
-import { deserializeBundle, serializeSheet } from '@/shared/lib/persistence';
+import { deserializeBundle, serializeSheet } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 
 export function useBundleImport({ sheets, writeSheetData, persistDeleteSheet, registerSheet, switchSheet }) {
