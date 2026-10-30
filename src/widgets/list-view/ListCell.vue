@@ -37,6 +37,7 @@ const emit = defineEmits(['drag-start']);
 const { updateBlock } = useBlockStore();
 const { activeVizComponent } = useVizMenu(props.block, () => {});
 
+const cellEl = ref(null);
 const codeExpanded = ref(false);
 
 const blockEval = computed(() => props.context.getEvaluation(props.block.name));
@@ -65,10 +66,15 @@ function formatValue(v) {
 function onUpdateCode(code) {
     updateBlock(props.block.id, { code }, `code:${props.block.id}`);
 }
+
+// Escape leaves the editor so page-level shortcuts (undo/redo) apply again; next/prev stay inert in v1
+function onNavigate(dir) {
+    if (dir === 'escape') { cellEl.value?.focus(); }
+}
 </script>
 
 <template>
-    <div class="list-cell bg-white border border-gray-300 rounded shadow-sm overflow-hidden text-[.875rem] leading-4">
+    <div ref="cellEl" tabindex="-1" class="list-cell bg-white border border-gray-300 rounded shadow-sm overflow-hidden text-[.875rem] leading-4 outline-none">
         <div class="list-cell-header flex items-center h-7 px-2 bg-black text-white cursor-move select-none"
              @mousedown="emit('drag-start', $event)">
             <span class="list-cell-name flex-1 min-w-0 truncate font-mono text-[13px]">{{ block.name }}</span>
@@ -91,6 +97,7 @@ function onUpdateCode(code) {
             <code-editor class="w-full" :code="block.code" :blocks :setHovered :clearHovered
                 :inputModes="block.inputModes || {}"
                 :blockName="block.name"
+                :onNavigate="onNavigate"
                 @update:code="onUpdateCode($event)" />
         </div>
         <div class="list-cell-output relative" :style="outputStyle">

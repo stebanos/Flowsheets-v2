@@ -114,6 +114,17 @@ describe('ListCell', () => {
         expect(tags).toHaveLength(0);
     });
 
+    test('Escape in the editor moves focus to the cell', async () => {
+        const { wrapper } = mountCell();
+        wrapper.element.ownerDocument.body.appendChild(wrapper.element);
+        await wrapper.find('.list-cell-code-toggle').trigger('click');
+        const editor = wrapper.findComponent(CodeEditor);
+        expect(typeof editor.props('onNavigate')).toBe('function');
+        editor.props('onNavigate')('escape');
+        expect(document.activeElement).toBe(wrapper.element);
+        wrapper.element.remove();
+    });
+
     test('code edits write through the store', async () => {
         const { wrapper, live } = mountCell();
         await wrapper.find('.list-cell-code-toggle').trigger('click');
