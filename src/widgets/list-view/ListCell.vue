@@ -4,7 +4,7 @@ import { useBlockStore } from '@/entities/block';
 import { CodeEditor } from '@/features/block/edit-code';
 import { useBlockEval } from '@/features/block/evaluation';
 import { ParamWidgetBar } from '@/features/block/parameter';
-import { useVizMenu } from '@/features/block/visualize';
+import { getVizDef, useVizMenu } from '@/features/block/visualize';
 import { BlockOutput } from '@/widgets/block-output';
 
 const DEFAULT_OUTPUT_HEIGHT = 72;
@@ -44,11 +44,11 @@ const codeExpanded = ref(false);
 
 const { paramValue } = useBlockEval(props.block, props.context);
 
-const isDefaultViz = computed(() => (props.block.visualizationType ?? 'default') === 'default');
+const fillsContainer = computed(() => getVizDef(props.block.visualizationType).fillsContainer);
 // Charts and custom vizes fill their container, so they need a definite height; default text grows (capped)
-const outputStyle = computed(() => isDefaultViz.value
-    ? { overflowY: 'auto', maxHeight: `${DEFAULT_VIZ_MAX_HEIGHT}px` }
-    : { overflowY: 'hidden', height: `${props.block.outputHeight ?? DEFAULT_OUTPUT_HEIGHT}px` }
+const outputStyle = computed(() => fillsContainer.value
+    ? { overflowY: 'hidden', height: `${props.block.outputHeight ?? DEFAULT_OUTPUT_HEIGHT}px` }
+    : { overflowY: 'auto', maxHeight: `${DEFAULT_VIZ_MAX_HEIGHT}px` }
 );
 
 function onUpdateCode(code) {

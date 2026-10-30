@@ -12,15 +12,20 @@ vi.mock('./useCustomViz', () => ({
     useCustomViz: () => ({ customVizes: mockCustomVizes })
 }));
 
-vi.mock('./viz-types', () => ({
-    VIZ_TYPES: {
-        default: { label: 'Default', component: {} },
-        html: { label: 'HTML', component: {} },
-        json: { label: 'JSON', component: {} },
-        'text-diff': { label: 'Text diff', component: {} },
-        custom: { label: 'Custom', component: {} }
-    }
-}));
+vi.mock('./viz-types', () => {
+    const VIZ_TYPES = {
+        default: { label: 'Default', component: {}, inMenu: true, fillsContainer: false },
+        html: { label: 'HTML', component: {}, inMenu: true, fillsContainer: true },
+        json: { label: 'JSON', component: {}, inMenu: true, fillsContainer: true },
+        'text-diff': { label: 'Text diff', component: {}, inMenu: true, fillsContainer: true },
+        hidden: { label: 'Hidden', component: {}, inMenu: false, fillsContainer: true },
+        custom: { label: 'Custom', component: {}, inMenu: false, fillsContainer: true }
+    };
+    return {
+        VIZ_TYPES,
+        getVizDef: type => VIZ_TYPES[type ?? 'default'] ?? VIZ_TYPES.default
+    };
+});
 
 const { useVizMenu } = await import('./useVizMenu');
 
@@ -50,6 +55,13 @@ describe('vizMenuItems — built-in types', () => {
         expect(labels).toContain('JSON');
         expect(labels).toContain('Text diff');
         expect(labels).not.toContain('Custom');
+    });
+
+    test('a type with inMenu: false is absent from the flat items', () => {
+        const block = makeBlock();
+        const { vizMenuItems } = useVizMenu(block, vi.fn());
+        const labels = vizMenuItems.value.map(i => i.label).filter(Boolean);
+        expect(labels).not.toContain('Hidden');
     });
 
     test('active built-in type has active flag set', () => {

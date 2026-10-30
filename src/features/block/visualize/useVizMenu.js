@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from './useCustomViz';
-import { VIZ_TYPES } from './viz-types';
+import { getVizDef, VIZ_TYPES } from './viz-types';
 
 export function useVizMenu(block, onEditViz) {
     const { updateBlock } = useBlockStore();
@@ -16,14 +16,12 @@ export function useVizMenu(block, onEditViz) {
         return VIZ_TYPES[currentVizType.value]?.label ?? 'Default';
     });
 
-    const activeVizComponent = computed(() =>
-        VIZ_TYPES[currentVizType.value]?.component ?? VIZ_TYPES.default.component
-    );
+    const activeVizComponent = computed(() => getVizDef(currentVizType.value).component);
 
     const vizMenuItems = computed(() => {
         const items = [];
-        for (const [key, { label }] of Object.entries(VIZ_TYPES)) {
-            if (key === 'custom') { continue; }
+        for (const [key, { label, inMenu }] of Object.entries(VIZ_TYPES)) {
+            if (!inMenu) { continue; }
             const isActive = currentVizType.value === key;
             items.push({
                 label,
