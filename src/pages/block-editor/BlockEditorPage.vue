@@ -16,8 +16,8 @@ import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
 import { useFocusedNote } from '@/features/note';
 import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
-import { Block, BlockGrid, CanvasNote, CustomVizEditor, SheetSidebar, SheetTabs } from '@/widgets';
-import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons } from './components';
+import { Block, BlockGrid, CanvasNote, CustomVizEditor, ListView, SheetSidebar, SheetTabs } from '@/widgets';
+import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons, ViewModeToggle } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
 
 // stores
@@ -50,6 +50,10 @@ watch(sheetSidebarOpen, val => localStorage.setItem(SHEET_SIDEBAR_KEY, JSON.stri
 
 // canvas pan
 const { panX, panY, isPanning, startPan, resetPan, setPan, panByDelta } = useCanvasPan();
+
+// view mode (per sheet, persisted in the sheet's view object)
+const viewMode = ref('canvas');
+const isListMode = computed(() => viewMode.value === 'list');
 
 // history
 const history = useHistory();
@@ -107,14 +111,20 @@ function _onKeydown(e) {
 
     if (e.code !== 'Space' && inInput) { return; }
 
+    const cmd = e.metaKey || e.ctrlKey;
+
+    if (cmd && e.shiftKey && e.key === 'Z') { history.redo(); e.preventDefault(); return; }
+    if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
+
+    // everything below is canvas-scoped: in list mode the selection and canvas are not on screen
+    if (isListMode.value) { return; }
+
     if (e.code === 'Space') {
         if (e.repeat || inInput) { return; }
         isSpaceHeld.value = true;
         e.preventDefault();
         return;
     }
-
-    const cmd = e.metaKey || e.ctrlKey;
 
     if (cmd && e.key === 'a') { selectAll(blocks); e.preventDefault(); return; }
     if (cmd && e.key === 'c') { copySelected(blocks, [...selectedNames.value]); return; }
@@ -133,8 +143,6 @@ function _onKeydown(e) {
         e.preventDefault();
         return;
     }
-    if (cmd && e.shiftKey && e.key === 'Z') { history.redo(); e.preventDefault(); return; }
-    if (cmd && !e.shiftKey && e.key === 'z') { history.undo(); e.preventDefault(); return; }
     if (e.key === 'Escape' && focusedBlockName.value === null) { clearSelection(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && focusedBlockName.value === null && focusedNoteId.value === null && selectedNames.value.size > 0) {
         const toDelete = blocks.filter(b => selectedNames.value.has(b.name));
@@ -194,6 +202,11 @@ const { focusedNoteId } = useFocusedNote();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
 
+// the canvas unmounts in list mode — re-register on every (re)mount so focusCanvas() targets live elements
+watch(canvasEl, (el) => {
+    if (el) { registerCanvas(el, wrapAnnouncerEl.value); }
+}, { flush: 'post' });
+
 const SCROLL_RESUME_MS = 500;
 const LINE_PX = 40;
 let _lastScrollTime = 0;
@@ -202,12 +215,16 @@ let _lastScrollTime = 0;
 const { createSheet, deletedNotice } = useSheetManager();
 const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
     getCustomVizes:  () => library,
-    getPan:          () => ({ panX: panX.value, panY: panY.value }),
-    onPanLoaded:     (view) => setPan(view.panX, view.panY)
+    getPan:          () => ({ panX: panX.value, panY: panY.value, viewMode: viewMode.value }),
+    onPanLoaded:     (view) => {
+        setPan(view.panX, view.panY);
+        viewMode.value = view.viewMode ?? 'canvas';
+    }
 });
 const { prepareImport } = useFileIO();
 watch([library, activeVizName], scheduleSave, { deep: true });
-watch([panX, panY], scheduleSave);
+watch([panX, panY, viewMode], scheduleSave);
+watch(isListMode, (on) => { if (on) { clearSelection(); } });
 watch(activeSheetName, () => clearSelection());
 
 // track active sheet for per-sheet history stacks
@@ -217,7 +234,6 @@ watch(activeSheetId, (id) => { if (id) { history.setActiveSheet(id); } }, { imme
 onMounted(async () => {
     window.addEventListener('keydown', _onKeydown);
     window.addEventListener('keyup', _onKeyup);
-    registerCanvas(canvasEl.value, wrapAnnouncerEl.value);
     // wire history snapshot capture/restore + register store hooks
     await initHistory(
         () => serializeSheet(blocks, {}, activeSheetName.value, { panX: panX.value, panY: panY.value }, notes),
@@ -389,8 +405,9 @@ const statusColor = computed(() => {
                 <sheet-title :sheet-name="activeSheetName" :status-text="statusText" :status-color="statusColor" />
             </template>
             <template #controls>
+                <view-mode-toggle v-model="viewMode" />
                 <undo-redo-buttons :can-undo="canUndo" :can-redo="canRedo" @undo="history.undo()" @redo="history.redo()" />
-                <reset-pan-button @reset="resetPan" />
+                <reset-pan-button v-if="!isListMode" @reset="resetPan" />
                 <app-bar-toggle-button :open="sidebarOpen" aria-label="Toggle Viz Editor sidebar" @toggle="toggleSidebar">
                     <viz-sidebar-icon />
                 </app-bar-toggle-button>
@@ -401,6 +418,7 @@ const statusColor = computed(() => {
             <div class="flex flex-col flex-1 overflow-hidden">
                 <sheet-tabs @open-sidebar="openSheetSidebar" />
                 <div
+                    v-if="!isListMode || sheets.length === 0"
                     ref="canvasEl"
                     data-canvas
                     role="group"
@@ -444,6 +462,7 @@ const statusColor = computed(() => {
                         }"
                     />
                 </div>
+                <list-view v-else class="flex-1 min-h-0" :context :blocks :setHovered :clearHovered />
             </div>
         </div>
         <p-drawer v-model:visible="sidebarOpen" position="right" header="Custom Visualizations" class="w-125 top-9.75">

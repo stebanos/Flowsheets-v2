@@ -96,7 +96,7 @@ describe('serializeSheet', () => {
 
     it('includes view when provided', () => {
         const result = serializeSheet([makeBlock()], {}, 'Sheet', { panX: 100, panY: -50 });
-        expect(result.view).toEqual({ panX: 100, panY: -50 });
+        expect(result.view).toEqual({ panX: 100, panY: -50, viewMode: 'canvas' });
     });
 
     it('omits view when not provided', () => {
@@ -210,13 +210,13 @@ describe('deserializeSheet', () => {
     it('restores view from json', () => {
         const json = { version: 2, name: 'Sheet', blocks: [], view: { panX: 200, panY: -100 } };
         const { view } = deserializeSheet(json);
-        expect(view).toEqual({ panX: 200, panY: -100 });
+        expect(view).toEqual({ panX: 200, panY: -100, viewMode: 'canvas' });
     });
 
     it('defaults view to { panX: 0, panY: 0 } when missing', () => {
         const json = { version: 2, name: 'Sheet', blocks: [] };
         const { view } = deserializeSheet(json);
-        expect(view).toEqual({ panX: 0, panY: 0 });
+        expect(view).toEqual({ panX: 0, panY: 0, viewMode: 'canvas' });
     });
 });
 
@@ -263,7 +263,7 @@ describe('round-trip', () => {
 
         expect(restoredVizes).toEqual({ Table: { hash: 'tablehash', source: '<table/>' } });
         expect(restoredVizes).not.toHaveProperty('Chart');
-        expect(view).toEqual({ panX: 300, panY: 150 });
+        expect(view).toEqual({ panX: 300, panY: 150, viewMode: 'canvas' });
     });
 });
 
@@ -525,5 +525,46 @@ describe('bundle round-trip', () => {
         expect(b.blocks).toHaveLength(0);
 
         expect(vizLibrary).toEqual({ Table: { hash: 'tablehash', source: '<table/>' } });
+    });
+});
+
+describe('list view persistence', () => {
+    const roundTrip = (blocks, view) => deserializeSheet(serializeSheet(blocks, {}, 'S', view, []));
+
+    it('listPosition number survives round-trip', () => {
+        const { blocks } = roundTrip([makeBlock({ listPosition: 2 })], null);
+        expect(blocks[0].listPosition).toBe(2);
+    });
+
+    it('listPosition 0 survives round-trip', () => {
+        const { blocks } = roundTrip([makeBlock({ listPosition: 0 })], null);
+        expect(blocks[0].listPosition).toBe(0);
+    });
+
+    it('listPosition null survives round-trip', () => {
+        const { blocks } = roundTrip([makeBlock({ listPosition: null })], null);
+        expect(blocks[0].listPosition).toBeNull();
+    });
+
+    it('missing listPosition on an old file deserializes to null', () => {
+        const { blocks } = deserializeSheet({ version: '1.2.0', name: 'S', blocks: [makeBlock()] });
+        expect(blocks[0].listPosition).toBeNull();
+    });
+
+    it('viewMode "list" round-trips', () => {
+        const { view } = roundTrip([], { panX: 1, panY: 2, viewMode: 'list' });
+        expect(view).toEqual({ panX: 1, panY: 2, viewMode: 'list' });
+    });
+
+    it('missing viewMode defaults to "canvas"', () => {
+        const { view } = roundTrip([], { panX: 1, panY: 2 });
+        expect(view.viewMode).toBe('canvas');
+    });
+
+    it('bundle export still works and keeps listPosition', () => {
+        const bundle = serializeBundle([{ id: 's1', name: 'S', blocks: [makeBlock({ listPosition: 1 })], vizes: {} }], 's1');
+        expect(bundle.sheets[0].blocks[0].listPosition).toBe(1);
+        const { sheets } = deserializeBundle(bundle);
+        expect(sheets[0].blocks[0].listPosition).toBe(1);
     });
 });

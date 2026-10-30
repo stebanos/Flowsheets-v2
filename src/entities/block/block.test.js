@@ -70,3 +70,13 @@ describe('createBlock — explicit values override defaults', () => {
         expect(b.param).toEqual({ widget: 'slider', min: 0, max: 1, step: 0.1 });
     });
 });
+
+describe('createBlock — listPosition', () => {
+    test('defaults to null', () => {
+        expect(createBlock(BASE).listPosition).toBeNull();
+    });
+
+    test('keeps a passed value', () => {
+        expect(createBlock({ ...BASE, listPosition: 3 }).listPosition).toBe(3);
+    });
+});

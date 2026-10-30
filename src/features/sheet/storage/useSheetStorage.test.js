@@ -586,7 +586,7 @@ describe('shared state across instances', () => {
         await nextTick();
 
         const stored = JSON.parse(fakeStorage.getItem(KEY_SHEET(ids[0])));
-        expect(stored.view).toEqual({ panX: 40, panY: 50 });
+        expect(stored.view).toEqual({ panX: 40, panY: 50, viewMode: 'canvas' });
     });
 
     it('switchSheet through an argument-less instance still restores pan via the configured handler', async () => {

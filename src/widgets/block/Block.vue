@@ -6,6 +6,7 @@ import { insertReference, useConnectDrag } from '@/features/block/connect';
 import { useDrag } from '@/features/block/drag';
 import { CodeEditor } from '@/features/block/edit-code';
 import { useCellDimensions } from '@/features/block/grid';
+import { useListOrder } from '@/features/block/list-view';
 import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
 import { useBlockNavigation, useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
@@ -46,6 +47,7 @@ const props = defineProps({
 const emit = defineEmits(['edit-viz']);
 
 const { blocks, updateBlock } = useBlockStore();
+const { isIncluded, toggle: toggleListInclusion } = useListOrder();
 
 const { focusedBlockName, wrapIndicator, setWrapIndicator, register, unregister, selectBlock, focusCanvas } = useFocusedBlock();
 const { focusNext, focusPrev } = useBlockNavigation(blocks);
@@ -358,7 +360,7 @@ watch(
         <div class="block-header relative border-b border-gray-300 flex items-center h-6"
              :class="isHighlighted ? 'bg-yellow-200 text-black' : 'bg-black text-white'">
             <!-- Name — draggable row, absolute so it centers against full header width -->
-            <div class="absolute inset-0 flex items-center justify-center cursor-move overflow-hidden pr-16"
+            <div class="absolute inset-0 flex items-center justify-center cursor-move overflow-hidden pr-20"
                  :class="{ 'z-20': isNameEditing }"
                  @mousedown="onNameMousedown($event)">
                 <block-name :name="block.name" :blocks :identifiersByBlock="props.identifiersByBlock"
@@ -380,6 +382,17 @@ watch(
                         <path d="M3.5 11.5 C6 11.5 6 8 8 8"/>
                         <polyline points="6.5,6.5 8,8 6.5,9.5"/>
                         <rect x="8" y="4" width="6" height="8" rx="1.5"/>
+                    </svg>
+                </button>
+                <button
+                    class="h-full pl-1.5 pr-0.5 flex items-center opacity-50 group-hover:opacity-75 hover:opacity-100! cursor-pointer transition-opacity"
+                    :class="{ 'opacity-100!': isIncluded(block) }"
+                    title="Include in list view"
+                    @click.stop="toggleListInclusion(block)"
+                    @mousedown.stop>
+                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter">
+                        <rect x="2" y="2" width="10" height="10" rx="1" />
+                        <path d="M7 4.5v5M4.5 7h5" />
                     </svg>
                 </button>
                 <button

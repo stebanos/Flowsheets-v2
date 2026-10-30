@@ -11,7 +11,8 @@ const PERSISTED_BLOCK_FIELDS = [
     'visualizationType',
     'vizOptions',
     'editorCollapsed',
-    'param'
+    'param',
+    'listPosition'
 ];
 
 /**
@@ -65,7 +66,7 @@ export function serializeSheet(blocks, vizes, name, view, notes) {
     };
 
     if (view != null) {
-        result.view = { panX: view.panX ?? 0, panY: view.panY ?? 0 };
+        result.view = { panX: view.panX ?? 0, panY: view.panY ?? 0, viewMode: view.viewMode ?? 'canvas' };
     }
 
     return result;
@@ -91,13 +92,14 @@ export function deserializeSheet(json) {
         vizOptions: block.vizOptions ?? {},
         editorCollapsed: block.editorCollapsed ?? false,
         param: block.param ?? null,
+        listPosition: block.listPosition ?? null,
         userMinWidth: undefined,
         userMinEditorHeight: undefined,
         userMinOutputHeight: undefined
     }));
 
     const vizes = json.customVizes ?? {};
-    const view = { panX: json.view?.panX ?? 0, panY: json.view?.panY ?? 0 };
+    const view = { panX: json.view?.panX ?? 0, panY: json.view?.panY ?? 0, viewMode: json.view?.viewMode ?? 'canvas' };
     const notes = (json.notes ?? []).map(n => ({
         id: n.id,
         x: n.x ?? 0,
