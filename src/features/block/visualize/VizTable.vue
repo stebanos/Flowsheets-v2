@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { formatValue } from '@/shared/lib/format-value';
 
 const props = defineProps({
     value: {},
@@ -8,14 +9,14 @@ const props = defineProps({
 
 function renderCell(v) {
     if (v === null || v === undefined) { return '—'; }
-    if (typeof v === 'object') { try { return JSON.stringify(v); } catch { return String(v); } }
+    if (typeof v === 'object') { return formatValue(v); }
     if (typeof v === 'number' && !Number.isInteger(v)) { return v.toFixed(3); }
     return String(v);
 }
 
 function renderTitle(v) {
     if (v === null || v === undefined) { return '—'; }
-    if (typeof v === 'object') { try { return JSON.stringify(v); } catch { return String(v); } }
+    if (typeof v === 'object') { return formatValue(v); }
     return String(v);
 }
 

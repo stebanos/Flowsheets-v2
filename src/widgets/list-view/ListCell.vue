@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
 import { CodeEditor } from '@/features/block/edit-code';
 import { ParamWidgetBar } from '@/features/block/parameter';
@@ -55,13 +56,6 @@ const outputStyle = computed(() => isDefaultViz.value
     ? { overflowY: 'auto', maxHeight: `${DEFAULT_VIZ_MAX_HEIGHT}px` }
     : { overflowY: 'hidden', height: `${props.block.outputHeight ?? DEFAULT_OUTPUT_HEIGHT}px` }
 );
-
-function formatValue(v) {
-    if (v === undefined) { return 'undefined'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
-}
 
 function onUpdateCode(code) {
     updateBlock(props.block.id, { code }, `code:${props.block.id}`);

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { detectStringMode } from '@/shared/lib/evaluator';
+import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
 import { insertReference, useConnectDrag } from '@/features/block/connect';
 import { useDrag } from '@/features/block/drag';
@@ -234,11 +235,7 @@ const paramValue = computed(() => blockEval.value?.error ? undefined : blockEval
 const formattedResult = computed(() => {
     const evaluation = blockEval.value;
     if (evaluation?.error) { return 'null'; }
-    const v = evaluation ? evaluation.value : undefined;
-    if (v === undefined) { return 'undefined'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
+    return formatValue(evaluation ? evaluation.value : undefined);
 });
 
 // Viz selector bar

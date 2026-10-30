@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { diffLines } from '@/shared/lib/diff';
+import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
 
 const props = defineProps({
@@ -20,20 +21,14 @@ function setCompareBlock(name) {
     updateBlock(props.block.id, { vizOptions: { ...props.block.vizOptions, compareBlock: name } });
 }
 
-function stringify(v) {
-    if (v === undefined || v === null) { return String(v); }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
-}
-
-const thisText = computed(() => props.error ? '' : stringify(props.value));
+const thisText = computed(() => props.error ? '' : formatValue(props.value));
 
 const compareText = computed(() => {
     const name = compareBlockName.value;
     if (!name) { return ''; }
     const ev = props.getEvaluation(name);
     if (!ev || ev.error) { return ''; }
-    return stringify(ev.value);
+    return formatValue(ev.value);
 });
 
 const compareError = computed(() => {

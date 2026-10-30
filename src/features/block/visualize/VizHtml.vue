@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
+import { formatValue } from '@/shared/lib/format-value';
 
 const props = defineProps({
     value: {},
@@ -11,9 +12,7 @@ const props = defineProps({
 
 const htmlContent = computed(() => {
     if (props.error) { return `<span style="color:red">${props.error}</span>`; }
-    const v = props.value;
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
+    return formatValue(props.value);
 });
 
 const hasContent = computed(() => props.value != null || props.error != null);

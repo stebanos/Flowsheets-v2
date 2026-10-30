@@ -1,11 +1,5 @@
 import { computed, ref, watch } from 'vue';
-
-function formatValue(v) {
-    if (v === undefined) { return 'undefined'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
-}
+import { formatValue } from '@/shared/lib/format-value';
 
 export function useBlockOutput(block, { cellHeight, blockEval }) {
     const outputHeight = ref(block.outputHeight ?? 3 * cellHeight.value);

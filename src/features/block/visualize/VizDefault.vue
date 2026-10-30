@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
+import { formatValue } from '@/shared/lib/format-value';
 import { safeStringify } from './safeStringify';
 
 const props = defineProps({
@@ -13,14 +14,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:content-height']);
-
-function formatValue(v) {
-    if (v === undefined) { return 'undefined'; }
-    if (v === null) { return 'null'; }
-    if (typeof v === 'number') { return String(v); }
-    if (typeof v === 'string') { return v; }
-    try { return JSON.stringify(v); } catch { return String(v); }
-}
 
 const isComplex = computed(() => props.value !== null && typeof props.value === 'object');
 const listIsPrimitive = computed(() =>
