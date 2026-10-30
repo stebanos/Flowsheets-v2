@@ -1,10 +1,10 @@
 import { ref } from 'vue';
+import { getHash } from '@/shared/lib/hash';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
-import { getHash } from '@/shared/lib/hash';
 
 // Prevent Vite HMR from resetting module-level state (pendingImport would be lost on hot reload)
 if (import.meta.hot) { import.meta.hot.decline(); }

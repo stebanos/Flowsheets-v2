@@ -255,8 +255,8 @@ describe('cancelImport', () => {
 
 describe('exportSheet', () => {
     beforeEach(() => {
-        global.URL.createObjectURL = vi.fn(() => 'blob:mock');
-        global.URL.revokeObjectURL = vi.fn();
+        globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock');
+        globalThis.URL.revokeObjectURL = vi.fn();
     });
 
     test('calls readSheetData with the provided sheetId', async () => {

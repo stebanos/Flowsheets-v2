@@ -117,9 +117,17 @@ export default [
             'boundaries/elements': [
                 { type: 'app',      pattern: 'src/app/**' },
                 { type: 'pages',    pattern: 'src/pages/**' },
-                // Each feature slice (block/drag, block/name, etc.) is captured separately
-                // so cross-feature imports are detectable as cross-element imports.
-                { type: 'features', pattern: 'src/features/block/(**)', capture: ['featureName'] },
+                // Each feature slice is captured separately so cross-feature imports are
+                // detectable as cross-element imports. Slices live either in a group
+                // (src/features/block/<slice>, src/features/sheet/<slice>) or flat
+                // (src/features/note, src/features/canvas). Both captures are always set:
+                // for flat slices the doubled parens make group === featureName, so
+                // block/manage and sheet/manage stay distinct elements.
+                {
+                    type: 'features',
+                    pattern: ['src/features/(block|sheet)/(*)', 'src/features/((note|canvas))'],
+                    capture: ['group', 'featureName']
+                },
                 { type: 'widgets',  pattern: 'src/widgets/**' },
                 { type: 'entities', pattern: 'src/entities/**' },
                 { type: 'shared',   pattern: 'src/shared/**' }
@@ -134,9 +142,9 @@ export default [
                     { from: 'pages',    allow: ['widgets', 'features', 'entities', 'shared'] },
                     { from: 'widgets',  allow: ['features', 'entities', 'shared'] },
                     {
-                        from: [['features', { featureName: '*' }]],
+                        from: [['features', { group: '*', featureName: '*' }]],
                         allow: [
-                            ['features', { featureName: '{{from.captured.featureName}}' }],
+                            ['features', { group: '{{from.captured.group}}', featureName: '{{from.captured.featureName}}' }],
                             'entities', 'shared'
                         ]
                     },
