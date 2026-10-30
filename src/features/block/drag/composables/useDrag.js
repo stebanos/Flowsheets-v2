@@ -1,10 +1,12 @@
 import { reactive, ref } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 import { useHistory } from '@/entities/history';
 
 export function useDrag(snapX, snapY, updateFn) {
     const _updateFn = updateFn ?? useBlockStore().updateBlock;
     const { beginGroup, endGroup } = useHistory();
+    const drag = useWindowDrag();
 
     const isDragging = ref(false);
 
@@ -27,8 +29,7 @@ export function useDrag(snapX, snapY, updateFn) {
         dragState.coparticipants = coparticipants;
 
         beginGroup();
-        window.addEventListener('mousemove', onDrag);
-        window.addEventListener('mouseup', stopDrag);
+        drag.start(onDrag, stopDrag);
     }
 
     function onDrag(event) {
@@ -54,8 +55,7 @@ export function useDrag(snapX, snapY, updateFn) {
         isDragging.value = false;
         dragState.block = null;
         dragState.coparticipants = [];
-        window.removeEventListener('mousemove', onDrag);
-        window.removeEventListener('mouseup', stopDrag);
+        drag.stop();
         endGroup();
     }
 

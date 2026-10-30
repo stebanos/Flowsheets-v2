@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 import { detectStringMode } from '@/shared/lib/evaluator';
 import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
@@ -265,20 +266,16 @@ function toggleEditorCollapse() {
     updateBlock(props.block.id, { editorCollapsed: editorCollapsed.value });
 }
 
+// multi-selection click: collapse to this block on mouseup unless the mouse moved (a drag)
+const selectOneDrag = useWindowDrag();
+
 function onWrapperMousedown(e) {
     if (e.metaKey || e.ctrlKey || e.shiftKey) {
         toggleSelect(props.block.name);
         return;
     }
     if (isSelected.value && selectedNames.value.size > 1) {
-        function cleanup() {
-            window.removeEventListener('mousemove', onFirstMove);
-            window.removeEventListener('mouseup', onMouseup);
-        }
-        function onFirstMove() { cleanup(); }
-        function onMouseup() { selectOne(props.block.name); cleanup(); }
-        window.addEventListener('mousemove', onFirstMove);
-        window.addEventListener('mouseup', onMouseup);
+        selectOneDrag.start(() => selectOneDrag.stop(), () => selectOne(props.block.name));
     } else {
         selectOne(props.block.name);
     }

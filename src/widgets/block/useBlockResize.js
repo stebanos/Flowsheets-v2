@@ -1,4 +1,5 @@
-import { onBeforeUnmount, ref } from 'vue';
+import { ref } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 import { useBlockStore } from '@/entities/block';
 
 export function useBlockResize(props, {
@@ -8,7 +9,7 @@ export function useBlockResize(props, {
 }) {
     const { updateBlock } = useBlockStore();
     const isResizingLocal = ref(false);
-    let resizeCleanup = null;
+    const drag = useWindowDrag();
 
     function handleStartResizeEditor(event) {
         const startY = event.clientY;
@@ -21,16 +22,8 @@ export function useBlockResize(props, {
         const onUp = () => {
             isResizingLocal.value = false;
             updateBlock(props.block.id, { editorHeight: editorHeight.value });
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-            resizeCleanup = null;
         };
-        resizeCleanup = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        drag.start(onMove, onUp);
     }
 
     function handleStartResizeOutput(event) {
@@ -50,19 +43,9 @@ export function useBlockResize(props, {
         const onUp = () => {
             isResizingLocal.value = false;
             updateBlock(props.block.id, { outputHeight: outputHeight.value, width: editorWidth.value });
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-            resizeCleanup = null;
         };
-        resizeCleanup = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        drag.start(onMove, onUp);
     }
-
-    onBeforeUnmount(() => { resizeCleanup?.(); });
 
     return { isResizingLocal, handleStartResizeEditor, handleStartResizeOutput };
 }

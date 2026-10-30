@@ -13,6 +13,7 @@ function withSetup(composable) {
     let result;
     const app = createApp({ setup() { result = composable(); return () => {}; } });
     app.mount(document.createElement('div'));
+    result.app = app;
     return result;
 }
 
@@ -141,5 +142,25 @@ describe('handleStartResizeOutput', () => {
 
         window.dispatchEvent(new MouseEvent('mouseup'));
         expect(isResizingLocal.value).toBe(false);
+    });
+});
+
+describe('unmount mid-drag', () => {
+    test('removes the window listeners so later events do nothing', () => {
+        const deps = makeDeps();
+        const { handleStartResizeEditor, app } = withSetup(() => useBlockResize(props, deps));
+        const remove = vi.spyOn(window, 'removeEventListener');
+
+        handleStartResizeEditor({ clientY: 100 });
+        app.unmount();
+
+        expect(remove).toHaveBeenCalledWith('mousemove', expect.any(Function));
+        expect(remove).toHaveBeenCalledWith('mouseup', expect.any(Function));
+        remove.mockRestore();
+
+        window.dispatchEvent(new MouseEvent('mousemove', { clientY: 130 }));
+        window.dispatchEvent(new MouseEvent('mouseup'));
+        expect(deps.editorHeight.value).toBe(80);
+        expect(mockUpdateBlock).not.toHaveBeenCalled();
     });
 });

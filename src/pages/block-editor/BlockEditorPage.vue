@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useHoveredState, useSidebar } from '@/shared/composables';
+import { useHoveredState, useSidebar, useWindowDrag } from '@/shared/composables';
 import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
 import { initHistory, useHistory } from '@/entities/history';
@@ -90,14 +90,14 @@ async function _onConnectUp() {
     }
 }
 
+const connectWindowDrag = useWindowDrag();
+
 watch(connectActive, (isActive) => {
     if (isActive) {
-        window.addEventListener('mousemove', _onConnectMove);
-        window.addEventListener('mouseup', _onConnectUp);
+        connectWindowDrag.start(_onConnectMove, _onConnectUp);
         return;
     }
-    window.removeEventListener('mousemove', _onConnectMove);
-    window.removeEventListener('mouseup', _onConnectUp);
+    connectWindowDrag.stop();
 });
 
 const isSpaceHeld = ref(false);
@@ -260,8 +260,6 @@ onMounted(async () => {
 onUnmounted(() => {
     window.removeEventListener('keydown', _onKeydown);
     window.removeEventListener('keyup', _onKeyup);
-    window.removeEventListener('mousemove', _onConnectMove);
-    window.removeEventListener('mouseup', _onConnectUp);
 });
 
 // handlers
@@ -297,6 +295,8 @@ function onCreate(event) {
     createBlock({ x: clientX - left - panX.value, y: clientY - top - panY.value }, null, '1 + 1', cellWidth, unitY);
 }
 
+const rubberBandDrag = useWindowDrag();
+
 function onCanvasMousedown(event) {
     if (event.button === 1) { startPan(event); return; }
     if (event.button === 0 && isSpaceHeld.value) { startPan(event); return; }
@@ -310,13 +310,8 @@ function onCanvasMousedown(event) {
             e.clientX - canvasRect.left - panX.value,
             e.clientY - canvasRect.top - panY.value
         );
-        const onUp = () => {
-            finishRubberBand(blocks, setSelection, clearSelection);
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        const onUp = () => finishRubberBand(blocks, setSelection, clearSelection);
+        rubberBandDrag.start(onMove, onUp);
     }
 }
 

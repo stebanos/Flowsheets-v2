@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 import { useNoteStore } from '@/entities/note';
 import { useDrag } from '@/features/block/drag';
 import { useDeleteNote, useFocusedNote } from '@/features/note';
@@ -96,6 +97,7 @@ function onTitleClick() {
 }
 
 const resizing = ref(false);
+const resizeDrag = useWindowDrag();
 let resizeStartX = 0;
 let resizeStartY = 0;
 let resizeStartWidth = 0;
@@ -109,8 +111,7 @@ function onResizeMousedown(event) {
     resizeStartY = event.clientY;
     resizeStartWidth = props.note.width;
     resizeStartHeight = props.note.height;
-    window.addEventListener('mousemove', onResizeMousemove);
-    window.addEventListener('mouseup', onResizeMouseup);
+    resizeDrag.start(onResizeMousemove, onResizeMouseup);
 }
 
 function onResizeMousemove(event) {
@@ -124,8 +125,6 @@ function onResizeMousemove(event) {
 
 function onResizeMouseup() {
     resizing.value = false;
-    window.removeEventListener('mousemove', onResizeMousemove);
-    window.removeEventListener('mouseup', onResizeMouseup);
 }
 </script>
 

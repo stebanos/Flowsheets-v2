@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 
 const AXIS_LOCK_THRESHOLD = 5;
 const PAN_START_THRESHOLD = 6;
@@ -13,6 +14,7 @@ let _startClientX = 0;
 let _startClientY = 0;
 let _lockedAxis = null;
 let _pendingPan = false;
+const _drag = useWindowDrag(); // module scope: no owner to dispose, stops on mouseup only
 
 function startPan(event) {
     _baseX = panX.value;
@@ -21,8 +23,7 @@ function startPan(event) {
     _startClientY = event.clientY;
     _lockedAxis = null;
     _pendingPan = true;
-    window.addEventListener('mousemove', _onPanMove);
-    window.addEventListener('mouseup', _stopPan);
+    _drag.start(_onPanMove, _stopPan);
 }
 
 function _onPanMove(event) {
@@ -52,8 +53,7 @@ function _stopPan() {
     isPanning.value = false;
     _pendingPan = false;
     _lockedAxis = null;
-    window.removeEventListener('mousemove', _onPanMove);
-    window.removeEventListener('mouseup', _stopPan);
+    _drag.stop();
 }
 
 function resetPan() { panX.value = 0; panY.value = 0; }

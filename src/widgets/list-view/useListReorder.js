@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref } from 'vue';
+import { useWindowDrag } from '@/shared/composables';
 
 /**
  * Vertical drag-to-reorder for the list view. `dropIndex` is the insertion gap (0..n) the
@@ -7,6 +8,7 @@ import { onBeforeUnmount, ref } from 'vue';
 export function useListReorder(items, getCellElements, moveTo) {
     const dragging = ref(null);
     const dropIndex = ref(null);
+    const drag = useWindowDrag();
 
     function _fromIndex() {
         return items.value.findIndex(b => b.id === dragging.value);
@@ -41,8 +43,7 @@ export function useListReorder(items, getCellElements, moveTo) {
     function _stop() {
         dragging.value = null;
         dropIndex.value = null;
-        window.removeEventListener('mousemove', _onMove);
-        window.removeEventListener('mouseup', _onUp);
+        drag.stop();
     }
 
     function startDrag(id, event) {
@@ -51,10 +52,10 @@ export function useListReorder(items, getCellElements, moveTo) {
         event?.preventDefault?.();
         dragging.value = id;
         dropIndex.value = null;
-        window.addEventListener('mousemove', _onMove);
-        window.addEventListener('mouseup', _onUp);
+        drag.start(_onMove, _onUp);
     }
 
+    // the helper detaches on unmount by itself; this keeps the state reset too
     onBeforeUnmount(_stop);
 
     return { dragging, dropIndex, startDrag };
