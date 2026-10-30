@@ -36,7 +36,6 @@ const _unreadable    = new Set();    // ids whose stored data failed to load —
 // auto-save, switchSheet and closeSheet behave identically whichever instance runs them.
 const _handlers = {
     getCustomVizes: () => ({}),
-    onVizesLoaded:  () => {},
     getPan:         () => ({ panX: 0, panY: 0 }),
     onPanLoaded:    () => {}
 };
@@ -124,11 +123,10 @@ export function useSheetStorage(handlers = {}) {
         }
     }
 
-    function _applyToStores({ blocks: loadedBlocks, vizes, view, notes: loadedNotes }) {
+    function _applyToStores({ blocks: loadedBlocks, view, notes: loadedNotes }) {
         const { suppress } = useHistory();
         suppress(() => {
             replaceBlocks(loadedBlocks);
-            _handlers.onVizesLoaded(vizes);
             _handlers.onPanLoaded(view);
             replaceNotes(loadedNotes);
         });
