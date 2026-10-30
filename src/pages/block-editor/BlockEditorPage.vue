@@ -13,7 +13,7 @@ import { useDataImport } from '@/features/block/import';
 import { useBlockClipboard, useBlockManager, useDeleteBlock } from '@/features/block/manage';
 import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
-import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
+import { useCanvasPan, useCanvasPoint, useRubberBandSelection } from '@/features/canvas';
 import { useFocusedNote } from '@/features/note';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, ListView, SheetSidebar, SheetTabs } from '@/widgets';
@@ -74,8 +74,7 @@ const connectWirePath = computed(() => {
 });
 
 function _onConnectMove(e) {
-    const { left, top } = canvasEl.value.getBoundingClientRect();
-    updatePointer({ x: e.clientX - left - panX.value, y: e.clientY - top - panY.value });
+    updatePointer(toCanvasPoint(e));
 }
 
 async function _onConnectUp() {
@@ -201,6 +200,7 @@ const { registerCanvas, focusedBlockName } = useFocusedBlock();
 const { focusedNoteId } = useFocusedNote();
 const canvasEl = ref(null);
 const wrapAnnouncerEl = ref(null);
+const { toCanvasPoint } = useCanvasPoint(canvasEl);
 
 // the canvas unmounts in list mode — re-register on every (re)mount so focusCanvas() targets live elements
 watch(canvasEl, (el) => {
@@ -300,15 +300,12 @@ function onCanvasMousedown(event) {
     if (event.button === 1) { startPan(event); return; }
     if (event.button === 0 && isSpaceHeld.value) { startPan(event); return; }
     if (event.button === 0 && !event.target.closest('[data-block], [data-note]')) {
-        const canvasRect = canvasEl.value.getBoundingClientRect();
-        startRubberBand(
-            event.clientX - canvasRect.left - panX.value,
-            event.clientY - canvasRect.top - panY.value
-        );
-        const onMove = (e) => updateRubberBand(
-            e.clientX - canvasRect.left - panX.value,
-            e.clientY - canvasRect.top - panY.value
-        );
+        const { x, y } = toCanvasPoint(event);
+        startRubberBand(x, y);
+        const onMove = (e) => {
+            const p = toCanvasPoint(e);
+            updateRubberBand(p.x, p.y);
+        };
         const onUp = () => finishRubberBand(blocks, setSelection, clearSelection);
         rubberBandDrag.start(onMove, onUp);
     }
@@ -358,20 +355,12 @@ function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
 
 function onCanvasMousemove(e) {
-    const { left, top } = canvasEl.value.getBoundingClientRect();
-    canvasMousePos.value = {
-        x: e.clientX - left - panX.value,
-        y: e.clientY - top - panY.value
-    };
+    canvasMousePos.value = toCanvasPoint(e);
 }
 
 function onCanvasContextMenu(event) {
     if (event.target.closest('[data-block]') || event.target.closest('[data-note]')) { return; }
-    const { left, top } = canvasEl.value.getBoundingClientRect();
-    contextMenuPos.value = {
-        x: event.clientX - left - panX.value,
-        y: event.clientY - top - panY.value
-    };
+    contextMenuPos.value = toCanvasPoint(event);
     canvasContextMenu.value.show(event);
 }
 
