@@ -1,3 +1,5 @@
+import { emptySheet } from './emptySheet';
+
 // ── IndexedDB helpers ────────────────────────────────────────────────────────
 
 const DB_NAME    = 'flowsheets';
@@ -72,7 +74,7 @@ async function _readSheetFile(id) {
     try {
         handle = await dir.getFileHandle(_safeFilename(id));
     } catch (err) {
-        if (err?.name === 'NotFoundError') { return { blocks: [], customVizes: [] }; }
+        if (err?.name === 'NotFoundError') { return emptySheet(); }
         throw err;
     }
     const file = await handle.getFile();
@@ -135,7 +137,7 @@ export function useOPFSStrategy() {
 
     async function initSheet(id, name) {
         const now = new Date().toISOString();
-        await _writeSheetFile(id, { blocks: [], customVizes: [] });
+        await _writeSheetFile(id, emptySheet());
         await _putSheet({ id, name, createdAt: now, updatedAt: now });
     }
 

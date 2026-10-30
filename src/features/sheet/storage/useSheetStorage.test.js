@@ -772,3 +772,74 @@ describe('unreadable sheet data', () => {
         expect(fakeStorage.getItem(KEY_SHEET(ids[1]))).toBe('not json');
     });
 });
+
+describe('corrupt catalogue', () => {
+    it('reports an error and writes nothing when the catalogue is unparseable', async () => {
+        const { useSheetStorage, useSheetStore } = await freshImports();
+        fakeStorage.setItem(KEY_CATALOGUE, 'not json');
+        fakeStorage.setItem(KEY_ACTIVE_ID, 'sheet:local/old');
+
+        const { loadFromStorage, localStatus, localError, isFirstBoot } = useSheetStorage();
+        await expect(loadFromStorage()).resolves.toBeUndefined();
+
+        expect(localStatus.value).toBe('error');
+        expect(localError.value).toBeTruthy();
+        expect(isFirstBoot.value).toBe(false);
+        expect(fakeStorage.getItem(KEY_CATALOGUE)).toBe('not json');
+        expect(fakeStorage.getItem(KEY_ACTIVE_ID)).toBe('sheet:local/old');
+        expect(fakeStorage.getItem(KEY_OPEN_IDS)).toBeNull();
+        expect(Object.keys(fakeStorage._store).filter(k => k.startsWith('flowsheets.v2.sheet.'))).toEqual([]);
+        expect(useSheetStore().sheets).toHaveLength(0);
+    });
+
+    it('keeps saves blocked after a catalogue failure', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        fakeStorage.setItem(KEY_CATALOGUE, '{"not":"an array"}');
+
+        const storage = useSheetStorage();
+        await storage.loadFromStorage();
+        expect(storage.localStatus.value).toBe('error');
+
+        useBlockStore().addBlock(BLOCK('extra'));
+        await nextTick();
+        storage.scheduleSave();
+        vi.advanceTimersByTime(500);
+        await nextTick();
+        storage.flushSave();
+        await nextTick();
+
+        expect(fakeStorage.getItem(KEY_CATALOGUE)).toBe('{"not":"an array"}');
+        expect(Object.keys(fakeStorage._store).filter(k => k.startsWith('flowsheets.v2.sheet.'))).toEqual([]);
+        expect(storage.localStatus.value).toBe('error');
+    });
+
+    it('still takes the first-boot path when the catalogue key is absent', async () => {
+        const { useSheetStorage } = await freshImports();
+
+        const { loadFromStorage, localStatus, isFirstBoot } = useSheetStorage();
+        await loadFromStorage();
+
+        expect(isFirstBoot.value).toBe(true);
+        expect(localStatus.value).toBe('idle');
+        expect(JSON.parse(fakeStorage.getItem(KEY_CATALOGUE))).toHaveLength(1);
+    });
+});
+
+describe('sheet shape normalisation', () => {
+    it('loads a stored customVizes array as an empty object', async () => {
+        const { useSheetStorage } = await freshImports();
+        const id = 'sheet:local/s1';
+        seedSheets([id]);
+        fakeStorage.setItem(KEY_SHEET(id), JSON.stringify({ version: '1.2.0', blocks: [], customVizes: [], notes: [] }));
+
+        const onVizesLoaded = vi.fn();
+        const { loadFromStorage, localStatus } = useSheetStorage({ onVizesLoaded });
+        await loadFromStorage();
+
+        expect(localStatus.value).toBe('idle');
+        expect(onVizesLoaded).toHaveBeenCalledTimes(1);
+        const vizes = onVizesLoaded.mock.calls[0][0];
+        expect(Array.isArray(vizes)).toBe(false);
+        expect(vizes).toEqual({});
+    });
+});

@@ -7,6 +7,20 @@ import { useSheetStore } from '@/entities/sheet';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
 
+// ── storage strategy contract ───────────────────────────────────────────────
+// A strategy (useLSStrategy, useOPFSStrategy) exposes six async methods:
+//   loadCatalogue()              → [{ id, name, createdAt, updatedAt }]
+//   readSheet(id)                → sheet data
+//   writeSheet(id, name, data)   → upserts the sheet data and its catalogue entry
+//   renameSheet(id, name)        → updates the catalogue entry only
+//   deleteSheet(id)              → removes the sheet data and its catalogue entry
+//   initSheet(id, name)          → writes an empty sheet and adds a catalogue entry
+// Sheet data shape: { blocks: [], customVizes: {}, view: { panX, panY }, notes: [] }
+// (`version` is added by the serializer; `view`/`notes` may be absent in older data).
+// Missing data is not an error: loadCatalogue resolves `[]` and readSheet resolves the
+// empty sheet (see ./emptySheet). Corrupt data IS an error: both reject so the consumer
+// can refuse to overwrite what is stored. Writers must never replace a corrupt catalogue.
+
 // ── pointer keys (localStorage — small, fast) ────────────────────────────────
 const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';
 const KEY_OPEN_IDS  = 'flowsheets.v2.openSheetIds';
@@ -34,6 +48,7 @@ let bootPromise     = null;
 let pendingSwitchId = null;
 let loading         = false;  // true while stores hold data that does not belong to activeSheetId
 let saveTimer       = null;
+let catalogueUnreadable = false;  // the stored catalogue failed to load — never write anything
 
 
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
@@ -58,6 +73,10 @@ function _readJson(key, fallback) {
 
 function _writeJson(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
+}
+
+function _isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 // ── open-ids helpers ──────────────────────────────────────────────────────────
@@ -88,7 +107,7 @@ export function useSheetStorage(handlers = {}) {
 
     function _saveBlocked() {
         const id = activeSheetId.value;
-        return loading || !id || _pendingDelete.has(id) || _unreadable.has(id);
+        return catalogueUnreadable || loading || !id || _pendingDelete.has(id) || _unreadable.has(id);
     }
 
     async function _saveCurrentSheet() {
@@ -137,7 +156,7 @@ export function useSheetStorage(handlers = {}) {
             const envelope = {
                 version:     raw.version     ?? 1,
                 blocks:      raw.blocks      ?? [],
-                customVizes: raw.customVizes ?? {},
+                customVizes: _isPlainObject(raw.customVizes) ? raw.customVizes : {},
                 view:        raw.view        ?? {},
                 notes:       raw.notes       ?? []
             };
@@ -174,7 +193,17 @@ export function useSheetStorage(handlers = {}) {
     }
 
     async function _bootInner() {
-        let catalogue = await strategy.loadCatalogue();
+        let catalogue;
+        try {
+            catalogue = await strategy.loadCatalogue();
+        } catch (err) {
+            // Not a first run — the catalogue exists but cannot be read. Creating a sheet here
+            // would overwrite it and orphan every stored sheet, so stop and keep saves blocked.
+            catalogueUnreadable = true;
+            localStatus.value = 'error';
+            localError.value  = `Your sheets could not be loaded (${err.message}). Auto-save is paused so the stored data is not overwritten.`;
+            return;
+        }
 
         if (catalogue.length === 0) {
             isFirstBoot.value = true;
