@@ -1,5 +1,6 @@
 import { computed, effectScope, reactive, shallowReactive, toRaw, watch } from 'vue';
-import { buildTemplateExpression, computeBlockStatuses, detectStringMode, evaluateInContext, findCycle } from '@/shared/lib/evaluator';
+import { buildTemplateExpression, detectStringMode, evaluateInContext, findCycle } from '@/shared/lib/evaluator';
+import { computeBlockStatuses } from '@/entities/block';
 
 function outputsEqual(a, b) {
     if (a === b) { return true; }
