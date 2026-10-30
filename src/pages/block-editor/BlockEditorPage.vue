@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useHoveredState, useSidebar } from '@/shared/composables';
 import { serializeSheet, deserializeSheet } from '@/shared/lib/persistence';
 import { useBlockDependencies, useBlockStore } from '@/entities/block';
+import { initHistory, useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
@@ -15,7 +16,7 @@ import { useFocusedBlock, useBlockSelection } from '@/features/block/navigate';
 import { useCustomViz } from '@/features/block/visualize';
 import { useCanvasPan, useRubberBandSelection } from '@/features/canvas';
 import { useFocusedNote } from '@/features/note';
-import { initHistory, useHistory, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { Block, BlockGrid, CanvasNote, CustomVizEditor, ListView, SheetSidebar, SheetTabs } from '@/widgets';
 import { AppBar, AppBarToggleButton, EmptyCanvas, ResetPanButton, SheetTitle, UndoRedoButtons, ViewModeToggle } from './components';
 import { AppIcon, SheetSidebarIcon, VizSidebarIcon } from './components/icons';
@@ -221,7 +222,10 @@ const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = 
         viewMode.value = view.viewMode ?? 'canvas';
     }
 });
-const { prepareImport } = useFileIO();
+const { prepareImport } = useFileIO({
+    // imported vizes are merged into the library; compile them so the new sheet can render them
+    onVizesImported: () => loadVizes(library)
+});
 watch([library, activeVizName], scheduleSave, { deep: true });
 watch([panX, panY, viewMode], scheduleSave);
 watch(isListMode, (on) => { if (on) { clearSelection(); } });

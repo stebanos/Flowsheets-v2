@@ -1,7 +1,7 @@
 import { nextTick, ref } from 'vue';
 import { renameIdentifier } from '@/shared/lib/evaluator';
 import { generateUniqueNameFromName, useBlockStore } from '@/entities/block';
-import { useHistory } from '@/features/sheet/history';
+import { useHistory } from '@/entities/history';
 
 const JS_RESERVED = new Set([
     'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do',

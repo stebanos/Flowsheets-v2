@@ -10,7 +10,7 @@ let ParamWidgetBar, useHistory, useBlockStore, serializeSheet, deserializeSheet,
 
 beforeEach(async () => {
     vi.resetModules();
-    ({ useHistory } = await import('@/features/sheet/history'));
+    ({ useHistory } = await import('@/entities/history'));
     ({ useBlockStore } = await import('@/entities/block'));
     ({ serializeSheet, deserializeSheet } = await import('@/shared/lib/persistence'));
     blockModule = await import('@/entities/block/blockStore');

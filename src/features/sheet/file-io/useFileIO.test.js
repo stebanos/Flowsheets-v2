@@ -7,7 +7,7 @@ const mockReadSheetData = vi.fn();
 // --- Mocks ---
 
 const mockCustomVizes = reactive({});
-const mockLoadVizes = vi.fn();
+const mockOnVizesImported = vi.fn();
 const mockReplaceBlocks = vi.fn();
 const mockRenameActiveSheet = vi.fn();
 const mockCreateSheet = vi.fn(() => 'sheet:local/new');
@@ -26,15 +26,8 @@ vi.mock('@/entities/note', () => ({
     useNoteStore: () => ({ notes: reactive([]), replaceNotes: mockReplaceNotes })
 }));
 
-vi.mock('@/features/sheet/history', () => ({
+vi.mock('@/entities/history', () => ({
     useHistory: () => ({ suppress: mockSuppress })
-}));
-
-vi.mock('@/features/block/visualize', () => ({
-    useCustomViz: () => ({
-        customVizes: mockCustomVizes,
-        loadVizes: mockLoadVizes
-    })
 }));
 
 const mockSheets = reactive([]);
@@ -51,7 +44,7 @@ vi.mock('@/entities/sheet', () => ({
     })
 }));
 
-vi.mock('@/features/sheet/storage', () => ({
+vi.mock('../storage/useSheetStorage', () => ({
     useSheetStorage: () => ({
         readSheetData: mockReadSheetData,
         writeSheetData: vi.fn(),
@@ -75,6 +68,7 @@ const mockLibrary = reactive({});
 const mockSaveLibraryEntry = vi.fn(async (name, source) => { mockLibrary[name] = { hash: null, source }; });
 
 vi.mock('@/entities/viz', () => ({
+    useCustomVizStore: () => ({ customVizes: mockCustomVizes }),
     useVizLibrary: () => ({
         library: mockLibrary,
         saveLibraryEntry: mockSaveLibraryEntry
@@ -110,14 +104,14 @@ beforeEach(() => {
     mockSheets.splice(0);
     mockActiveSheetId.value = null;
     mockReplaceBlocks.mockClear();
-    mockLoadVizes.mockClear();
+    mockOnVizesImported.mockClear();
     mockSaveLibraryEntry.mockClear();
     mockRenameActiveSheet.mockClear();
     mockCreateSheet.mockClear();
     mockInitNewSheet.mockClear();
     mockReadSheetData.mockClear();
     // Reset pendingImport between tests
-    const io = useFileIO();
+    const io = useFileIO({ onVizesImported: mockOnVizesImported });
     io.cancelImport();
 });
 
@@ -279,7 +273,7 @@ describe('confirmImport', () => {
         await confirmImport();
         expect(mockCreateSheet).not.toHaveBeenCalled();
         expect(mockReplaceBlocks).not.toHaveBeenCalled();
-        expect(mockLoadVizes).not.toHaveBeenCalled();
+        expect(mockOnVizesImported).not.toHaveBeenCalled();
     });
 
     test('creates a new sheet with the imported name', async () => {
@@ -312,13 +306,21 @@ describe('confirmImport', () => {
         );
     });
 
-    test('calls loadVizes with the library after merging imported vizes', async () => {
+    test('invokes the onVizesImported handler after merging imported vizes into the library', async () => {
         const customVizes = { myViz: { source: { template: '<div/>', script: '', style: '' } } };
         const { prepareImport, confirmImport } = useFileIO();
         await prepareImport(mockFile(validJson({ customVizes })));
         await confirmImport();
         expect(mockSaveLibraryEntry).toHaveBeenCalledWith('myViz', expect.objectContaining({ template: '<div/>' }));
-        expect(mockLoadVizes).toHaveBeenCalledWith(mockLibrary);
+        expect(mockOnVizesImported).toHaveBeenCalledTimes(1);
+        expect(mockOnVizesImported.mock.invocationCallOrder[0]).toBeGreaterThan(mockSaveLibraryEntry.mock.invocationCallOrder[0]);
+    });
+
+    test('a caller that registers the handler shares it with callers that pass no options', async () => {
+        const { prepareImport, confirmImport } = useFileIO();
+        await prepareImport(mockFile(validJson()));
+        await confirmImport();
+        expect(mockOnVizesImported).toHaveBeenCalledTimes(1);
     });
 
     test('clears pendingImport after confirmation', async () => {

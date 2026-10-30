@@ -1,7 +1,7 @@
 import { createApp, nextTick, ref } from 'vue';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { useBlockStore } from '@/entities/block';
-import { useHistory } from '@/features/sheet/history';
+import { useHistory } from '@/entities/history';
 import { useBlockDimensions } from './useBlockDimensions';
 
 function withSetup(composable) {

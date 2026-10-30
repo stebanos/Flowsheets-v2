@@ -43,14 +43,14 @@ vi.mock('./useLSStrategy', async (importOriginal) => {
 
 async function freshImports() {
     vi.resetModules();
-    const [{ useSheetStorage }, { useSheetStore }, { useBlockStore }, { useCustomViz }] =
+    const [{ useSheetStorage }, { useSheetStore }, { useBlockStore }, { useCustomVizStore }] =
         await Promise.all([
             import('./useSheetStorage'),
             import('@/entities/sheet/useSheetStore'),
             import('@/entities/block'),
-            import('@/features/block/visualize')
+            import('@/entities/viz')
         ]);
-    return { useSheetStorage, useSheetStore, useBlockStore, useCustomViz };
+    return { useSheetStorage, useSheetStore, useBlockStore, useCustomVizStore };
 }
 
 const KEY_CATALOGUE = 'flowsheets.v2.catalogue';
@@ -90,7 +90,7 @@ describe('loadFromStorage', () => {
     });
 
     it('loads blocks and vizes into stores for the active sheet', async () => {
-        const { useSheetStorage, useBlockStore, useCustomViz } = await freshImports();
+        const { useSheetStorage, useBlockStore, useCustomVizStore } = await freshImports();
 
         const id = 'sheet:local/abc';
         fakeStorage.setItem(KEY_CATALOGUE, JSON.stringify([
@@ -110,7 +110,7 @@ describe('loadFromStorage', () => {
         expect(blocks).toHaveLength(1);
         expect(blocks[0].id).toBe('b1');
 
-        const { customVizes } = useCustomViz();
+        const { customVizes } = useCustomVizStore();
         expect(Object.keys(customVizes)).toHaveLength(0);
     });
 

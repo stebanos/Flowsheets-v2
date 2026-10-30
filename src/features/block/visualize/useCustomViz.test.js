@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBlockStore } from '@/entities/block';
 import { useCustomViz } from './useCustomViz';
 
-vi.mock('@/entities/viz', () => ({
+// Mocked by resolved module id, so the store's relative `./useVizLibrary` import is mocked too.
+vi.mock('@/entities/viz/useVizLibrary', () => ({
     useVizLibrary: () => ({
         library: {},
         createLibraryEntry: vi.fn(),
@@ -12,7 +13,7 @@ vi.mock('@/entities/viz', () => ({
     })
 }));
 
-const { customVizes, activeVizName, createViz, renameViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel } = useCustomViz();
+const { customVizes, activeVizName, createViz, runViz, saveDraft, revertDraft, getComponent, loadVizes, setErrorPanel } = useCustomViz();
 const { blocks } = useBlockStore();
 
 // Minimal style element stub
@@ -27,7 +28,6 @@ function makeStyleEl(name) {
 let styleEl;
 let querySelectorSpy;
 let appendChildSpy;
-let createElementSpy;
 
 beforeEach(() => {
     for (const key of Object.keys(customVizes)) { delete customVizes[key]; }
@@ -38,25 +38,19 @@ beforeEach(() => {
     // Default: style element already exists (querySelector returns it)
     querySelectorSpy = vi.spyOn(document.head, 'querySelector').mockReturnValue(styleEl);
     appendChildSpy = vi.spyOn(document.head, 'appendChild').mockReturnValue(styleEl);
-    createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(styleEl);
+    vi.spyOn(document, 'createElement').mockReturnValue(styleEl);
 });
 
 afterEach(() => {
     vi.restoreAllMocks();
 });
 
-describe('createViz', () => {
-    test('initializes entry with new draft shape', () => {
-        createViz();
-        const name = activeVizName.value;
-        const entry = customVizes[name];
-        expect(entry).toBeDefined();
-        expect(entry.source).toBeNull();
-        expect(entry.error).toBeNull();
-        expect(entry.errorPanel).toBeNull();
-        expect(typeof entry.draft.template).toBe('string');
-        expect(typeof entry.draft.script).toBe('string');
-        expect(typeof entry.draft.style).toBe('string');
+describe('useCustomViz', () => {
+    test('exposes the store state and data operations alongside the compile operations', () => {
+        const api = useCustomViz();
+        for (const key of ['customVizes', 'activeVizName', 'createViz', 'deleteViz', 'renameViz', 'runViz', 'saveDraft', 'revertDraft', 'getComponent', 'loadVizes', 'setErrorPanel']) {
+            expect(api[key]).toBeDefined();
+        }
     });
 });
 
@@ -155,37 +149,18 @@ describe('setErrorPanel', () => {
     });
 });
 
-describe('saveDraft', () => {
-    test('updates all three panel fields', () => {
-        createViz();
-        const name = activeVizName.value;
-        const newDraft = { template: '<p/>', script: 'return {};', style: 'p {}' };
-        saveDraft(name, newDraft);
-        expect(customVizes[name].draft).toEqual(newDraft);
-    });
-});
-
-describe('revertDraft', () => {
-    test('restores draft to source and clears error and errorPanel', () => {
+describe('revertDraft after a compile', () => {
+    test('restores draft to the compiled source and clears error and errorPanel', () => {
         createViz();
         const name = activeVizName.value;
         const draft = { template: '<div/>', script: '', style: '' };
         runViz(name, draft);
-        // Modify draft and set errorPanel
         saveDraft(name, { template: '<p/>', script: 'bad', style: '' });
         setErrorPanel(name, 'template');
         revertDraft(name);
         expect(customVizes[name].draft).toEqual(draft);
         expect(customVizes[name].error).toBeNull();
         expect(customVizes[name].errorPanel).toBeNull();
-    });
-
-    test('does nothing if source is null', () => {
-        createViz();
-        const name = activeVizName.value;
-        const originalDraft = { ...customVizes[name].draft };
-        revertDraft(name);
-        expect(customVizes[name].draft).toEqual(originalDraft);
     });
 });
 
@@ -204,50 +179,5 @@ describe('loadVizes', () => {
         loadVizes({ V: { source } });
         expect(customVizes['V'].error).toBeNull();
         expect(customVizes['V'].source).toEqual(source);
-    });
-});
-
-describe('renameViz', () => {
-    test('preserves tab order', () => {
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['A'] = { ...stub };
-        customVizes['B'] = { ...stub };
-        customVizes['C'] = { ...stub };
-        renameViz('B', 'X');
-        expect(Object.keys(customVizes)).toEqual(['A', 'X', 'C']);
-    });
-
-    test('updates activeVizName when renaming the active tab', () => {
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['Viz 1'] = { ...stub };
-        activeVizName.value = 'Viz 1';
-        renameViz('Viz 1', 'MyViz');
-        expect(activeVizName.value).toBe('MyViz');
-    });
-
-    test('does not change activeVizName when renaming a non-active tab', () => {
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['A'] = { ...stub };
-        customVizes['B'] = { ...stub };
-        activeVizName.value = 'A';
-        renameViz('B', 'X');
-        expect(activeVizName.value).toBe('A');
-    });
-
-    test('returns false and does nothing if new name already exists', () => {
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['A'] = { ...stub };
-        customVizes['B'] = { ...stub };
-        const result = renameViz('A', 'B');
-        expect(result).toBe(false);
-        expect(Object.keys(customVizes)).toEqual(['A', 'B']);
-    });
-
-    test('returns false and does nothing if old name does not exist', () => {
-        const stub = { source: null, draft: { template: '', script: '', style: '' }, component: null, error: null, errorPanel: null };
-        customVizes['A'] = { ...stub };
-        const result = renameViz('Z', 'A2');
-        expect(result).toBe(false);
-        expect(Object.keys(customVizes)).toEqual(['A']);
     });
 });

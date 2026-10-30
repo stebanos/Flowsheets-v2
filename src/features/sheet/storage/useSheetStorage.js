@@ -1,9 +1,9 @@
 import { reactive, ref, watch } from 'vue';
 import { deserializeSheet, migrate, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
+import { useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
-import { useHistory } from '@/features/sheet/history';
 import { useLSStrategy } from './useLSStrategy';
 import { useOPFSStrategy } from './useOPFSStrategy';
 

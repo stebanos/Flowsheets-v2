@@ -1,6 +1,6 @@
 import { reactive, ref } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useHistory } from '@/features/sheet/history';
+import { useHistory } from '@/entities/history';
 
 export function useDrag(snapX, snapY, updateFn) {
     const _updateFn = updateFn ?? useBlockStore().updateBlock;

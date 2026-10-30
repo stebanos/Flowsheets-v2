@@ -2,23 +2,27 @@ import { ref } from 'vue';
 import { getHash } from '@/shared/lib/hash';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet } from '@/shared/lib/persistence';
 import { useBlockStore } from '@/entities/block';
+import { useHistory } from '@/entities/history';
 import { useNoteStore } from '@/entities/note';
 import { useSheetStore } from '@/entities/sheet';
-import { useVizLibrary } from '@/entities/viz';
+import { useCustomVizStore, useVizLibrary } from '@/entities/viz';
+import { useSheetStorage } from '../storage/useSheetStorage';
+import { useBundleImport } from './useBundleImport';
 
 // Prevent Vite HMR from resetting module-level state (pendingImport would be lost on hot reload)
 if (import.meta.hot) { import.meta.hot.decline(); }
-
-import { useCustomViz } from '@/features/block/visualize';
-import { useHistory } from '@/features/sheet/history';
-import { useSheetStorage } from '@/features/sheet/storage';
-import { useBundleImport } from './useBundleImport';
 
 // Module-level singletons — shared across all callers
 // { summary, data, conflicts } | null
 const pendingImport = ref(null);
 // { [importedName]: { action: 'use-system' | 'add-as-new' | 'remap', targetName?: string } }
 const conflictResolutions = ref({});
+
+// Handlers supplied by the page. Every useFileIO() caller shares them so that an import
+// confirmed from any widget behaves identically.
+const _handlers = {
+    onVizesImported: () => {}   // called after the imported vizes are merged into the library
+};
 
 function _triggerDownload(filename, content) {
     const blob = new Blob([content], { type: 'application/json' });
@@ -37,10 +41,13 @@ function _nextAvailableName(baseName) {
     return `${baseName}-${n}`;
 }
 
-export function useFileIO() {
+export function useFileIO(handlers = {}) {
+    for (const [key, fn] of Object.entries(handlers)) {
+        if (fn && key in _handlers) { _handlers[key] = fn; }
+    }
     const { blocks, replaceBlocks } = useBlockStore();
     const { notes, replaceNotes } = useNoteStore();
-    const { customVizes, loadVizes } = useCustomViz();
+    const { customVizes } = useCustomVizStore();
     const { activeSheetName, sheets, activeSheetId, registerSheet, createSheet: createSheetInStore } = useSheetStore();
     const { readSheetData, writeSheetData, switchSheet, initNewSheet, persistDeleteSheet, flushSave } = useSheetStorage();
     const { suppress } = useHistory();
@@ -233,7 +240,7 @@ export function useFileIO() {
             replaceBlocks(finalBlocks);
             replaceNotes(data.notes ?? []);
         });
-        loadVizes(library);
+        _handlers.onVizesImported();
 
         pendingImport.value = null;
         conflictResolutions.value = {};

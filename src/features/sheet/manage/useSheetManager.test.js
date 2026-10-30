@@ -27,7 +27,7 @@ const mockSheetStorage = {
     unmarkPendingDelete: vi.fn()
 };
 
-vi.mock('@/features/sheet/storage', () => ({
+vi.mock('../storage/useSheetStorage', () => ({
     useSheetStorage: () => mockSheetStorage
 }));
 

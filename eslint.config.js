@@ -119,13 +119,14 @@ export default [
                 { type: 'pages',    pattern: 'src/pages/**' },
                 // Each feature slice is captured separately so cross-feature imports are
                 // detectable as cross-element imports. Slices live either in a group
-                // (src/features/block/<slice>, src/features/sheet/<slice>) or flat
-                // (src/features/note, src/features/canvas). Both captures are always set:
-                // for flat slices the doubled parens make group === featureName, so
-                // block/manage and sheet/manage stay distinct elements.
+                // (src/features/block/<slice>) or flat (src/features/note, src/features/canvas,
+                // src/features/sheet — whose manage/, storage/ and file-io/ sub-folders are
+                // segments of one slice, not slices). Both captures are always set: for flat
+                // slices the doubled parens make group === featureName, so block/manage and
+                // sheet stay distinct elements.
                 {
                     type: 'features',
-                    pattern: ['src/features/(block|sheet)/(*)', 'src/features/((note|canvas))'],
+                    pattern: ['src/features/(block)/(*)', 'src/features/((note|canvas|sheet))'],
                     capture: ['group', 'featureName']
                 },
                 { type: 'widgets',  pattern: 'src/widgets/**' },

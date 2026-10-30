@@ -1,7 +1,7 @@
 import { renameIdentifiers } from '@/shared/lib/evaluator';
 import { generateUniqueId } from '@/shared/utils';
 import { useBlockStore, generateUniqueNameFromName } from '@/entities/block';
-import { useHistory } from '@/features/sheet/history';
+import { useHistory } from '@/entities/history';
 
 export function useBlockClipboard() {
     const { blocks: storeBlocks, addBlock, removeBlock } = useBlockStore();

@@ -1,6 +1,6 @@
 import { reactive, ref } from 'vue';
 import { useSheetStore } from '@/entities/sheet';
-import { useSheetStorage } from '@/features/sheet/storage';
+import { useSheetStorage } from '../storage/useSheetStorage';
 
 const deletingIds   = reactive(new Set());
 const deletedNotice = ref(null);

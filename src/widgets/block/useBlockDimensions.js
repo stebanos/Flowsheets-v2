@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue';
 import { useBlockStore } from '@/entities/block';
-import { useHistory } from '@/features/sheet/history';
+import { useHistory } from '@/entities/history';
 
 export function useBlockDimensions(block, { cellWidth, cellHeight, unitX, snappedInputsPanelHeight, snappedParamBarHeight = ref(0), snappedOutputHeight, editorCollapsed = ref(false) }) {
     const { updateBlock } = useBlockStore();
