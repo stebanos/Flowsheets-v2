@@ -1,12 +1,9 @@
 <script setup>
 import { computed, nextTick, onErrorCaptured, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useCustomViz } from './useCustomViz';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null },
-    block: { type: Object, required: true }
-});
+const props = defineProps(VIZ_PROPS);
 
 const emit = defineEmits(['update:content-height']);
 

@@ -3,15 +3,9 @@ import { computed, ref } from 'vue';
 import { diffLines } from '@/shared/lib/diff';
 import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null },
-    block: { type: Object, required: true },
-    isList: { type: Boolean, default: false },
-    outputItems: { type: Array, default: () => [] },
-    getEvaluation: { type: Function, required: true }
-});
+const props = defineProps(VIZ_PROPS);
 
 const { updateBlock } = useBlockStore();
 

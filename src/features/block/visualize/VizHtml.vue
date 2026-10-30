@@ -1,14 +1,9 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
 import { formatValue } from '@/shared/lib/format-value';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null },
-    block: { type: Object, default: null },
-    isList: { type: Boolean, default: false },
-    outputItems: { type: Array, default: () => [] }
-});
+const props = defineProps(VIZ_PROPS);
 
 const htmlContent = computed(() => {
     if (props.error) { return `<span style="color:red">${props.error}</span>`; }

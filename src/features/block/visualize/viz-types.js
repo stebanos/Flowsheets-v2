@@ -8,6 +8,10 @@ import VizTable from './VizTable.vue';
 import VizTextDiff from './VizTextDiff.vue';
 import VizTimeline from './VizTimeline.vue';
 
+// the prop contract lives in its own module so the components can import it
+// without a cycle through this file's component imports
+export { VIZ_PROPS } from './viz-props';
+
 // inMenu: listed in the flat part of the viz menu
 // fillsContainer: the viz sizes itself to its box rather than growing with its content
 export const VIZ_TYPES = {

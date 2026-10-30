@@ -1,11 +1,9 @@
 <script setup>
 import { computed } from 'vue';
 import { formatValue } from '@/shared/lib/format-value';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null }
-});
+const props = defineProps(VIZ_PROPS);
 
 function renderCell(v) {
     if (v === null || v === undefined) { return '—'; }

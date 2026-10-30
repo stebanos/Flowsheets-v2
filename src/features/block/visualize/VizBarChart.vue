@@ -2,11 +2,9 @@
 import { computed } from 'vue';
 import { coerceNumberSeries, extent, niceTicks } from './chartHelpers';
 import { useChartSize } from './useChartSize';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null }
-});
+const props = defineProps(VIZ_PROPS);
 
 const { containerRef, width, height } = useChartSize();
 

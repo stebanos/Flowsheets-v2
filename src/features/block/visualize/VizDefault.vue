@@ -4,14 +4,9 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { formatValue } from '@/shared/lib/format-value';
 import { safeStringify } from './safeStringify';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null },
-    block: { type: Object, default: null },
-    isList: { type: Boolean, default: false },
-    outputItems: { type: Array, default: () => [] }
-});
+const props = defineProps(VIZ_PROPS);
 
 const emit = defineEmits(['update:content-height']);
 

@@ -3,14 +3,9 @@ import { computed } from 'vue';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { safeStringify } from './safeStringify';
+import { VIZ_PROPS } from './viz-props';
 
-const props = defineProps({
-    value: {},
-    error: { type: String, default: null },
-    block: { type: Object, default: null },
-    isList: { type: Boolean, default: false },
-    outputItems: { type: Array, default: () => [] }
-});
+const props = defineProps(VIZ_PROPS);
 
 // null has typeof 'object' so it's not a primitive here (JSON null is valid and useful).
 const isPrimitive = computed(() => !props.error && props.value !== null && typeof props.value !== 'object');
