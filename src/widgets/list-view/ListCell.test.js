@@ -30,7 +30,8 @@ function mountCell({ block = mk(), evaluation = { value: 2 }, status = 'ok' } = 
         getStatus: () => status
     };
     const wrapper = shallowMount(ListCell, {
-        props: { block: live, context, blocks: store.blocks, setHovered: () => {}, clearHovered: () => {} }
+        props: { block: live, context, blocks: store.blocks, setHovered: () => {}, clearHovered: () => {} },
+        global: { stubs: { BlockOutput: false } }
     });
     return { wrapper, context, live };
 }

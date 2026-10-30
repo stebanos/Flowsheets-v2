@@ -13,7 +13,7 @@ describe('useBlockOutput', () => {
     test('outputHeight is initialised from block.outputHeight', () => {
         const block = { visualizationType: null, outputHeight: 120 };
         const { outputHeight } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         expect(outputHeight.value).toBe(120);
@@ -22,7 +22,7 @@ describe('useBlockOutput', () => {
     test('outputHeight falls back to 3*cellHeight when block.outputHeight is missing', () => {
         const block = { visualizationType: null };
         const { outputHeight } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         expect(outputHeight.value).toBe(120); // 3 * 40
@@ -31,7 +31,7 @@ describe('useBlockOutput', () => {
     test('snappedOutputHeight equals outputHeight directly', () => {
         const block = { visualizationType: null, outputHeight: 120 };
         const { snappedOutputHeight } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref({ value: 42 }) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         expect(snappedOutputHeight.value).toBe(120);
@@ -40,7 +40,7 @@ describe('useBlockOutput', () => {
     test('snappedOutputHeight reflects changes to outputHeight ref', () => {
         const block = { visualizationType: null, outputHeight: 120 };
         const result = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref({ value: 42 }) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         result.outputHeight.value = 200;
@@ -50,7 +50,7 @@ describe('useBlockOutput', () => {
     test('outputOverflowY is "hidden" for non-default viz types', () => {
         const block = { visualizationType: 'html', outputHeight: 120 };
         const { outputOverflowY } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         expect(outputOverflowY.value).toBe('hidden');
@@ -59,7 +59,7 @@ describe('useBlockOutput', () => {
     test('outputOverflowY is "auto" for default viz type', () => {
         const block = { visualizationType: 'default', outputHeight: 120 };
         const { outputOverflowY } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         expect(outputOverflowY.value).toBe('auto');
@@ -68,7 +68,7 @@ describe('useBlockOutput', () => {
     test('outputHeight follows the block when it is restored (undo/redo)', async () => {
         const block = reactive({ visualizationType: null, outputHeight: 120 });
         const { outputHeight } = withSetup(() =>
-            useBlockOutput(block, { cellHeight: ref(40), blockEval: ref(null) })
+            useBlockOutput(block, { cellHeight: ref(40) })
         );
 
         outputHeight.value = 200;

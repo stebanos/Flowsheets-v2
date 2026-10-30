@@ -1,10 +1,11 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { formatValue } from '@/shared/lib/format-value';
 import { useBlockStore } from '@/entities/block';
 import { CodeEditor } from '@/features/block/edit-code';
+import { useBlockEval } from '@/features/block/evaluation';
 import { ParamWidgetBar } from '@/features/block/parameter';
 import { useVizMenu } from '@/features/block/visualize';
+import { BlockOutput } from '@/widgets/block-output';
 
 const DEFAULT_OUTPUT_HEIGHT = 72;
 const DEFAULT_VIZ_MAX_HEIGHT = 480;
@@ -41,14 +42,7 @@ const { activeVizComponent } = useVizMenu(props.block, () => {});
 const cellEl = ref(null);
 const codeExpanded = ref(false);
 
-const blockEval = computed(() => props.context.getEvaluation(props.block.name));
-const status = computed(() => props.context.getStatus(props.block.name));
-// undefined = no usable value (error or missing) — the widget bar shows its "no value" state
-const paramValue = computed(() => blockEval.value?.error ? undefined : blockEval.value?.value);
-
-const outputValue = computed(() => blockEval.value?.value);
-const isList = computed(() => Array.isArray(outputValue.value));
-const outputItems = computed(() => isList.value ? outputValue.value.map(formatValue) : []);
+const { paramValue } = useBlockEval(props.block, props.context);
 
 const isDefaultViz = computed(() => (props.block.visualizationType ?? 'default') === 'default');
 // Charts and custom vizes fill their container, so they need a definite height; default text grows (capped)
@@ -95,20 +89,7 @@ function onNavigate(dir) {
                 @update:code="onUpdateCode($event)" />
         </div>
         <div class="list-cell-output relative" :style="outputStyle">
-            <div v-if="status === 'blocked'"
-                 class="h-6 w-full flex items-center bg-amber-50 text-amber-700 font-mono text-[.8125rem] px-2">
-                blocked — upstream error
-            </div>
-            <component
-                v-else
-                :is="activeVizComponent"
-                :value="outputValue"
-                :error="blockEval?.error ?? null"
-                :block="block"
-                :is-list="isList"
-                :output-items="outputItems"
-                :get-evaluation="context.getEvaluation"
-                class="h-full w-full" />
+            <block-output :block :context :active-viz-component="activeVizComponent" />
         </div>
     </div>
 </template>

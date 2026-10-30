@@ -1,5 +1,6 @@
 export { Block } from './block';
 export { BlockGrid } from './block-grid';
+export { BlockOutput } from './block-output';
 export { CanvasNote } from './canvas-note';
 export { CustomVizEditor } from './custom-viz-editor';
 export { ListView } from './list-view';
