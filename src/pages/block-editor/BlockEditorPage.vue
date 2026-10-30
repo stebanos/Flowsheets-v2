@@ -116,7 +116,7 @@ watch(canvasEl, (el) => {
 
 // sheet & file management
 const { createSheet, deletedNotice } = useSheetManager();
-const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot } = useSheetStorage({
+const { localStatus, localError, loadFromStorage, scheduleSave, isFirstBoot, catalogueUnreadable } = useSheetStorage({
     getCustomVizes:  () => library,
     getPan:          () => ({ panX: panX.value, panY: panY.value, viewMode: viewMode.value }),
     onPanLoaded:     (view) => {
@@ -209,6 +209,7 @@ function onCanvasMousedown(event) {
 
 function openSheetSidebar() { sheetSidebarOpen.value = true; }
 function createSheetFromEmpty() { createSheet('Untitled'); }
+function reloadPage() { window.location.reload(); }
 
 function onCanvasMousemove(e) {
     canvasMousePos.value = toCanvasPoint(e);
@@ -293,7 +294,7 @@ const statusColor = computed(() => {
                             <circle :cx="connectTo.x" :cy="connectTo.y" r="3" fill="black" />
                         </svg>
                     </div>
-                    <empty-canvas v-if="sheets.length === 0" @create="createSheetFromEmpty" />
+                    <empty-canvas v-if="sheets.length === 0" :unreadable="catalogueUnreadable" @create="createSheetFromEmpty" @reload="reloadPage" />
                     <div
                         v-if="isSelecting && rect"
                         class="pointer-events-none absolute border border-cyan-400 bg-cyan-100/30"

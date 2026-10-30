@@ -29,6 +29,7 @@ import { useOPFSStrategy } from './useOPFSStrategy';
 const localError     = ref(null);    // string | null
 const openSheetIds   = reactive([]);
 const isFirstBoot    = ref(false);   // true only when storage was completely empty on this load
+const catalogueUnreadable = ref(false);  // the stored catalogue failed to load — never write anything
 const _pendingDelete = new Set();    // ids whose writes must be suppressed until deleted
 const _unreadable    = new Set();    // ids whose stored data failed to load — never overwrite them
 
@@ -45,8 +46,6 @@ let bootPromise     = null;
 let pendingSwitchId = null;
 let loading         = false;  // true while stores hold data that does not belong to activeSheetId
 let scheduler       = null;   // created on the first useSheetStorage() call; shared by every caller
-let catalogueUnreadable = false;  // the stored catalogue failed to load — never write anything
-
 
 const strategy = _opfsAvailable() ? useOPFSStrategy() : useLSStrategy();
 
@@ -85,7 +84,7 @@ export function useSheetStorage(handlers = {}) {
 
     function _saveBlocked() {
         const id = activeSheetId.value;
-        return catalogueUnreadable || loading || !id || _pendingDelete.has(id) || _unreadable.has(id);
+        return catalogueUnreadable.value || loading || !id || _pendingDelete.has(id) || _unreadable.has(id);
     }
 
     async function _saveCurrentSheet() {
@@ -150,7 +149,7 @@ export function useSheetStorage(handlers = {}) {
         } catch (err) {
             // Not a first run — the catalogue exists but cannot be read. Creating a sheet here
             // would overwrite it and orphan every stored sheet, so stop and keep saves blocked.
-            catalogueUnreadable = true;
+            catalogueUnreadable.value = true;
             scheduler.status.value = 'error';
             localError.value  = `Your sheets could not be loaded (${err.message}). Auto-save is paused so the stored data is not overwritten.`;
             return;
@@ -225,6 +224,11 @@ export function useSheetStorage(handlers = {}) {
     // ── initNewSheet ──────────────────────────────────────────────────────────
 
     function initNewSheet(id, name) {
+        if (catalogueUnreadable.value) {
+            scheduler.status.value = 'error';
+            localError.value  = 'Your sheets could not be loaded, so a new sheet cannot be created. Reload the page to try again.';
+            return;
+        }
         _applyToStores({ blocks: [], vizes: {}, view: { panX: 0, panY: 0 }, notes: [] });
         writeActiveId(id);
         _addToOpenIds(id);
@@ -297,6 +301,7 @@ export function useSheetStorage(handlers = {}) {
         localError,
         openSheetIds,
         isFirstBoot,
+        catalogueUnreadable,
         loadFromStorage,
         switchSheet,
         closeSheet,

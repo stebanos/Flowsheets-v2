@@ -17,7 +17,7 @@ const { sheets, activeSheetId } = useSheetStore();
 const sortedSheets = computed(() =>
     [...sheets].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
 );
-const { switchSheet } = useSheetStorage();
+const { catalogueUnreadable, switchSheet } = useSheetStorage();
 const { createSheet, deleteSheet, renameSheet, deletingIds, deleteError } = useSheetManager();
 const { prepareImport, confirmImport, cancelImport, pendingImport, conflictResolutions, resolveConflict, prepareBundleImport, bundleImportState, confirmBundleImport, cancelBundleImport, exportSheet, exportBundle } = useFileIO();
 const { library } = useVizLibrary();
@@ -86,6 +86,10 @@ function confirmNewSheet() {
 
 function cancelNewSheet() {
     pendingNewSheet.value = false;
+}
+
+function reloadPage() {
+    window.location.reload();
 }
 
 function handleDeleteSheet(event, id) {
@@ -167,7 +171,8 @@ function handleCancelBundleImport() {
             >Import</button>
             <button
                 v-tooltip.bottom="{ value: 'New sheet', pt: { text: { class: 'text-[10px] py-0.5 px-1.5' } } }"
-                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded bg-gray-200 hover:bg-gray-300 ml-1.5"
+                class="text-[10px] font-medium text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded bg-gray-200 hover:bg-gray-300 ml-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                :disabled="catalogueUnreadable"
                 @click="handleCreateSheet"
             >+ New</button>
         </template>
@@ -257,6 +262,12 @@ function handleCancelBundleImport() {
                 </div>
             </li>
         </ul>
+
+        <!-- Unreadable catalogue: nothing is written; offer a retry -->
+        <div v-if="catalogueUnreadable" class="px-2.5 py-1 text-[11px] text-red-400 leading-snug">
+            Your sheets could not be loaded. Nothing has been overwritten.
+            <button type="button" class="block mt-1 underline cursor-pointer" @click="reloadPage">Reload to try again</button>
+        </div>
 
         <!-- Delete error -->
         <p v-if="deleteError" class="px-2.5 py-1 text-[11px] text-red-400">{{ deleteError }}</p>

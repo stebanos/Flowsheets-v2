@@ -788,6 +788,36 @@ describe('corrupt catalogue', () => {
         expect(localStatus.value).toBe('idle');
         expect(JSON.parse(fakeStorage.getItem(KEY_CATALOGUE))).toHaveLength(1);
     });
+
+    it('exposes catalogueUnreadable after a catalogue failure', async () => {
+        const { useSheetStorage } = await freshImports();
+        const { loadFromStorage, catalogueUnreadable } = useSheetStorage();
+        expect(catalogueUnreadable.value).toBe(false);
+
+        fakeStorage.setItem(KEY_CATALOGUE, 'not json');
+        await loadFromStorage();
+
+        expect(catalogueUnreadable.value).toBe(true);
+    });
+
+    it('initNewSheet refuses while the catalogue is unreadable', async () => {
+        const { useSheetStorage, useBlockStore } = await freshImports();
+        fakeStorage.setItem(KEY_CATALOGUE, 'not json');
+
+        const { loadFromStorage, initNewSheet, localStatus, localError } = useSheetStorage();
+        await loadFromStorage();
+        useBlockStore().addBlock(BLOCK('keep'));
+
+        initNewSheet('sheet:local/new', 'New');
+        await nextTick();
+
+        expect(Object.keys(fakeStorage._store).filter(k => k.startsWith('flowsheets.v2.sheet.'))).toEqual([]);
+        expect(fakeStorage.getItem(KEY_CATALOGUE)).toBe('not json');
+        expect(localStatus.value).toBe('error');
+        expect(localError.value).toContain('cannot be created');
+        expect(useBlockStore().blocks).toHaveLength(1);
+        expect(useBlockStore().blocks[0].id).toBe('keep');
+    });
 });
 
 describe('sheet shape normalisation', () => {

@@ -18,6 +18,7 @@ export function useSheetManager() {
     const sheetStorage = useSheetStorage();
 
     function createSheet(name) {
+        if (sheetStorage.catalogueUnreadable.value) { return null; }
         const resolvedName = name?.trim() || 'Untitled';
         sheetStorage.flushSave(); // the store is about to move the active id away from the current sheet
         const id = sheetStore.createSheet(resolvedName);

@@ -18,6 +18,7 @@ vi.mock('@/entities/sheet', () => ({
 
 const mockSheetStorage = {
     openSheetIds: reactive([]),
+    catalogueUnreadable: ref(false),
     initNewSheet: vi.fn(),
     flushSave: vi.fn(),
     closeSheet: vi.fn(),
@@ -47,6 +48,7 @@ describe('useSheetManager', () => {
     beforeEach(() => {
         mockSheets.splice(0);
         vi.clearAllMocks();
+        mockSheetStorage.catalogueUnreadable.value = false;
         mockSheetStorage.persistDeleteSheet.mockResolvedValue(undefined);
     });
 
@@ -61,6 +63,18 @@ describe('useSheetManager', () => {
             expect(mockSheetStore.createSheet).toHaveBeenCalledWith('My Sheet');
             expect(mockSheetStorage.initNewSheet).toHaveBeenCalledWith(newId, 'My Sheet');
             expect(result).toBe(newId);
+        });
+
+        it('returns null and touches nothing while the catalogue is unreadable', () => {
+            mockSheetStorage.catalogueUnreadable.value = true;
+
+            const { createSheet } = useSheetManager();
+            const result = createSheet('My Sheet');
+
+            expect(result).toBeNull();
+            expect(mockSheetStorage.flushSave).not.toHaveBeenCalled();
+            expect(mockSheetStore.createSheet).not.toHaveBeenCalled();
+            expect(mockSheetStorage.initNewSheet).not.toHaveBeenCalled();
         });
 
         it('flushes the current sheet\'s pending save before the store switches the active id', () => {
