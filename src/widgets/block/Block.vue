@@ -14,13 +14,12 @@ import { useDeleteBlock } from '@/features/block/manage';
 import { BlockName } from '@/features/block/name';
 import { useBlockNavigation, useBlockSelection, useFocusedBlock } from '@/features/block/navigate';
 import { ParamConfigPopover, ParamWidgetBar } from '@/features/block/parameter';
+import { useBlockDimensions, useBlockResize } from '@/features/block/resize';
 import { useVizMenu, VizMenu } from '@/features/block/visualize';
 import { BlockOutput } from '@/widgets/block-output';
 import OutputHistoryPopover from './OutputHistoryPopover.vue';
-import { useBlockDimensions } from './useBlockDimensions';
 import { useBlockExtract } from './useBlockExtract';
 import { useBlockOutput } from './useBlockOutput';
-import { useBlockResize } from './useBlockResize';
 
 const props = defineProps({
     block: {
