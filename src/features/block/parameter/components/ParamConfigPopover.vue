@@ -50,14 +50,7 @@ const param = computed(() => {
     return out;
 });
 
-const isValid = computed(() => {
-    const p = param.value;
-    if (p.widget === 'slider') {
-        return [p.min, p.max, p.step].every(Number.isFinite) && p.min < p.max && p.step > 0;
-    }
-    if (p.widget === 'options') { return p.options.length > 0; }
-    return true;
-});
+const isValid = computed(() => WIDGET_TYPES[param.value.widget].validate(param.value));
 
 function onSave() {
     if (!isValid.value) { return; }
