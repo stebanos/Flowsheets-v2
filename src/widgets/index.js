@@ -6,4 +6,4 @@ export { CustomVizEditor } from './custom-viz-editor';
 export { ListView } from './list-view';
 export { SheetSidebar } from './sheet-sidebar';
 export { SheetTabs } from './sheet-tabs';
-export { default as VizConflictResolver } from './VizConflictResolver.vue';
+export { VizConflictResolver } from './viz-conflict-resolver';

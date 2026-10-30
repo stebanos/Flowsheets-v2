@@ -4,7 +4,7 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
 import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
-import { VizConflictResolver } from '@/widgets';
+import { VizConflictResolver } from '@/widgets/viz-conflict-resolver';
 
 const props = defineProps({
     open: {
