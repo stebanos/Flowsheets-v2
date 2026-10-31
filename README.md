@@ -22,6 +22,12 @@ Visit http://localhost:5173.
 
 **Rename freely** — double-click a block name to rename it. All references in other blocks rewrite to match.
 
+**Connect by dragging** — drag a block's name port or output grip onto another block to insert a reference to it at the cursor.
+
+**See what changed** — hover a block's output to see its previous value and a line diff against the current one, so you can tell what an upstream edit did.
+
+**Turn a block into a parameter** — choose *Make parameter…* from a block's options menu to drive it with a slider, text field, toggle, color picker, or options list. The widget rewrites the block's code as a literal, so references, undo, and persistence work as for any other block.
+
 **Extract a sub-expression** — select any part of an expression and press `⌘⇧X` (Mac) / `Ctrl+Shift+X` (Windows/Linux) to pull it out into its own block, replacing the selection with the new block's name.
 
 **Undo / redo** — `⌘Z` / `⌘⇧Z` (or the topbar buttons) step through your edits — block create/delete/move/rename, code changes, notes, and more. Each sheet keeps its own history.
@@ -34,7 +40,9 @@ Visit http://localhost:5173.
 
 **Work across sheets** — a workbook holds many sheets. Use the left sidebar to create, rename, and delete them, or the tab strip to switch between the ones you have open. Each sheet has its own canvas, blocks, and history.
 
-**Persistence** — sheets auto-save to browser storage. Use the *Export* icon next to a sheet in the left sidebar to download a single `.flowsheet.json`, or *Export workbook* in the sidebar footer to save every sheet as one `.flowbundle.json`. *Import* at the top of the sidebar loads either format (a bundle prompts per-sheet on how to merge).
+**List view** — switch the app bar toggle from *Canvas* to *List* to see the sheet as an ordered column of cells. Use the *Include in list view* toggle in a block's header to add it, and drag cells to reorder them. The view mode is saved per sheet.
+
+**Persistence** — sheets auto-save to browser storage. Use the *Export* icon next to a sheet in the left sidebar to download a single `.flowsheet.json`, or *Export workbook* in the sidebar footer to save every sheet as one `.flowbundle.json`. *Import* at the top of the sidebar loads either format (a bundle prompts per-sheet on how to merge). If the stored sheet catalogue cannot be read, nothing is overwritten: the app shows a notice and offers a reload instead of starting fresh.
 
 ## Development
 
