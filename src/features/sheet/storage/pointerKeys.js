@@ -2,8 +2,9 @@
 // The active sheet id and the open-tab list are the only things the storage
 // segment keeps in localStorage regardless of the strategy in use.
 
-export const KEY_ACTIVE_ID = 'flowsheets.v2.activeSheetId';
-export const KEY_OPEN_IDS  = 'flowsheets.v2.openSheetIds';
+import { KEY_ACTIVE_ID, KEY_OPEN_IDS } from './storageKeys';
+
+export { KEY_ACTIVE_ID, KEY_OPEN_IDS };
 
 function _readJson(key, fallback) {
     try {

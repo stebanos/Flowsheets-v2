@@ -1,7 +1,5 @@
 import { emptySheet } from './emptySheet';
-
-const KEY_CATALOGUE = 'flowsheets.v2.catalogue';
-const KEY_SHEET     = (id) => `flowsheets.v2.sheet.${id}`;
+import { KEY_CATALOGUE, KEY_SHEET } from './storageKeys';
 
 // Throws on corrupt data (unparseable, or not an array) so no caller can
 // replace an existing catalogue with a fresh one. A missing key is an empty catalogue.
