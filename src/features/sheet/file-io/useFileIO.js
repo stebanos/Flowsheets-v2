@@ -6,6 +6,7 @@ import { useNoteStore } from '@/entities/note';
 import { deserializeSheet, migrate, serializeBundle, serializeSheet, useSheetStore } from '@/entities/sheet';
 import { useCustomVizStore, useVizLibrary } from '@/entities/viz';
 import { useSheetStorage } from '../storage/useSheetStorage';
+import { BUNDLE_FILE_EXT, SHEET_FILE_EXT } from './fileExtensions';
 import { useBundleImport } from './useBundleImport';
 
 // Prevent Vite HMR from resetting module-level state (pendingImport would be lost on hot reload)
@@ -57,7 +58,7 @@ export function useFileIO(handlers = {}) {
             .toLowerCase()
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, '');
-        return `${sanitized || 'untitled'}.flowsheet.json`;
+        return `${sanitized || 'untitled'}${SHEET_FILE_EXT}`;
     }
 
     function _buildContent() {
@@ -71,7 +72,7 @@ export function useFileIO(handlers = {}) {
             const stored = await readSheetData(sheetId);
             const name = sheets.find(s => s.id === sheetId)?.name ?? 'untitled';
             const sanitized = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            suggestedName = `${sanitized || 'untitled'}.flowsheet.json`;
+            suggestedName = `${sanitized || 'untitled'}${SHEET_FILE_EXT}`;
             content = JSON.stringify(serializeSheet(stored?.blocks ?? [], stored?.customVizes ?? {}, name, null, stored?.notes ?? []), null, 2);
         } else {
             suggestedName = _buildSuggestedName();
@@ -83,7 +84,7 @@ export function useFileIO(handlers = {}) {
             try {
                 handle = await window.showSaveFilePicker({
                     suggestedName,
-                    types: [{ description: 'Flowsheets file', accept: { 'application/json': ['.flowsheet.json'] } }]
+                    types: [{ description: 'Flowsheets file', accept: { 'application/json': [SHEET_FILE_EXT] } }]
                 });
             } catch (err) {
                 if (err.name === 'AbortError') { return; }
@@ -271,7 +272,7 @@ export function useFileIO(handlers = {}) {
         const bundle = serializeBundle(sheetEntries, activeSheetId.value);
         const raw = activeSheetName.value ?? 'untitled';
         const sanitized = raw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const filename = `${sanitized || 'untitled'}.flowbundle.json`;
+        const filename = `${sanitized || 'untitled'}${BUNDLE_FILE_EXT}`;
         _triggerDownload(filename, JSON.stringify(bundle, null, 2));
     }
 

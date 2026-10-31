@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useConfirm } from 'primevue/useconfirm';
 import { useSheetStore } from '@/entities/sheet';
 import { useVizLibrary } from '@/entities/viz';
-import { useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
+import { BUNDLE_FILE_EXT, SHEET_FILE_EXT, useFileIO, useSheetManager, useSheetStorage } from '@/features/sheet';
 import { VizConflictResolver } from '@/widgets/viz-conflict-resolver';
 
 const props = defineProps({
@@ -136,7 +136,7 @@ async function onFileInputChange(e) {
     if (!file) { return; }
     e.target.value = '';
     importError.value = null;
-    if (file.name.endsWith('.flowbundle.json')) {
+    if (file.name.endsWith(BUNDLE_FILE_EXT)) {
         const result = await prepareBundleImport(file);
         if (result.error) { importError.value = result.error; }
         return;
@@ -302,7 +302,7 @@ function handleCancelBundleImport() {
     <input
         ref="fileInputEl"
         type="file"
-        accept=".flowsheet.json,.flowbundle.json"
+        :accept="`${SHEET_FILE_EXT},${BUNDLE_FILE_EXT}`"
         class="hidden"
         @change="onFileInputChange"
     />
