@@ -1,4 +1,5 @@
 import { BLOCK_SIZE_DEFAULTS } from '@/shared/layout/cellDimensions';
+import { CURRENT_VERSION } from './migrations';
 
 const PERSISTED_BLOCK_FIELDS = [
     'id',
@@ -60,7 +61,7 @@ export function serializeSheet(blocks, vizes, name, view, notes) {
     });
 
     const result = {
-        version: '1.2.0',
+        version: CURRENT_VERSION,
         name,
         blocks: serializedBlocks,
         customVizes,
@@ -197,7 +198,7 @@ export function deserializeBundle(json) {
     const sheets = (json.sheets ?? []).map((sheet) => {
         const sheetVizes = (json.formatVersion === '1.1.0' || json.formatVersion === '1.2.0') ? vizLibrary : (sheet.customVizes ?? {});
         const { blocks, vizes, name, notes } = deserializeSheet({
-            version: '1.2.0',
+            version: CURRENT_VERSION,
             blocks: sheet.blocks ?? [],
             customVizes: sheetVizes,
             name: sheet.name,

@@ -1,6 +1,6 @@
 import { getHash } from '@/shared/lib/hash';
 
-const CURRENT_VERSION = '1.2.0';
+export const CURRENT_VERSION = '1.2.0';
 
 export async function migrate(json) {
     const version = json.version;
@@ -19,10 +19,10 @@ export async function migrate(json) {
     }
 
     if (version === '1.1.0') {
-        return migrate({ ...json, version: '1.2.0', notes: json.notes ?? [] });
+        return migrate({ ...json, version: CURRENT_VERSION, notes: json.notes ?? [] });
     }
 
-    if (version === '1.2.0') {
+    if (version === CURRENT_VERSION) {
         return json;
     }
 
