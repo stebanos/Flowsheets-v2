@@ -1,3 +1,5 @@
+import { BLOCK_SIZE_DEFAULTS } from '@/shared/layout/cellDimensions';
+
 const PERSISTED_BLOCK_FIELDS = [
     'id',
     'name',
@@ -84,9 +86,9 @@ export function deserializeSheet(json) {
 
     const blocks = (json.blocks ?? []).map((block) => ({
         ...block,
-        width:        block.width        ?? block.userMinWidth        ?? 150,
-        editorHeight: block.editorHeight ?? block.userMinEditorHeight ?? 48,
-        outputHeight: block.outputHeight ?? block.userMinOutputHeight ?? 72,
+        width:        block.width        ?? block.userMinWidth        ?? BLOCK_SIZE_DEFAULTS.width,
+        editorHeight: block.editorHeight ?? block.userMinEditorHeight ?? BLOCK_SIZE_DEFAULTS.editorHeight,
+        outputHeight: block.outputHeight ?? block.userMinOutputHeight ?? BLOCK_SIZE_DEFAULTS.outputHeight,
         inputModes: block.inputModes ?? {},
         visualizationType: block.visualizationType ?? 'default',
         vizOptions: block.vizOptions ?? {},

@@ -1,5 +1,5 @@
 import { generateUniqueId } from '@/shared/utils';
-import { generateUniqueName, generateUniqueNameFromName, useBlockStore } from '@/entities/block';
+import { createBlock as makeBlock, generateUniqueName, generateUniqueNameFromName, useBlockStore } from '@/entities/block';
 
 export function useBlockManager() {
     const { blocks, addBlock } = useBlockStore();
@@ -9,7 +9,7 @@ export function useBlockManager() {
         const existingNames = blocks.map(block => block.name);
         const resolvedName = name ? generateUniqueNameFromName(name, existingNames) : generateUniqueName(existingNames);
 
-        addBlock({
+        addBlock(makeBlock({
             id: generateUniqueId(blockIds),
             name: resolvedName,
             x: Math.floor(x / cellWidth.value) * cellWidth.value,
@@ -17,13 +17,8 @@ export function useBlockManager() {
             width: cellWidth.value,
             editorHeight: 2 * unitY.value,
             outputHeight: 3 * unitY.value,
-            code,
-            inputModes: {},
-            visualizationType: 'default',
-            vizOptions: {},
-            editorCollapsed: false,
-            param: null
-        });
+            code
+        }));
 
         return resolvedName;
     }

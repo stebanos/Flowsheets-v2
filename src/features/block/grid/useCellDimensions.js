@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue';
-import { computeUnitX, snapX as pureSnapX, snapY as pureSnapY } from '@/shared/layout/cellDimensions';
+import { computeUnitX, DEFAULT_CELL_HEIGHT, DEFAULT_CELL_WIDTH, snapX as pureSnapX, snapY as pureSnapY } from '@/shared/layout/cellDimensions';
 
-const cellWidth = ref(150);
-const cellHeight = ref(24);
+const cellWidth = ref(DEFAULT_CELL_WIDTH);
+const cellHeight = ref(DEFAULT_CELL_HEIGHT);
 
 const unitX = computed(() => computeUnitX(cellWidth.value));
 

@@ -3,6 +3,16 @@
  * No Vue, no reactivity, no side effects.
  */
 
+export const DEFAULT_CELL_WIDTH = 150;
+export const DEFAULT_CELL_HEIGHT = 24;
+
+// A new block spans one cell wide; its editor is two rows and its output three.
+export const BLOCK_SIZE_DEFAULTS = {
+    width: DEFAULT_CELL_WIDTH,
+    editorHeight: 2 * DEFAULT_CELL_HEIGHT,
+    outputHeight: 3 * DEFAULT_CELL_HEIGHT
+};
+
 /**
  * Compute the sub-column snap unit for horizontal snapping.
  * Tries to divide cellWidth by 4, 3, or 2; returns cellWidth if none divide evenly.
