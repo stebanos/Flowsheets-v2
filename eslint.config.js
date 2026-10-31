@@ -20,6 +20,10 @@ function importLayer(source) {
 
 const layerName = ['vue', 'vue-ecosystem', 'primevue', 'external', 'shared', 'entities', 'features', 'widgets', 'pages', 'relative'];
 
+// eslint-plugin-boundaries v7 object selectors: `from` names an element, `allow` lists targets.
+const el = (type) => ({ element: { type } });
+const to = (...types) => types.map((type) => ({ to: el(type) }));
+
 const localPlugin = {
     rules: {
         'import-order': {
@@ -138,19 +142,19 @@ export default [
         rules: {
             'boundaries/dependencies': ['error', {
                 default: 'disallow',
-                rules: [
-                    { from: 'app',      allow: ['pages', 'widgets', 'features', 'entities', 'shared'] },
-                    { from: 'pages',    allow: ['widgets', 'features', 'entities', 'shared'] },
-                    { from: 'widgets',  allow: ['features', 'entities', 'shared'] },
+                policies: [
+                    { from: el('app'),      allow: to('pages', 'widgets', 'features', 'entities', 'shared') },
+                    { from: el('pages'),    allow: to('widgets', 'features', 'entities', 'shared') },
+                    { from: el('widgets'),  allow: to('features', 'entities', 'shared') },
                     {
-                        from: [['features', { group: '*', featureName: '*' }]],
+                        from: { element: { type: 'features', captured: { group: '*', featureName: '*' } } },
                         allow: [
-                            ['features', { group: '{{from.captured.group}}', featureName: '{{from.captured.featureName}}' }],
-                            'entities', 'shared'
+                            { to: { element: { type: 'features', captured: { group: '{{from.captured.group}}', featureName: '{{from.captured.featureName}}' } } } },
+                            ...to('entities', 'shared')
                         ]
                     },
-                    { from: 'entities', allow: ['shared'] },
-                    { from: 'shared',   allow: [] }
+                    { from: el('entities'), allow: to('shared') },
+                    { from: el('shared'),   allow: [] }
                 ]
             }]
         }
